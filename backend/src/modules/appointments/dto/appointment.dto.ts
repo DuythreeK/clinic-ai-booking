@@ -1,7 +1,7 @@
 export class CreateAppointmentDto {
-  patientId: string;
-  doctorId: string;
-  slotId: string;
+  patientId!: string;
+  doctorId!: string;
+  slotId!: string;
   reason?: string;
   attachments?: string;
 }
@@ -12,16 +12,16 @@ export class UpdateAppointmentDto {
 }
 
 export class UpdateAppointmentStatusDto {
-  status: string;
+  status!: string;
 }
 
 export class AddDoctorNotesDto {
-  doctorNotes: string;
+  doctorNotes!: string;
   doctorAdvice?: string;
 }
 
 export class RescheduleAppointmentDto {
-  newSlotId: string;
+  newSlotId!: string;
   reason?: string;
 }
 

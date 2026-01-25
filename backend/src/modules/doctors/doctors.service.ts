@@ -21,7 +21,7 @@ export class DoctorsService {
     return this.prisma.doctor.create({
       data: {
         userId,
-        licenseNumber: dto.licenseNumber,
+        licenseNumber: dto.licenseNumber ?? (() => { throw new BadRequestException('License number is required'); })(),
         specialtyId: dto.specialtyId,
         bio: dto.bio,
         yearsExperience: dto.yearsExperience || 0,

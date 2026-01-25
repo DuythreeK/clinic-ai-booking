@@ -1,5 +1,5 @@
 export class CreateDoctorDto {
-  licenseNumber: string;
+  licenseNumber: string | undefined;
   specialtyId?: string;
   bio?: string;
   yearsExperience?: number;
@@ -13,5 +13,5 @@ export class UpdateDoctorDto {
 }
 
 export class ApproveDoctorDto {
-  isApproved: boolean;
+  isApproved: boolean | undefined;
 }
