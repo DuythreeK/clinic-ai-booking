@@ -131,11 +131,7 @@ export class AuthService {
           sub: user.id,
           email: user.email,
           role: user.role,
-        } as JwtPayload,
-        {
-          secret: process.env.JWT_SECRET,
-          expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-        },
+        } as any,
       );
 
       return { accessToken: newAccessToken };
@@ -163,21 +159,15 @@ export class AuthService {
     email: string,
     role: UserRole,
   ) {
-    const payload: JwtPayload = {
+    const payload = {
       sub: userId,
       email,
       role,
     };
 
-    const accessToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_SECRET,
-      expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-    });
+    const accessToken = this.jwtService.sign(payload as any);
 
-    const refreshToken = this.jwtService.sign(payload, {
-      secret: process.env.JWT_REFRESH_SECRET,
-      expiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-    });
+    const refreshToken = this.jwtService.sign(payload as any);
 
     // Store hashed refresh token in DB
     const expiresAt = new Date();

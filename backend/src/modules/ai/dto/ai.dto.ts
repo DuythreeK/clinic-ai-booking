@@ -2,7 +2,7 @@ import { IsArray, IsString, IsOptional, IsObject } from 'class-validator';
 
 export class TriageRequestDto {
   @IsArray()
-  symptoms: string[];
+  symptoms!: string[];
 
   @IsString()
   @IsOptional()
@@ -18,15 +18,15 @@ export class TriageRequestDto {
 }
 
 export class TriageResultDto {
-  recommended_specialties: string[];
-  urgency_level: 'THUONG' | 'NEN_DI_SOM' | 'KHAN';
-  follow_up_questions: string[];
-  disclaimer: string;
+  recommended_specialties!: string[];
+  urgency_level!: 'THUONG' | 'NEN_DI_SOM' | 'KHAN';
+  follow_up_questions!: string[];
+  disclaimer!: string;
 }
 
 export class PrevisitSummaryRequestDto {
   @IsObject()
-  patientData: Record<string, any>;
+  patientData!: Record<string, any>;
 
   @IsString()
   @IsOptional()
@@ -38,7 +38,7 @@ export class PrevisitSummaryRequestDto {
 }
 
 export class PrevisitSummaryResultDto {
-  summary: string[];
-  keyPoints: string[];
-  recommendations: string[];
+  summary!: string[];
+  keyPoints!: string[];
+  recommendations!: string[];
 }

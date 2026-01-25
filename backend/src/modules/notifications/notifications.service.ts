@@ -36,7 +36,7 @@ export class NotificationsService {
    * Cron job: Send appointment reminders 1 hour before appointment
    * Placeholder implementation - replace with actual Firebase Cloud Messaging
    */
-  @Cron(CronExpression.EVERY_15_MINUTES)
+  @Cron(CronExpression.EVERY_5_MINUTES)
   async sendAppointmentReminders() {
     this.logger.log('🔔 Checking for upcoming appointments...');
 

@@ -2,17 +2,17 @@ import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
   @MinLength(6)
-  password: string;
+  password!: string;
 
   @IsString()
-  firstName: string;
+  firstName!: string;
 
   @IsString()
-  lastName: string;
+  lastName!: string;
 
   @IsString()
   @IsOptional()
@@ -21,16 +21,16 @@ export class RegisterDto {
 
 export class LoginDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  password: string;
+  password!: string;
 }
 
 export class AuthResponseDto {
-  accessToken: string;
-  refreshToken: string;
-  user: {
+  accessToken!: string;
+  refreshToken!: string;
+  user!: {
     id: string;
     email: string;
     firstName: string;
@@ -40,9 +40,9 @@ export class AuthResponseDto {
 }
 
 export class RefreshTokenDto {
-  refreshToken: string;
+  refreshToken!: string;
 }
 
 export class RefreshResponseDto {
-  accessToken: string;
+  accessToken!: string;
 }
