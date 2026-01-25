@@ -1,0 +1,310 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// ENUM TYPES
+// ============================================================================
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  ADMIN
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+enum UrgencyLevel {
+  THUONG
+  NEN_DI_SOM
+  KHAN
+}
+
+// ============================================================================
+// USER & AUTH
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // bcrypt hashed
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatar    String?
+  role      UserRole @default(PATIENT)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  refreshTokens RefreshToken[]
+  fcmTokens     FcmToken[]
+  patient       PatientProfile?
+  doctor        Doctor?
+  admin         AdminProfile?
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique // Hash of refresh token
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime? // For logout
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model FcmToken {
+  id    String @id @default(cuid())
+  token String @unique // Firebase Cloud Messaging token
+  userId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("fcm_tokens")
+}
+
+model AdminProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_profiles")
+}
+
+// ============================================================================
+// PATIENT
+// ============================================================================
+
+model PatientProfile {
+  id              String  @id @default(cuid())
+  userId          String  @unique
+  dateOfBirth     DateTime?
+  gender          String? // M, F, O
+  address         String?
+  city            String?
+  country         String?
+  emergencyPhone  String?
+  medicalHistory  String? // JSON string or text
+  allergies       String? // JSON string or text
+  currentMedications String? // JSON string
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("patient_profiles")
+}
+
+// ============================================================================
+// DOCTOR & SPECIALTIES
+// ============================================================================
+
+model Doctor {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  licenseNumber   String   @unique
+  specialtyId     String?
+  isApproved      Boolean  @default(false)
+  bio             String?
+  yearsExperience Int      @default(0)
+  rating          Float    @default(0) // Out of 5
+  totalReviews    Int      @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialty         Specialty?      @relation(fields: [specialtyId], references: [id])
+  doctorClinics     DoctorClinic[]
+  slots             Slot[]
+  appointments      Appointment[]
+
+  @@index([specialtyId])
+  @@index([isApproved])
+  @@map("doctors")
+}
+
+model Specialty {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  icon        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctors Doctor[]
+
+  @@map("specialties")
+}
+
+// ============================================================================
+// CLINIC & LOCATIONS
+// ============================================================================
+
+model Clinic {
+  id      String @id @default(cuid())
+  name    String
+  address String
+  city    String
+  country String
+  phone   String?
+  email   String?
+  hours   String? // JSON string with opening hours
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctors DoctorClinic[]
+  slots   Slot[]
+
+  @@map("clinics")
+}
+
+model DoctorClinic {
+  id       String @id @default(cuid())
+  doctorId String
+  clinicId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+
+  @@unique([doctorId, clinicId])
+  @@index([clinicId])
+  @@map("doctor_clinics")
+}
+
+// ============================================================================
+// SLOTS & APPOINTMENTS
+// ============================================================================
+
+model Slot {
+  id        String   @id @default(cuid())
+  doctorId  String
+  clinicId  String
+  startAt   DateTime
+  endAt     DateTime
+  isBlocked Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctor        Doctor         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  clinic        Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
+  appointments  Appointment[]
+
+  // Unique constraint: prevent double-booking same doctor/clinic/time
+  @@unique([doctorId, clinicId, startAt, endAt])
+  @@index([doctorId])
+  @@index([clinicId])
+  @@index([startAt, endAt])
+  @@map("slots")
+}
+
+model Appointment {
+  id             String            @id @default(cuid())
+  patientId      String
+  doctorId       String
+  slotId         String            @unique // One appointment per slot
+  status         AppointmentStatus @default(PENDING)
+  reason         String?           // Chief complaint
+  attachments    String?           // JSON string array of file URLs
+  triageJson     String?           // JSON from AI triage
+  previsitSummary String?          // AI-generated summary
+  doctorNotes    String?
+  doctorAdvice   String?           // Prescription, advice
+  rescheduledFrom String?          // Previous appointment ID if rescheduled
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  slot    Slot           @relation(fields: [slotId], references: [id], onDelete: Restrict)
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("appointments")
+}
+
+// ============================================================================
+// AI & TRIAGE CACHE (optional, for optimization)
+// ============================================================================
+
+model TriageResult {
+  id                String   @id @default(cuid())
+  appointmentId     String?  // Link to appointment if saved
+  symptoms          String   // JSON string of input
+  recommendedSpecialties String // JSON array
+  urgencyLevel      UrgencyLevel
+  followUpQuestions String   // JSON array
+  disclaimer        String?
+  modelUsed         String?  // Which LLM model
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([appointmentId])
+  @@map("triage_results")
+}
+
+// ============================================================================
+// AUDIT LOG (optional, for admin)
+// ============================================================================
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  // Who performed action
+  action    String   // CREATE, UPDATE, DELETE, LOGIN, etc.
+  entity    String   // User, Doctor, Appointment, etc.
+  entityId  String?  // ID of affected entity
+  details   String?  // JSON string with change details
+  ipAddress String?
+  userAgent String?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
