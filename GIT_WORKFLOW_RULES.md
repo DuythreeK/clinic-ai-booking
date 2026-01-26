@@ -27,15 +27,22 @@
 
 ### Mobile (Flutter)
 
-| # | Feature | Folder | Files | Người phụ trách | Status |
-|---|---------|--------|-------|-----------------|--------|
-| 1 | ✅ **Auth & Login** | `features/auth/` | login_screen.dart, auth_service.dart | **[Người E]** | Done |
-| 2 | ✅ **Home & Booking** | `features/booking/` | home_screen.dart, booking_service.dart | **[Người E]** | Done |
-| 3 | **Doctor Search** | `features/doctor_portal/` | doctor_list_screen.dart, doctor_detail_screen.dart | **[Người F]** | In Progress |
-| 4 | **AI Triage Form** | `features/ai_triage/` | triage_form_screen.dart, triage_service.dart | **[Người F]** | In Progress |
-| 5 | **Admin Portal** | `features/admin_portal/` | admin_dashboard_screen.dart, admin_service.dart | **[Người G]** | To Do |
-| 6 | **Appointment Details** | `features/appointments/` | appointment_detail_screen.dart, appointment_service.dart | **[Người G]** | To Do |
-| 7 | **Profile Management** | `features/profile/` | profile_screen.dart, edit_profile_screen.dart | **[Người G]** | To Do |
+| Feature | Folder | Key files | Owner | Status |
+|---------|--------|----------|-------|--------|
+| **Auth & Login** | `features/auth/` | `screens/login_screen.dart`; `services/auth_service.dart` | **[Người A]** | Done |
+| **Home & Booking (Shell/Nav)** | `features/booking/` | `screens/home_screen.dart`; `screens/booking_shell_screen.dart`; `services/booking_service.dart` | **[Người A]** | Done |
+| **Doctor Search (List + Detail + Filter)** | `features/doctor_portal/` | `screens/doctor_list_screen.dart`; `screens/doctor_detail_screen.dart`; `screens/doctor_filter_screen.dart`; `services/doctor_service.dart` | **[Người B]** | In Progress |
+| **AI Triage Form** | `features/ai_triage/` | `screens/triage_form_screen.dart`; `services/triage_service.dart` | **[Người A]** | In Progress |
+| **Appointments (List + Detail)** | `features/appointments/` | `screens/appointment_list_screen.dart`; `screens/appointment_detail_screen.dart`; `services/appointment_service.dart` | **[Người A]** | To Do |
+| **Slot Selection (Calendar/List + Conflict Handling)** | `features/slots/` | `screens/slot_calendar_screen.dart`; `screens/slot_list_screen.dart`; `services/slot_service.dart` | **[Người C]** | To Do |
+| **Clinics (List/Picker)** | `features/clinics/` | `screens/clinic_list_screen.dart`; `screens/clinic_picker_screen.dart`; `services/clinic_service.dart` | **[Người C]** | To Do |
+| **Profile Management (Patient)** | `features/profile/` | `screens/profile_screen.dart`; `screens/edit_profile_screen.dart`; `services/profile_service.dart` | **[Người B]** | To Do |
+| **Admin Portal (Shell)** | `features/admin_portal/` | `screens/admin_dashboard_screen.dart`; `services/admin_service.dart` | **[Người D]** | To Do |
+| **Admin Doctors (CRUD)** | `features/admin_portal/` | `screens/admin_doctor_list_screen.dart`; `screens/admin_doctor_form_screen.dart`; `services/admin_doctor_service.dart` | **[Người D]** | To Do |
+| **Admin Clinics (CRUD)** | `features/admin_portal/` | `screens/admin_clinic_list_screen.dart`; `screens/admin_clinic_form_screen.dart`; `services/admin_clinic_service.dart` | **[Người D]** | To Do |
+| **Admin Specialties (CRUD)** | `features/admin_portal/` | `screens/admin_specialty_list_screen.dart`; `screens/admin_specialty_form_screen.dart`; `services/admin_specialty_service.dart` | **[Người D]** | To Do |
+| **Admin Slots (CRUD)** | `features/admin_portal/` | `screens/admin_slot_list_screen.dart`; `screens/admin_slot_form_screen.dart`; `services/admin_slot_service.dart` | **[Người D]** | To Do |
+| **Push Notifications** | `features/notifications/` | `screens/notification_settings_screen.dart`; `services/notification_service.dart` | **[Người D]** | To Do |
 
 ---
 
