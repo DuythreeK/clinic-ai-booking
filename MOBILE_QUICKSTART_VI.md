@@ -343,3 +343,34 @@ Sau khi hoàn thành giai đoạn này:
 **Sẵn sàng để xây dựng! 🚀**
 
 Đối với các câu hỏi hoặc vấn đề, hãy kiểm tra các tập tin README hoặc tham khảo tài liệu Flutter.
+## HUONG DAN CACH CHAY (CAP NHAT)
+
+### Buoc 1: Cai Flutter SDK
+1. Cai Flutter theo huong dan: https://docs.flutter.dev/get-started/install/windows
+2. Them `flutter/bin` vao PATH (vi du `D:\Admin\flutter\bin`)
+3. Mo terminal moi va kiem tra:
+```bash
+flutter --version
+flutter doctor
+```
+
+### Buoc 2: Cai dependencies
+```bash
+cd clinic-ai-booking/mobile
+flutter pub get
+```
+
+### Buoc 3: Cau hinh backend URL
+Mo `lib/core/config/api_config.dart` va sua:
+```dart
+const String baseUrl = 'http://localhost:3000';
+```
+
+### Buoc 4: Chay app
+```bash
+flutter run
+```
+
+### Buoc 5: Kiem tra nhanh
+- Dang nhap / dang ky
+- Vao man AI Triage va gui trieu chung

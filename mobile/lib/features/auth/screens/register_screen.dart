@@ -1,4 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
+
+import '../../../core/api/dio_client.dart';
+import '../../../core/storage/auth_storage.dart';
+import '../services/auth_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -8,6 +14,8 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  late final AuthService authService;
+  final Logger logger = Logger();
   final _formKey = GlobalKey<FormState>();
   final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -19,6 +27,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _agreeToTerms = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    final dioClient = DioClient();
+    authService = AuthService(
+      dioClient: dioClient,
+      authStorage: AuthStorage(),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -243,6 +262,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
               const SizedBox(height: 32),
+
+              if (_errorMessage != null)
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _errorMessage!,
+                    style: TextStyle(color: Colors.red[900], fontSize: 13),
+                  ),
+                ),
+              if (_errorMessage != null) const SizedBox(height: 16),
               
               // Register Button
               SizedBox(
@@ -295,20 +328,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_formKey.currentState!.validate() && _agreeToTerms) {
       setState(() {
         _isLoading = true;
+        _errorMessage = null;
       });
 
-      // Simulate registration
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Đăng ký thành công')),
-          );
-          Navigator.of(context).pop();
-        }
-      });
+      _registerWithApi();
+    }
+  }
+
+  Future<void> _registerWithApi() async {
+    try {
+      final fullName = _fullNameController.text.trim();
+      final parts = fullName.split(' ');
+      final firstName = parts.isNotEmpty ? parts.first : fullName;
+      final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : '';
+
+      await authService.register(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        firstName: firstName,
+        lastName: lastName,
+        phone: _phoneController.text.trim(),
+      );
+
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đăng ký thành công')),
+      );
+      context.go('/login');
+    } catch (e) {
+      logger.e('Registration failed: $e');
+      if (mounted) {
+        setState(() => _errorMessage = 'Đăng ký thất bại');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 

@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
-import 'api_config.dart';
+import '../config/api_config.dart';
 
 class TokenInterceptor extends Interceptor {
   final FlutterSecureStorage secureStorage;
@@ -96,26 +97,6 @@ class TokenInterceptor extends Interceptor {
   }
 }
 
-class RetryInterceptor extends Interceptor {
-  final Dio dio;
-  final Logger logger;
-  final Function logPrint;
-
-  RetryInterceptor({
-    required this.dio,
-    required this.logger,
-    required this.logPrint,
-  });
-
-  @override
-  Future<void> onError(
-    DioException err,
-    ErrorInterceptorHandler handler,
-  ) async {
-    return handler.next(err);
-  }
-}
-
 class DioClient {
   late final Dio _dio;
   final FlutterSecureStorage secureStorage;
@@ -142,8 +123,21 @@ class DioClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        logger: Logger(),
-        logPrint: print,
+        logPrint: (message) => Logger().d(message),
+        retries: 3,
+        retryDelays: const [
+          Duration(milliseconds: 500),
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+        ],
+        retryEvaluator: (error, attempt) {
+          // Avoid retrying auth errors to prevent loops.
+          final status = error.response?.statusCode;
+          if (status == 401 || status == 403) {
+            return false;
+          }
+          return true;
+        },
       ),
     );
   }

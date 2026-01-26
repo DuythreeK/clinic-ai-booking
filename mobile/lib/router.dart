@@ -49,7 +49,7 @@ final GoRouter appRouter = GoRouter(
         children: [
           const Icon(Icons.error_outline, size: 64, color: Colors.red),
           const SizedBox(height: 16),
-          Text('Route not found: ${state.location}'),
+          Text('Route not found: ${state.uri}'),
           const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () => context.go('/home'),

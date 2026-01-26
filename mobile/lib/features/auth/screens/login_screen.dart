@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/api/dio_client.dart';
@@ -59,6 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Đăng nhập thành công!')),
         );
+        context.go('/home');
       }
     } catch (e) {
       setState(() => errorMessage = 'Đăng nhập thất bại: ${e.toString()}');
@@ -239,7 +241,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   const Text('Chưa có tài khoản? '),
                   TextButton(
                     onPressed: () {
-                      logger.i('Điều hướng đến trang đăng ký');
+                      logger.i('Navigate to register screen');
+                      context.go('/register');
                     },
                     child: const Text('Đăng ký ngay'),
                   ),

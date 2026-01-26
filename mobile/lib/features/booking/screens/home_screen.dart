@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -49,11 +50,11 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         return const _HomeView();
       case 1:
-        return const _BookingView();
+        return const SearchDoctorPage();
       case 2:
-        return const _AppointmentsView();
+        return const AppointmentsPage();
       case 3:
-        return const _ProfileView();
+        return const ProfilePage();
       default:
         return const SizedBox.shrink();
     }
@@ -86,14 +87,14 @@ class _HomeView extends StatelessWidget {
                   child: Card(
                     child: InkWell(
                       onTap: () {
-                        // Navigate to booking
+                        context.go('/doctors');
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
                             Icon(
-                              Icons.add_calendar,
+                              Icons.calendar_month,
                               size: 32,
                               color: Theme.of(context).primaryColor,
                             ),
@@ -114,7 +115,7 @@ class _HomeView extends StatelessWidget {
                   child: Card(
                     child: InkWell(
                       onTap: () {
-                        // Navigate to AI Triage
+                        context.go('/triage');
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -165,14 +166,14 @@ class _HomeView extends StatelessWidget {
   }
 }
 
-class _BookingView extends StatefulWidget {
-  const _BookingView();
+class SearchDoctorPage extends StatefulWidget {
+  const SearchDoctorPage();
 
   @override
-  State<_BookingView> createState() => _BookingViewState();
+  State<SearchDoctorPage> createState() => _SearchDoctorPageState();
 }
 
-class _BookingViewState extends State<_BookingView> {
+class _SearchDoctorPageState extends State<SearchDoctorPage> {
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -243,8 +244,8 @@ class _BookingViewState extends State<_BookingView> {
   }
 }
 
-class _AppointmentsView extends StatelessWidget {
-  const _AppointmentsView();
+class AppointmentsPage extends StatelessWidget {
+  const AppointmentsPage();
 
   @override
   Widget build(BuildContext context) {
@@ -295,8 +296,8 @@ class _AppointmentsView extends StatelessWidget {
   }
 }
 
-class _ProfileView extends StatelessWidget {
-  const _ProfileView();
+class ProfilePage extends StatelessWidget {
+  const ProfilePage();
 
   @override
   Widget build(BuildContext context) {
@@ -380,119 +381,6 @@ class _ProfileView extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Clinic AI Booking'),
-        centerTitle: true,
-      ),
-      body: _pages[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() => _currentIndex = index);
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.search),
-            label: 'Search',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_today),
-            label: 'Appointments',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class SearchDoctorPage extends StatelessWidget {
-  const SearchDoctorPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.search, size: 64),
-          const SizedBox(height: 16),
-          const Text(
-            'Search Doctors',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to search
-            },
-            child: const Text('Find a Doctor'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class AppointmentsPage extends StatelessWidget {
-  const AppointmentsPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.calendar_today, size: 64),
-          const SizedBox(height: 16),
-          const Text(
-            'My Appointments',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Navigate to appointments list
-            },
-            child: const Text('View Appointments'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.person, size: 64),
-          const SizedBox(height: 16),
-          const Text(
-            'My Profile',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Edit profile
-            },
-            child: const Text('Edit Profile'),
-          ),
-        ],
       ),
     );
   }
