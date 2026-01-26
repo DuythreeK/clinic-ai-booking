@@ -96,11 +96,32 @@ class TokenInterceptor extends Interceptor {
   }
 }
 
+class RetryInterceptor extends Interceptor {
+  final Dio dio;
+  final Logger logger;
+  final Function logPrint;
+
+  RetryInterceptor({
+    required this.dio,
+    required this.logger,
+    required this.logPrint,
+  });
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    return handler.next(err);
+  }
+}
+
 class DioClient {
   late final Dio _dio;
   final FlutterSecureStorage secureStorage;
 
-  DioClient({required this.secureStorage}) {
+  DioClient({FlutterSecureStorage? secureStorage})
+      : secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -113,7 +134,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.add(TokenInterceptor(
-      secureStorage: secureStorage,
+      secureStorage: this.secureStorage,
       dio: _dio,
     ));
 
@@ -222,3 +243,4 @@ class DioClient {
     );
   }
 }
+
