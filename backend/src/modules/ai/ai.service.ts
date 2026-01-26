@@ -1,105 +1,42 @@
-import { Injectable } from '@nestjs/common';
-import { TriageRequestDto, TriageResultDto, PrevisitSummaryResultDto, PrevisitSummaryRequestDto } from './dto/ai.dto';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  PrevisitSummaryRequestDto,
+  PrevisitSummaryResultDto,
+  TriageRequestDto,
+  TriageResultDto,
+} from './dto/ai.dto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UrgencyLevel } from '@prisma/client';
 
-/**
- * AI Service - Placeholder for LLM integration
- * Currently mocks AI responses, can be replaced with real OpenAI/Anthropic calls
- */
+type LlmProvider = 'openai' | 'anthropic';
+
 @Injectable()
 export class AiService {
+  private readonly logger = new Logger(AiService.name);
+  private readonly provider = (process.env.AI_PROVIDER || 'openai') as LlmProvider;
+  private readonly openaiApiKey = process.env.OPENAI_API_KEY;
+  private readonly anthropicApiKey = process.env.ANTHROPIC_API_KEY;
+  private readonly openaiModel = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  private readonly anthropicModel =
+    process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620';
+
   constructor(private prisma: PrismaService) {}
 
-  /**
-   * AI Triage: Analyzes symptoms and recommends specialties
-   * TODO: Replace with actual LLM call (OpenAI, Anthropic, etc.)
-   */
   async performTriage(dto: TriageRequestDto): Promise<TriageResultDto> {
-    // MOCK IMPLEMENTATION
-    const specialtyMap: Record<string, string[]> = {
-      'headache|đau_đầu': ['Tổng quát', 'Tâm thần'],
-      'fever|sốt': ['Tổng quát', 'Nhi khoa'],
-      'chest_pain|đau_ngực': ['Tim mạch', 'Tổng quát'],
-      'skin_rash|phát_ban': ['Da liễu'],
-      'anxiety|lo_âu': ['Tâm thần'],
-    };
-
-    let recommendedSpecialties = ['Tổng quát'];
-    let urgencyLevel: UrgencyLevel = UrgencyLevel.THUONG;
-
-    // Simple keyword matching for demo
-    const symptomString = dto.symptoms.join(' ').toLowerCase();
-
-    if (symptomString.includes('chest') || symptomString.includes('ngực')) {
-      recommendedSpecialties = ['Tim mạch', 'Tổng quát'];
-      urgencyLevel = UrgencyLevel.KHAN;
-    } else if (
-      symptomString.includes('fever') ||
-      symptomString.includes('sốt')
-    ) {
-      recommendedSpecialties = ['Tổng quát', 'Nhi khoa'];
-      urgencyLevel = UrgencyLevel.NEN_DI_SOM;
-    } else if (
-      symptomString.includes('anxiety') ||
-      symptomString.includes('lo_âu')
-    ) {
-      recommendedSpecialties = ['Tâm thần'];
-      urgencyLevel = UrgencyLevel.THUONG;
-    } else if (
-      symptomString.includes('skin') ||
-      symptomString.includes('rash')
-    ) {
-      recommendedSpecialties = ['Da liễu'];
-      urgencyLevel = UrgencyLevel.THUONG;
+    const llmResult = await this.tryLlmTriage(dto);
+    if (llmResult) {
+      return llmResult;
     }
 
-    const result: TriageResultDto = {
-      recommended_specialties: recommendedSpecialties,
-      urgency_level: urgencyLevel,
-      follow_up_questions: [
-        'Bạn đã có bất kỳ phương pháp điều trị nào chưa?',
-        'Các triệu chứng kéo dài bao lâu?',
-        'Bạn đã dùng thuốc gì?',
-      ],
-      disclaimer:
-        'Đây là kết quả phân tích tự động. Vui lòng tư vấn bác sĩ để có chẩn đoán chính xác.',
-    };
-
-    return result;
+    return this.mockTriage(dto);
   }
 
-  /**
-   * Pre-visit Summary: Generate summary for doctor before appointment
-   * TODO: Replace with actual LLM call
-   */
   async generatePrevisitSummary(
     dto: PrevisitSummaryRequestDto,
   ): Promise<PrevisitSummaryResultDto> {
-    // MOCK IMPLEMENTATION
-    const summary: string[] = [
-      `• Bệnh nhân: ${dto.patientData.firstName || 'Unknown'} ${dto.patientData.lastName || ''}`,
-      `• Tuổi: ${dto.patientData.age || 'N/A'}`,
-      `• Tình trạng sức khỏe chung: Tương đối ổn định`,
-      '• Bệnh sử: Không có bệnh nền đáng kể',
-      '• Dị ứng: Không rõ',
-    ];
+    const llmResult = await this.tryLlmPrevisitSummary(dto);
+    const result = llmResult ?? this.mockPrevisitSummary(dto);
 
-    const result: PrevisitSummaryResultDto = {
-      summary,
-      keyPoints: [
-        'Chuẩn bị thăm khám chi tiết',
-        'Xem xét cận lâm sàng nếu cần',
-        'Tập trung vào các triệu chứng chính',
-      ],
-      recommendations: [
-        'Kỹ thuật khám toàn diện',
-        'Hỏi tiền sử y tế chi tiết',
-        'Xem xét chỉ định xét nghiệm phù hợp',
-      ],
-    };
-
-    // Save to appointment if appointmentId provided
     if (dto.appointmentId) {
       await this.prisma.appointment.update({
         where: { id: dto.appointmentId },
@@ -112,31 +49,246 @@ export class AiService {
     return result;
   }
 
-  /**
-   * Validate and sanitize triage output
-   */
   validateTriageOutput(data: any): boolean {
-    // Check required fields
-    if (
-      !data.recommended_specialties ||
-      !Array.isArray(data.recommended_specialties)
-    ) {
+    if (!data?.recommended_specialties || !Array.isArray(data.recommended_specialties)) {
       return false;
     }
 
-    if (
-      !['THUONG', 'NEN_DI_SOM', 'KHAN'].includes(data.urgency_level)
-    ) {
+    if (!['THUONG', 'NEN_DI_SOM', 'KHAN'].includes(data.urgency_level)) {
       return false;
     }
 
-    if (
-      !data.follow_up_questions ||
-      !Array.isArray(data.follow_up_questions)
-    ) {
+    if (!data.follow_up_questions || !Array.isArray(data.follow_up_questions)) {
+      return false;
+    }
+
+    if (!data.disclaimer || typeof data.disclaimer !== 'string') {
       return false;
     }
 
     return true;
+  }
+
+  private async tryLlmTriage(dto: TriageRequestDto): Promise<TriageResultDto | null> {
+    const system = [
+      'You are a clinical triage assistant for a clinic booking app.',
+      'Return ONLY valid JSON with the following keys:',
+      'recommended_specialties (string[]), urgency_level (THUONG|NEN_DI_SOM|KHAN),',
+      'follow_up_questions (string[]), disclaimer (string).',
+      'Use Vietnamese for specialties and questions when appropriate.',
+    ].join(' ');
+    const user = JSON.stringify({ task: 'triage', input: dto });
+
+    const raw = await this.callLlm(system, user, 600);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = this.extractJson(raw);
+    if (!parsed) {
+      return null;
+    }
+
+    const normalized = {
+      recommended_specialties: parsed.recommended_specialties,
+      urgency_level: String(parsed.urgency_level || '').toUpperCase(),
+      follow_up_questions: parsed.follow_up_questions,
+      disclaimer: parsed.disclaimer,
+    };
+
+    if (!this.validateTriageOutput(normalized)) {
+      return null;
+    }
+
+    return normalized as TriageResultDto;
+  }
+
+  private async tryLlmPrevisitSummary(
+    dto: PrevisitSummaryRequestDto,
+  ): Promise<PrevisitSummaryResultDto | null> {
+    const system = [
+      'You are a medical assistant preparing a pre-visit summary for a doctor.',
+      'Return ONLY valid JSON with keys: summary (string[]), keyPoints (string[]),',
+      'recommendations (string[]). Use Vietnamese for bullets when appropriate.',
+    ].join(' ');
+    const user = JSON.stringify({ task: 'previsit_summary', input: dto });
+
+    const raw = await this.callLlm(system, user, 700);
+    if (!raw) {
+      return null;
+    }
+
+    const parsed = this.extractJson(raw);
+    if (!parsed) {
+      return null;
+    }
+
+    if (
+      !Array.isArray(parsed.summary) ||
+      !Array.isArray(parsed.keyPoints) ||
+      !Array.isArray(parsed.recommendations)
+    ) {
+      return null;
+    }
+
+    return parsed as PrevisitSummaryResultDto;
+  }
+
+  private async callLlm(
+    system: string,
+    user: string,
+    maxTokens: number,
+  ): Promise<string | null> {
+    try {
+      if (this.provider === 'anthropic') {
+        if (!this.anthropicApiKey) {
+          this.logger.warn('ANTHROPIC_API_KEY is missing; falling back to mock.');
+          return null;
+        }
+        return await this.callAnthropic(system, user, maxTokens);
+      }
+
+      if (!this.openaiApiKey) {
+        this.logger.warn('OPENAI_API_KEY is missing; falling back to mock.');
+        return null;
+      }
+      return await this.callOpenAi(system, user, maxTokens);
+    } catch (error) {
+      this.logger.warn(`LLM call failed; falling back to mock. ${String(error)}`);
+      return null;
+    }
+  }
+
+  private async callOpenAi(
+    system: string,
+    user: string,
+    maxTokens: number,
+  ): Promise<string> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.openaiModel,
+        temperature: 0.2,
+        max_tokens: maxTokens,
+        messages: [
+          { role: 'system', content: system },
+          { role: 'user', content: user },
+        ],
+      }),
+    });
+
+    const json = (await response.json()) as any;
+    if (!response.ok) {
+      throw new Error(
+        `OpenAI error: ${json?.error?.message || response.statusText}`,
+      );
+    }
+
+    return json?.choices?.[0]?.message?.content || '';
+  }
+
+  private async callAnthropic(
+    system: string,
+    user: string,
+    maxTokens: number,
+  ): Promise<string> {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': this.anthropicApiKey as string,
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: this.anthropicModel,
+        system,
+        max_tokens: maxTokens,
+        temperature: 0.2,
+        messages: [{ role: 'user', content: user }],
+      }),
+    });
+
+    const json = (await response.json()) as any;
+    if (!response.ok) {
+      throw new Error(
+        `Anthropic error: ${json?.error?.message || response.statusText}`,
+      );
+    }
+
+    return json?.content?.[0]?.text || '';
+  }
+
+  private extractJson(text: string): any | null {
+    if (!text) {
+      return null;
+    }
+
+    const first = text.indexOf('{');
+    const last = text.lastIndexOf('}');
+    if (first === -1 || last === -1 || last <= first) {
+      return null;
+    }
+
+    const slice = text.slice(first, last + 1);
+    try {
+      return JSON.parse(slice);
+    } catch {
+      return null;
+    }
+  }
+
+  private mockTriage(dto: TriageRequestDto): TriageResultDto {
+    const symptomString = dto.symptoms.join(' ').toLowerCase();
+
+    let recommendedSpecialties = ['General'];
+    let urgencyLevel: UrgencyLevel = UrgencyLevel.THUONG;
+
+    if (symptomString.includes('chest') || symptomString.includes('nguc')) {
+      recommendedSpecialties = ['Cardiology', 'General'];
+      urgencyLevel = UrgencyLevel.KHAN;
+    } else if (symptomString.includes('fever') || symptomString.includes('sot')) {
+      recommendedSpecialties = ['General', 'Pediatrics'];
+      urgencyLevel = UrgencyLevel.NEN_DI_SOM;
+    } else if (symptomString.includes('anxiety') || symptomString.includes('lo')) {
+      recommendedSpecialties = ['Mental Health'];
+      urgencyLevel = UrgencyLevel.THUONG;
+    } else if (symptomString.includes('skin') || symptomString.includes('rash')) {
+      recommendedSpecialties = ['Dermatology'];
+      urgencyLevel = UrgencyLevel.THUONG;
+    }
+
+    return {
+      recommended_specialties: recommendedSpecialties,
+      urgency_level: urgencyLevel,
+      follow_up_questions: [
+        'Symptoms started when?',
+        'How severe are the symptoms?',
+        'Any medications taken?',
+      ],
+      disclaimer:
+        'This is an automated suggestion. Please consult a doctor for diagnosis.',
+    };
+  }
+
+  private mockPrevisitSummary(
+    dto: PrevisitSummaryRequestDto,
+  ): PrevisitSummaryResultDto {
+    const firstName = dto.patientData?.firstName || 'Unknown';
+    const lastName = dto.patientData?.lastName || '';
+    const age = dto.patientData?.age || 'N/A';
+
+    return {
+      summary: [
+        `Patient: ${firstName} ${lastName}`.trim(),
+        `Age: ${age}`,
+        'General health: stable',
+      ],
+      keyPoints: ['Review chief complaint', 'Check past medical history'],
+      recommendations: ['Consider basic labs if needed'],
+    };
   }
 }
