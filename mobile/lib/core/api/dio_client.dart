@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
-import 'api_config.dart';
+import '../config/api_config.dart';
 
 class TokenInterceptor extends Interceptor {
   final FlutterSecureStorage secureStorage;
@@ -47,11 +48,17 @@ class TokenInterceptor extends Interceptor {
 
         final refreshResponse = await dio.post(
           '$baseUrl/auth/refresh',
-          data: {'refreshToken': refreshToken},
+          data: {'refresh_token': refreshToken},
         );
 
         if (refreshResponse.statusCode == 200) {
-          final newAccessToken = refreshResponse.data['accessToken'];
+          final responseData =
+              refreshResponse.data['data'] as Map<String, dynamic>?;
+          final newAccessToken = responseData?['access_token'] as String?;
+
+          if (newAccessToken == null || newAccessToken.isEmpty) {
+            return handler.next(err);
+          }
 
           await secureStorage.write(key: 'access_token', value: newAccessToken);
           logger.i('✅ Token refreshed successfully');
@@ -121,7 +128,12 @@ class DioClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        logger: Logger(),
+        retries: 3,
+        retryDelays: const [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 3),
+        ],
         logPrint: print,
       ),
     );

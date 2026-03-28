@@ -26,32 +26,32 @@ export class AiService {
     };
 
     let recommendedSpecialties = ['Tổng quát'];
-    let urgencyLevel: UrgencyLevel = UrgencyLevel.THUONG;
+    let urgencyLevel: UrgencyLevel = UrgencyLevel.NORMAL;
 
     // Simple keyword matching for demo
     const symptomString = dto.symptoms.join(' ').toLowerCase();
 
     if (symptomString.includes('chest') || symptomString.includes('ngực')) {
       recommendedSpecialties = ['Tim mạch', 'Tổng quát'];
-      urgencyLevel = UrgencyLevel.KHAN;
+      urgencyLevel = UrgencyLevel.URGENT;
     } else if (
       symptomString.includes('fever') ||
       symptomString.includes('sốt')
     ) {
       recommendedSpecialties = ['Tổng quát', 'Nhi khoa'];
-      urgencyLevel = UrgencyLevel.NEN_DI_SOM;
+      urgencyLevel = UrgencyLevel.SOON;
     } else if (
       symptomString.includes('anxiety') ||
       symptomString.includes('lo_âu')
     ) {
       recommendedSpecialties = ['Tâm thần'];
-      urgencyLevel = UrgencyLevel.THUONG;
+      urgencyLevel = UrgencyLevel.NORMAL;
     } else if (
       symptomString.includes('skin') ||
       symptomString.includes('rash')
     ) {
       recommendedSpecialties = ['Da liễu'];
-      urgencyLevel = UrgencyLevel.THUONG;
+      urgencyLevel = UrgencyLevel.NORMAL;
     }
 
     const result: TriageResultDto = {
@@ -101,10 +101,11 @@ export class AiService {
 
     // Save to appointment if appointmentId provided
     if (dto.appointmentId) {
+      const appointmentId = BigInt(dto.appointmentId);
       await this.prisma.appointment.update({
-        where: { id: dto.appointmentId },
+        where: { appointment_id: appointmentId },
         data: {
-          previsitSummary: JSON.stringify(result),
+          note: JSON.stringify(result),
         },
       });
     }
@@ -125,7 +126,7 @@ export class AiService {
     }
 
     if (
-      !['THUONG', 'NEN_DI_SOM', 'KHAN'].includes(data.urgency_level)
+      !['NORMAL', 'SOON', 'URGENT'].includes(data.urgency_level)
     ) {
       return false;
     }

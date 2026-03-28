@@ -1,48 +1,54 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { UserRole } from '@prisma/client';
+import {
+  IsEmail,
+  IsEnum,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
-export class RegisterDto {
+export class RegisterRequest {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  @MinLength(6)
-  password: string;
+  phone!: string;
 
   @IsString()
-  firstName: string;
+  @MinLength(8)
+  password!: string;
 
   @IsString()
-  lastName: string;
+  @MaxLength(150)
+  full_name!: string;
 
-  @IsString()
-  @IsOptional()
-  phone?: string;
+  @IsEnum(UserRole)
+  role!: UserRole;
 }
 
-export class LoginDto {
+export class LoginRequest {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  password: string;
+  password!: string;
 }
 
-export class AuthResponseDto {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-  };
+export class RefreshTokenRequest {
+  @IsString()
+  refresh_token!: string;
 }
 
-export class RefreshTokenDto {
-  refreshToken: string;
+export class ForgotPasswordRequest {
+  @IsEmail()
+  email!: string;
 }
 
-export class RefreshResponseDto {
-  accessToken: string;
+export class ResetPasswordRequest {
+  @IsString()
+  token!: string;
+
+  @IsString()
+  @MinLength(8)
+  new_password!: string;
 }

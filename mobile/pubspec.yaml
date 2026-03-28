@@ -14,7 +14,7 @@ dependencies:
 
   # HTTP & API
   dio: ^5.3.1
-  dio_retry: ^4.3.0
+  dio_smart_retry: ^6.0.0
   
   # State Management
   provider: ^6.0.0
@@ -38,10 +38,6 @@ dependencies:
   # Utilities
   get_it: ^7.6.0
   logger: ^2.0.2
-  
-  # Firebase (for FCM)
-  firebase_core: ^2.24.0
-  firebase_messaging: ^14.6.0
 
 dev_dependencies:
   flutter_test:
@@ -52,7 +48,6 @@ dev_dependencies:
   
   # Code generation
   build_runner: ^2.4.0
-  json_serializable: ^6.7.0
 
 flutter:
   uses-material-design: true

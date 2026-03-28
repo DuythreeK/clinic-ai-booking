@@ -1,8 +1,8 @@
 export class CreateClinicDto {
-  name: string;
-  address: string;
-  city: string;
-  country: string;
+  name!: string;
+  address!: string;
+  city!: string;
+  country!: string;
   phone?: string;
   email?: string;
   hours?: string; // JSON string with opening hours
