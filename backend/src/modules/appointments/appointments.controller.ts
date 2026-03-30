@@ -23,7 +23,7 @@ export class AppointmentsController {
   constructor(private appointmentsService: AppointmentsService) {}
 
   @Post()
-  @Roles(UserRole.PATIENT)
+  @Roles(UserRole.patient)
   async create(
     @CurrentUser('sub') patientId: string,
     @Body() dto: CreateAppointmentDto,
@@ -32,19 +32,19 @@ export class AppointmentsController {
   }
 
   @Get('my')
-  @Roles(UserRole.PATIENT)
+  @Roles(UserRole.patient)
   async getMyAppointments(@CurrentUser('sub') patientId: string) {
     return this.appointmentsService.getMyAppointments(patientId);
   }
 
   @Get('doctor')
-  @Roles(UserRole.DOCTOR)
+  @Roles(UserRole.doctor)
   async getDoctorAppointments(@CurrentUser('sub') doctorId: string) {
     return this.appointmentsService.getDoctorAppointments(doctorId);
   }
 
   @Patch(':id')
-  @Roles(UserRole.PATIENT, UserRole.DOCTOR)
+  @Roles(UserRole.patient, UserRole.doctor)
   async update(
     @Param('id') appointmentId: string,
     @CurrentUser('sub') userId: string,
@@ -61,7 +61,7 @@ export class AppointmentsController {
 
   @Delete(':id')
   @HttpCode(200)
-  @Roles(UserRole.PATIENT, UserRole.DOCTOR)
+  @Roles(UserRole.patient, UserRole.doctor)
   async cancel(
     @Param('id') appointmentId: string,
     @CurrentUser('sub') userId: string,
