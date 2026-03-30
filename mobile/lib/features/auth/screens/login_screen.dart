@@ -268,7 +268,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () {},
+                                    onPressed: () => context.go('/register'),
                                     style: TextButton.styleFrom(
                                       minimumSize: Size.zero,
                                       padding: EdgeInsets.zero,

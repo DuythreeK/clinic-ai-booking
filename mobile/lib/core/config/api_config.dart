@@ -1,5 +1,4 @@
-const String baseUrl = 'http://localhost:3000';
-
+const String baseUrl = 'https://factually-humane-doberman.ngrok-free.app';
 // Change these for different environments
 const String apiBaseUrl = '$baseUrl/api';
 

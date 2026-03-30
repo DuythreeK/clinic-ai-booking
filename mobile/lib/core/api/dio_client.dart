@@ -114,6 +114,9 @@ class DioClient {
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         contentType: Headers.jsonContentType,
+        headers: const {
+          'ngrok-skip-browser-warning': 'true',
+        },
         responseType: ResponseType.json,
       ),
     );
