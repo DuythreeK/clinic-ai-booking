@@ -140,7 +140,7 @@ class DoctorCatalog extends ChangeNotifier {
       name: 'Dr. Balestra',
       specialty: 'Nha si',
       focus: 'Nho rang khon & implant',
-      imageUrl: 'https://images.unsplash.com/photo-1594824475317-2f1e3f7f52ff?auto=format&fit=crop&w=900&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80',
       rating: 4.6,
       reviewCount: 1680,
       priceLabel: '150.000d/lan',

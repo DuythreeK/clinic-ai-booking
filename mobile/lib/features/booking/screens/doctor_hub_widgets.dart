@@ -266,11 +266,10 @@ class DoctorCard extends StatelessWidget {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(14),
-              child: Image.network(
-                doctor.imageUrl,
+              child: _DoctorImage(
+                imageUrl: doctor.imageUrl,
                 width: 78,
                 height: 92,
-                fit: BoxFit.cover,
               ),
             ),
             const SizedBox(width: 12),
@@ -423,6 +422,60 @@ class DoctorCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DoctorImage extends StatelessWidget {
+  const _DoctorImage({
+    required this.imageUrl,
+    required this.width,
+    required this.height,
+  });
+
+  final String imageUrl;
+  final double width;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      width: width,
+      height: height,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFE8F7FF), Color(0xFFDFF3F0)],
+            ),
+          ),
+          child: const Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_rounded,
+                size: 34,
+                color: Color(0xFF7B93AD),
+              ),
+              SizedBox(height: 4),
+              Text(
+                'No Image',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF7B93AD),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

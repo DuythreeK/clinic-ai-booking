@@ -83,12 +83,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(16),
-                                      child: Image.network(
-                                        doctor.imageUrl,
-                                        width: 96,
-                                        height: 112,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: _DoctorHeroImage(imageUrl: doctor.imageUrl),
                                     ),
                                     const SizedBox(width: 14),
                                     Expanded(
@@ -588,6 +583,40 @@ class _SectionCard extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _DoctorHeroImage extends StatelessWidget {
+  const _DoctorHeroImage({required this.imageUrl});
+
+  final String imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return Image.network(
+      imageUrl,
+      width: 96,
+      height: 112,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) {
+        return Container(
+          width: 96,
+          height: 112,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFE9F6FF), Color(0xFFE4F8EF)],
+            ),
+          ),
+          child: const Icon(
+            Icons.person_rounded,
+            size: 42,
+            color: Color(0xFF7991AA),
+          ),
+        );
+      },
     );
   }
 }
