@@ -13,6 +13,7 @@ class DoctorDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final catalog = DoctorCatalog.instance;
+    final reviews = _buildReviews();
 
     return AnimatedBuilder(
       animation: catalog,
@@ -326,43 +327,49 @@ class DoctorDetailScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 18),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Color(0x160B4766),
-                                  blurRadius: 20,
-                                  offset: Offset(0, 10),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              children: [
-                                const Text(
-                                  'Xem danh gia',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Color(0xFF22344C),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _openReviewsSheet(context, reviews),
+                            child: Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: const [
+                                  BoxShadow(
+                                    color: Color(0x160B4766),
+                                    blurRadius: 20,
+                                    offset: Offset(0, 10),
                                   ),
-                                ),
-                                const SizedBox(height: 10),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: List.generate(
-                                    5,
-                                    (index) => Icon(
-                                      Icons.star_rounded,
-                                      size: 34,
-                                      color: index < 4 ? const Color(0xFFFFB800) : const Color(0xFFD9E3EF),
+                                ],
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Xem danh gia',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFF22344C),
                                     ),
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(height: 10),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(
+                                      5,
+                                      (index) => Icon(
+                                        Icons.star_rounded,
+                                        size: 34,
+                                        color: index < 4
+                                            ? const Color(0xFFFFB800)
+                                            : const Color(0xFFD9E3EF),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -373,6 +380,101 @@ class DoctorDetailScreen extends StatelessWidget {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  List<_DoctorReview> _buildReviews() {
+    return const [
+      _DoctorReview(
+        name: 'Quang Huy',
+        avatar: 'QH',
+        rating: 4,
+        comment:
+            'Minh kham voi bac si thay kha on, tu van ro rang va de hieu. Bac si tham kham ky, huong dan cham soc va dung thuoc chi tiet.',
+      ),
+      _DoctorReview(
+        name: 'Minh Anh',
+        avatar: 'MA',
+        rating: 5,
+        comment:
+            'Rat hai long! Bac si nhiet tinh, nhe nhang va lang nghe ky. Chan doan ro rang, giai thich nguyen nhan va huong dieu tri, de hieu. Minh cam thay yen tam va se gioi thieu cho nguoi than.',
+      ),
+      _DoctorReview(
+        name: 'Duc Minh',
+        avatar: 'DM',
+        rating: 4,
+        comment:
+            'Bac si chuyen mon tot, kham can than va theo doi ky tinh trang. Dan do day du sau khi kham. Neu co the cai thien them phan dat lich nhanh hon thi se tot hon nua.',
+      ),
+      _DoctorReview(
+        name: 'Lan Huong',
+        avatar: 'LH',
+        rating: 5,
+        comment:
+            'Khong gian kham sach se, lich kham dung gio. Bac si nhin tong quat rat ky va dua ra huong xu ly hop ly.',
+      ),
+    ];
+  }
+
+  void _openReviewsSheet(BuildContext context, List<_DoctorReview> reviews) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.72,
+          minChildSize: 0.5,
+          maxChildSize: 0.94,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SafeArea(
+                top: false,
+                child: Column(
+                  children: [
+                    const SizedBox(height: 10),
+                    Container(
+                      width: 52,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD7E0EA),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Danh gia cua moi nguoi',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF25354D),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Expanded(
+                      child: ListView.separated(
+                        controller: scrollController,
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                        itemCount: reviews.length,
+                        separatorBuilder: (_, __) => const SizedBox(height: 24),
+                        itemBuilder: (context, index) {
+                          final review = reviews[index];
+                          return _ReviewTile(review: review);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -486,6 +588,84 @@ class _SectionCard extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _DoctorReview {
+  const _DoctorReview({
+    required this.name,
+    required this.avatar,
+    required this.rating,
+    required this.comment,
+  });
+
+  final String name;
+  final String avatar;
+  final int rating;
+  final String comment;
+}
+
+class _ReviewTile extends StatelessWidget {
+  const _ReviewTile({required this.review});
+
+  final _DoctorReview review;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: const Color(0xFFFFE8E0),
+          child: Text(
+            review.avatar,
+            style: const TextStyle(
+              fontWeight: FontWeight.w800,
+              color: Color(0xFFB45A46),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                review.name,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF1E2F48),
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: List.generate(
+                  5,
+                  (index) => Icon(
+                    Icons.star_rounded,
+                    size: 20,
+                    color: index < review.rating
+                        ? const Color(0xFFFFB800)
+                        : const Color(0xFFD8E2ED),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                review.comment,
+                style: const TextStyle(
+                  fontSize: 14,
+                  height: 1.6,
+                  color: Color(0xFF30435E),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
