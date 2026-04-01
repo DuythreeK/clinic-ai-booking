@@ -1,68 +1,69 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateClinicDto, UpdateClinicDto } from './dto/clinic.dto';
+import { okResponse, paginatedResponse } from '@/common/utils/api-response';
+import { toNumberId } from '@/common/utils/formatters';
 
 @Injectable()
 export class ClinicsService {
   constructor(private prisma: PrismaService) {}
 
-  async createClinic(dto: CreateClinicDto) {
-    return this.prisma.clinic.create({
-      data: dto,
-      include: {
-        doctors: {
-          include: { doctor: true },
-        },
-        slots: true,
-      },
-    });
+  private toResponse(facility: any) {
+    return {
+      id: toNumberId(facility.facility_id),
+      name: facility.name,
+      facilityType: facility.facility_type,
+      phone: facility.phone,
+      addressDetail: facility.address_detail,
+      province: facility.province,
+      district: facility.district,
+      ratingAvg: Number(facility.rating_avg),
+      isActive: facility.is_active === 1,
+    };
   }
 
-  async getClinics() {
-    return this.prisma.clinic.findMany({
-      include: {
-        doctors: {
-          include: { doctor: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  async getClinics(page = 1, limit = 10, search?: string, facilityType?: string) {
+    const where = {
+      is_active: 1,
+      facility_type: facilityType as any,
+      name: search
+        ? {
+            contains: search,
+          }
+        : undefined,
+    };
+
+    const [facilities, totalItems] = await Promise.all([
+      this.prisma.facility.findMany({
+        where,
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.facility.count({ where }),
+    ]);
+
+    return paginatedResponse(
+      'Get facilities successfully',
+      facilities.map((facility) => this.toResponse(facility)),
+      page,
+      limit,
+      totalItems,
+    );
   }
 
   async getClinicById(id: string) {
-    const clinic = await this.prisma.clinic.findUnique({
-      where: { id },
-      include: {
-        doctors: {
-          include: { doctor: true },
-        },
-        slots: true,
-      },
+    const facility = await this.prisma.facility.findUnique({
+      where: { facility_id: BigInt(id) },
     });
 
-    if (!clinic) throw new NotFoundException('Clinic not found');
-    return clinic;
-  }
+    if (!facility || facility.is_active !== 1) {
+      throw new NotFoundException('Facility not found');
+    }
 
-  async updateClinic(id: string, dto: UpdateClinicDto) {
-    await this.getClinicById(id);
-
-    return this.prisma.clinic.update({
-      where: { id },
-      data: dto,
-      include: {
-        doctors: {
-          include: { doctor: true },
-        },
-      },
-    });
-  }
-
-  async deleteClinic(id: string) {
-    await this.getClinicById(id);
-
-    return this.prisma.clinic.delete({
-      where: { id },
+    return okResponse('Get facility detail successfully', {
+      ...this.toResponse(facility),
+      email: facility.email,
+      openingHours: facility.opening_hours,
     });
   }
 }

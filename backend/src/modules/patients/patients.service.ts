@@ -1,98 +1,98 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { UpdatePatientProfileDto } from './dto/patient.dto';
+import { CreatePatientProfileDto } from './dto/patient.dto';
+import { okResponse } from '@/common/utils/api-response';
 
 @Injectable()
 export class PatientsService {
   constructor(private prisma: PrismaService) {}
 
-  async createPatientProfile(userId: string) {
-    return this.prisma.patientProfile.create({
-      data: { userId },
-      include: { user: true },
-    });
+  private toBigIntId(id: string): bigint {
+    return BigInt(id);
   }
 
-  async getPatientProfile(userId: string) {
-    const profile = await this.prisma.patientProfile.findUnique({
-      where: { userId },
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            avatar: true,
-          },
-        },
-        appointments: {
-          include: {
-            doctor: {
-              include: { user: true },
-            },
-          },
-        },
+  private toResponse(profile: any) {
+    return {
+      patientId: profile.patient_id.toString(),
+      userId: profile.user_id.toString(),
+      fullName: profile.full_name,
+      phoneNumber: profile.phone_number,
+      gender: profile.gender,
+      dateOfBirth: profile.date_of_birth,
+      addressDetail: profile.address_detail,
+      province: profile.province,
+      district: profile.district,
+      ward: profile.ward,
+      medicalConditions: profile.medical_conditions,
+      allergies: profile.allergies,
+      emergencyContact: profile.emergency_contact,
+      relationshipToUser: profile.relationship_to_user,
+      isPrimary: profile.is_primary === 1,
+      createdAt: profile.created_at,
+      updatedAt: profile.updated_at,
+    };
+  }
+
+  async createPatientProfile(userId: string, dto: CreatePatientProfileDto) {
+    const profile = await this.prisma.patientProfile.create({
+      data: {
+        user_id: this.toBigIntId(userId),
+        full_name: dto.fullName,
+        phone_number: dto.phoneNumber,
+        occupation: dto.occupation,
+        ethnicity: dto.ethnicity,
+        nationality: dto.nationality,
+        gender: dto.gender as any,
+        date_of_birth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
+        address_detail: dto.addressDetail,
+        province: dto.province,
+        district: dto.district,
+        ward: dto.ward,
+        medical_conditions: dto.medicalConditions,
+        allergies: dto.allergies,
+        emergency_contact: dto.emergencyContact,
+        relationship_to_user: dto.relationshipToUser,
+        is_primary: dto.isPrimary === undefined ? undefined : dto.isPrimary ? 1 : 0,
       },
     });
 
-    if (!profile) throw new NotFoundException('Patient profile not found');
-    return profile;
-  }
-
-  async updatePatientProfile(userId: string, dto: UpdatePatientProfileDto) {
-    return this.prisma.patientProfile.update({
-      where: { userId },
-      data: dto,
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            avatar: true,
-          },
-        },
+    return okResponse(
+      'Create patient profile successfully',
+      {
+        id: Number(profile.patient_id),
+        fullName: profile.full_name,
+        phoneNumber: profile.phone_number,
+        gender: profile.gender,
+        dateOfBirth: profile.date_of_birth,
+        occupation: profile.occupation,
+        ethnicity: profile.ethnicity,
+        nationality: profile.nationality,
+        province: profile.province,
+        district: profile.district,
+        ward: profile.ward,
+        addressDetail: profile.address_detail,
+        relationshipToUser: profile.relationship_to_user,
+        isPrimary: profile.is_primary === 1,
       },
-    });
+    );
   }
 
-  async deletePatientProfile(userId: string) {
-    return this.prisma.patientProfile.delete({
-      where: { userId },
-    });
-  }
-
-  async getPatientById(id: string) {
-    const profile = await this.prisma.patientProfile.findUnique({
-      where: { id },
-      include: {
-        user: true,
-        appointments: true,
-      },
+  async getPatientProfiles(userId: string) {
+    const profiles = await this.prisma.patientProfile.findMany({
+      where: { user_id: this.toBigIntId(userId) },
+      orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
     });
 
-    if (!profile) throw new NotFoundException('Patient not found');
-    return profile;
-  }
-
-  async getAllPatients() {
-    return this.prisma.patientProfile.findMany({
-      include: {
-        user: {
-          select: {
-            id: true,
-            email: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    return okResponse(
+      'Get patient profiles successfully',
+      profiles.map((profile) => ({
+        id: Number(profile.patient_id),
+        fullName: profile.full_name,
+        phoneNumber: profile.phone_number,
+        gender: profile.gender,
+        dateOfBirth: profile.date_of_birth,
+        isPrimary: profile.is_primary === 1,
+      })),
+    );
   }
 }

@@ -1,119 +1,64 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { UpdateUserDto, ChangePasswordDto } from './dto/user.dto';
+import { UpdateUserDto } from './dto/user.dto';
+import { okResponse } from '@/common/utils/api-response';
+import { toNumberId } from '@/common/utils/formatters';
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
-  async getUsers(role?: string) {
-    const where: any = {};
-    if (role) where.role = role;
+  private toBigIntId(id: string): bigint {
+    return BigInt(id);
+  }
 
-    return this.prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+  private toCurrentUserResponse(user: any) {
+    return {
+      id: toNumberId(user.user_id),
+      fullName: user.full_name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatar_url,
+      status: user.status,
+    };
   }
 
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        avatar: true,
-        role: true,
-        isActive: true,
-        createdAt: true,
-      },
+      where: { user_id: this.toBigIntId(id) },
     });
 
-    if (!user) throw new NotFoundException('User not found');
-    return user;
-  }
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
 
-  async getUserByEmail(email: string) {
-    return this.prisma.user.findUnique({
-      where: { email },
-    });
+    return okResponse('Get current user successfully', this.toCurrentUserResponse(user));
   }
 
   async updateUser(id: string, dto: UpdateUserDto) {
-    await this.getUserById(id);
+    const existing = await this.prisma.user.findUnique({
+      where: { user_id: this.toBigIntId(id) },
+    });
 
-    return this.prisma.user.update({
-      where: { id },
-      data: dto,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        phone: true,
-        avatar: true,
-        role: true,
+    if (!existing) {
+      throw new NotFoundException('User not found');
+    }
+
+    const user = await this.prisma.user.update({
+      where: { user_id: this.toBigIntId(id) },
+      data: {
+        full_name: dto.fullName,
+        phone: dto.phone,
+        avatar_url: dto.avatarUrl,
       },
     });
-  }
 
-  async changePassword(userId: string, dto: ChangePasswordDto) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) throw new NotFoundException('User not found');
-
-    // Note: Password validation should be done in auth service
-    // This is a simplified version
-
-    return this.prisma.user.update({
-      where: { id: userId },
-      data: { password: dto.newPassword },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-      },
-    });
-  }
-
-  async toggleUserActive(id: string, isActive: boolean) {
-    await this.getUserById(id);
-
-    return this.prisma.user.update({
-      where: { id },
-      data: { isActive },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        isActive: true,
-      },
-    });
-  }
-
-  async deleteUser(id: string) {
-    await this.getUserById(id);
-
-    return this.prisma.user.delete({
-      where: { id },
+    return okResponse('Update profile successfully', {
+      id: toNumberId(user.user_id),
+      fullName: user.full_name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatar_url,
     });
   }
 }

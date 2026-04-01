@@ -1,17 +1,51 @@
+import { IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
+
 export class CreateDoctorDto {
-  licenseNumber: string | undefined;
-  specialtyId?: string;
+  @IsString()
+  @MaxLength(150)
+  fullName!: string;
+
+  @IsString()
+  specialtyId!: string;
+
+  @IsString()
+  facilityId!: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
   bio?: string;
+
+  @IsOptional()
+  @IsNumber()
   yearsExperience?: number;
 }
 
 export class UpdateDoctorDto {
-  licenseNumber?: string;
-  specialtyId?: string;
-  bio?: string;
-  yearsExperience?: number;
-}
+  @IsOptional()
+  @IsString()
+  fullName?: string;
 
-export class ApproveDoctorDto {
-  isApproved: boolean | undefined;
+  @IsOptional()
+  @IsString()
+  specialtyId?: string;
+
+  @IsOptional()
+  @IsString()
+  facilityId?: string;
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  bio?: string;
+
+  @IsOptional()
+  @IsNumber()
+  yearsExperience?: number;
 }

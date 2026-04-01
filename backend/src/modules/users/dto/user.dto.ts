@@ -1,20 +1,17 @@
-export class CreateUserDto {
-  email!: string;
-  password!: string;
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  role!: string; // PATIENT, DOCTOR, ADMIN
-}
+import { IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateUserDto {
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  avatar?: string;
-}
+  @IsOptional()
+  @IsString()
+  @MaxLength(150)
+  fullName?: string;
 
-export class ChangePasswordDto {
-  currentPassword!: string;
-  newPassword!: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  avatarUrl?: string;
 }

@@ -31,14 +31,14 @@ export class SpecialtiesController {
 
   @Post()
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   async createSpecialty(@Body() dto: CreateSpecialtyDto) {
     return this.specialtiesService.createSpecialty(dto);
   }
 
   @Patch(':id')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   async updateSpecialty(
     @Param('id') id: string,
     @Body() dto: UpdateSpecialtyDto,
@@ -48,7 +48,7 @@ export class SpecialtiesController {
 
   @Delete(':id')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRole.admin)
   async deleteSpecialty(@Param('id') id: string) {
     return this.specialtiesService.deleteSpecialty(id);
   }

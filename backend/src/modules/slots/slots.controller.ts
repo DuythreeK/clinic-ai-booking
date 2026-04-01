@@ -47,21 +47,21 @@ export class SlotsController {
 
   @Post()
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+  @Roles(UserRole.admin, UserRole.doctor)
   async createSlot(@Body() dto: CreateSlotDto) {
     return this.slotsService.createSlot(dto);
   }
 
   @Post('bulk')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+  @Roles(UserRole.admin, UserRole.doctor)
   async createBulkSlots(@Body() dto: CreateBulkSlotsDto) {
     return this.slotsService.createBulkSlots(dto);
   }
 
   @Patch(':id')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+  @Roles(UserRole.admin, UserRole.doctor)
   async updateSlot(
     @Param('id') id: string,
     @Body() dto: UpdateSlotDto,
@@ -71,7 +71,7 @@ export class SlotsController {
 
   @Delete(':id')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+  @Roles(UserRole.admin, UserRole.doctor)
   async deleteSlot(@Param('id') id: string) {
     return this.slotsService.deleteSlot(id);
   }

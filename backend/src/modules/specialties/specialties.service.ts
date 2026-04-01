@@ -6,6 +6,10 @@ import { CreateSpecialtyDto, UpdateSpecialtyDto } from './dto/specialty.dto';
 export class SpecialtiesService {
   constructor(private prisma: PrismaService) {}
 
+  private toBigIntId(id: string): bigint {
+    return BigInt(id);
+  }
+
   async createSpecialty(dto: CreateSpecialtyDto) {
     const existingSpecialty = await this.prisma.specialty.findUnique({
       where: { name: dto.name },
@@ -16,47 +20,23 @@ export class SpecialtiesService {
     }
 
     return this.prisma.specialty.create({
-      data: dto,
-      include: { doctors: true },
+      data: {
+        name: dto.name,
+        description: dto.description,
+      },
     });
   }
 
   async getSpecialties() {
     return this.prisma.specialty.findMany({
-      include: {
-        doctors: {
-          select: {
-            id: true,
-            user: {
-              select: {
-                firstName: true,
-                lastName: true,
-              },
-            },
-          },
-        },
-      },
+      where: { is_active: 1 },
       orderBy: { name: 'asc' },
     });
   }
 
   async getSpecialtyById(id: string) {
     const specialty = await this.prisma.specialty.findUnique({
-      where: { id },
-      include: {
-        doctors: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-              },
-            },
-          },
-        },
-      },
+      where: { specialty_id: this.toBigIntId(id) },
     });
 
     if (!specialty) throw new NotFoundException('Specialty not found');
@@ -70,15 +50,20 @@ export class SpecialtiesService {
       const existingSpecialty = await this.prisma.specialty.findUnique({
         where: { name: dto.name },
       });
-      if (existingSpecialty && existingSpecialty.id !== id) {
+      if (
+        existingSpecialty &&
+        existingSpecialty.specialty_id !== this.toBigIntId(id)
+      ) {
         throw new BadRequestException('Specialty with this name already exists');
       }
     }
 
     return this.prisma.specialty.update({
-      where: { id },
-      data: dto,
-      include: { doctors: true },
+      where: { specialty_id: this.toBigIntId(id) },
+      data: {
+        name: dto.name,
+        description: dto.description,
+      },
     });
   }
 
@@ -86,7 +71,7 @@ export class SpecialtiesService {
     await this.getSpecialtyById(id);
 
     return this.prisma.specialty.delete({
-      where: { id },
+      where: { specialty_id: this.toBigIntId(id) },
     });
   }
 }

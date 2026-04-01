@@ -3,14 +3,13 @@ import {
   Get,
   Post,
   Patch,
-  Delete,
   Body,
   Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { CreateDoctorDto, UpdateDoctorDto, ApproveDoctorDto } from './dto/doctor.dto';
+import { CreateDoctorDto, UpdateDoctorDto } from './dto/doctor.dto';
 import { JwtGuard } from '@/common/guards/jwt.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -23,16 +22,28 @@ export class DoctorsController {
 
   @Get()
   async getDoctors(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
     @Query('specialtyId') specialtyId?: string,
-    @Query('approved') approved?: string,
+    @Query('facilityId') facilityId?: string,
   ) {
-    const isApproved = approved === 'true' ? true : approved === 'false' ? false : undefined;
-    return this.doctorsService.getDoctors(specialtyId, isApproved);
+    return this.doctorsService.getDoctors(
+      Number(page || 1),
+      Number(limit || 10),
+      search,
+      specialtyId,
+      facilityId,
+    );
   }
 
-  @Get('clinic/:clinicId')
-  async getDoctorsByClinic(@Param('clinicId') clinicId: string) {
-    return this.doctorsService.getDoctorsByClinic(clinicId);
+  @Get('profile/current')
+  @UseGuards(JwtGuard)
+  @Roles(UserRole.doctor)
+  async getCurrentDoctorProfile(@CurrentUser('sub') userId: string) {
+    return this.doctorsService.getDoctors(1, 100).then((response) =>
+      response.data.items.find((doctor) => String(doctor.id) === userId) ?? null,
+    );
   }
 
   @Get(':id')
@@ -40,16 +51,14 @@ export class DoctorsController {
     return this.doctorsService.getDoctorById(id);
   }
 
-  @Get('profile/current')
-  @UseGuards(JwtGuard)
-  @Roles(UserRole.DOCTOR)
-  async getCurrentDoctorProfile(@CurrentUser('sub') userId: string) {
-    return this.doctorsService.getDoctorByUserId(userId);
+  @Get(':id/reviews')
+  async getDoctorReviews(@Param('id') id: string) {
+    return this.doctorsService.getDoctorReviews(id);
   }
 
   @Post()
   @UseGuards(JwtGuard)
-  @Roles(UserRole.DOCTOR)
+  @Roles(UserRole.doctor)
   async createDoctor(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateDoctorDto,
@@ -59,33 +68,11 @@ export class DoctorsController {
 
   @Patch(':id')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
+  @Roles(UserRole.admin, UserRole.doctor)
   async updateDoctor(
     @Param('id') id: string,
     @Body() dto: UpdateDoctorDto,
-    @CurrentUser('sub') userId: string,
   ) {
-    const doctor = await this.doctorsService.getDoctorById(id);
-    if (doctor.userId !== userId) {
-      throw new Error('You can only update your own profile');
-    }
     return this.doctorsService.updateDoctor(id, dto);
-  }
-
-  @Patch(':id/approve')
-  @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async approveDoctor(
-    @Param('id') id: string,
-    @Body() dto: ApproveDoctorDto,
-  ) {
-    return this.doctorsService.approveDoctor(id, dto);
-  }
-
-  @Delete(':id')
-  @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.ADMIN)
-  async deleteDoctor(@Param('id') id: string) {
-    return this.doctorsService.deleteDoctor(id);
   }
 }
