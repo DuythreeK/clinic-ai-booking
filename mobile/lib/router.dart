@@ -1,67 +1,56 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'features/ai/screens/ai_triage_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
+import 'features/auth/services/auth_service.dart';
 import 'features/booking/screens/home_screen.dart';
-import 'features/booking/screens/doctor_search_screen.dart';
-import 'features/ai_triage/screens/triage_screen.dart';
 
-final GoRouter appRouter = GoRouter(
-  initialLocation: '/login',
-  routes: [
-    // Authentication Routes
-    GoRoute(
-      path: '/login',
-      name: 'login',
-      builder: (context, state) => const LoginScreen(),
-    ),
-    GoRoute(
-      path: '/register',
-      name: 'register',
-      builder: (context, state) => const RegisterScreen(),
-    ),
-    
-    // Home and Main Routes
-    GoRoute(
-      path: '/home',
-      name: 'home',
-      builder: (context, state) => const HomeScreen(),
-    ),
-    
-    // Booking Routes
-    GoRoute(
-      path: '/doctors',
-      name: 'doctors',
-      builder: (context, state) => const DoctorSearchScreen(),
-    ),
-    GoRoute(
-      path: '/triage',
-      name: 'triage',
-      builder: (context, state) => const TriageScreen(),
-    ),
-  ],
-  errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(title: const Text('Error')),
-    body: Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text('Route not found: ${state.uri}'),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => context.go('/home'),
-            child: const Text('Go to Home'),
-          ),
-        ],
+GoRouter createAppRouter({
+  required AuthService authService,
+  required bool isAuthenticated,
+}) {
+  return GoRouter(
+    initialLocation: isAuthenticated ? '/' : '/login',
+    routes: [
+      GoRoute(
+        path: '/',
+        name: 'home',
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          final requestedTab = int.tryParse(qp['tab'] ?? '') ?? 0;
+          final initialTab = requestedTab.clamp(0, 2);
+          final specialty = qp['specialty'];
+
+          return HomeScreen(
+            authService: authService,
+            initialTab: initialTab,
+            prefilledSpecialty: specialty,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        builder: (context, state) => LoginScreen(authService: authService),
+      ),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        builder: (context, state) => RegisterScreen(authService: authService),
+      ),
+      GoRoute(
+        path: '/ai-triage',
+        name: 'ai-triage',
+        builder: (context, state) => AiTriageScreen(authService: authService),
+      ),
+    ],
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Not Found')),
+      body: Center(
+        child: Text('Route not found: ${state.uri}'),
       ),
     ),
-  ),
-  redirect: (context, state) {
-    // Handle authentication redirects if needed
-    return null;
-  },
-);
-
+  );
+}

@@ -1,5 +1,4 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
 import '../../../core/api/dio_client.dart';
@@ -18,29 +17,27 @@ class AuthService {
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
-    required String firstName,
-    required String lastName,
-    String? phone,
+    required String fullName,
+    required String phone,
+    String role = 'patient',
   }) async {
     try {
       final response = await dioClient.post(
         '/auth/register',
         data: {
           'email': email,
-          'password': password,
-          'firstName': firstName,
-          'lastName': lastName,
           'phone': phone,
+          'password': password,
+          'full_name': fullName,
+          'role': role,
         },
       );
 
       if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = response.data;
-        await authStorage.saveTokens(
-          accessToken: data['accessToken'],
-          refreshToken: data['refreshToken'],
+        final data = response.data as Map<String, dynamic>;
+        await authStorage.saveUser(
+          (data['data'] as Map<String, dynamic>? ?? <String, dynamic>{}),
         );
-        await authStorage.saveUser(data['user']);
 
         logger.i('✅ Registration successful');
         return data;
@@ -67,12 +64,18 @@ class AuthService {
       );
 
       if (response.statusCode == 200) {
-        final data = response.data;
+        final data = response.data as Map<String, dynamic>;
+        final responseData =
+            (data['data'] as Map<String, dynamic>? ?? <String, dynamic>{});
+
         await authStorage.saveTokens(
-          accessToken: data['accessToken'],
-          refreshToken: data['refreshToken'],
+          accessToken: responseData['access_token'] as String,
+          refreshToken: responseData['refresh_token'] as String,
         );
-        await authStorage.saveUser(data['user']);
+        await authStorage.saveUser({
+          'user_id': responseData['user_id'],
+          'email': email,
+        });
 
         logger.i('✅ Login successful');
         return data;
@@ -87,14 +90,7 @@ class AuthService {
 
   Future<void> logout() async {
     try {
-      final refreshToken = await authStorage.getRefreshToken();
-
-      if (refreshToken != null) {
-        await dioClient.post(
-          '/auth/logout',
-          data: {'refreshToken': refreshToken},
-        );
-      }
+      await dioClient.post('/auth/logout');
 
       await authStorage.clear();
       logger.i('✅ Logout successful');

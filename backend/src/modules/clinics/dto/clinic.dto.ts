@@ -1,5 +1,5 @@
 export class CreateClinicDto {
-  name!: string
+  name!: string;
   address!: string;
   city!: string;
   country!: string;

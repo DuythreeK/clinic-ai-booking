@@ -1,8 +1,9 @@
-import { IsArray, IsString, IsOptional, IsObject } from 'class-validator';
+import { IsArray, IsIn, IsObject, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class TriageRequestDto {
-  @IsArray()
-  symptoms!: string[];
+  @IsString()
+  @MinLength(3)
+  symptoms!: string;
 
   @IsString()
   @IsOptional()
@@ -18,10 +19,15 @@ export class TriageRequestDto {
 }
 
 export class TriageResultDto {
-  recommended_specialties!: string[];
-  urgency_level!: 'THUONG' | 'NEN_DI_SOM' | 'KHAN';
-  follow_up_questions!: string[];
-  disclaimer!: string;
+  @IsString()
+  @IsIn(['Emergency', 'Urgent', 'Routine'])
+  urgency!: 'Emergency' | 'Urgent' | 'Routine';
+
+  @IsString()
+  specialty!: string;
+
+  @IsString()
+  reasoning!: string;
 }
 
 export class PrevisitSummaryRequestDto {

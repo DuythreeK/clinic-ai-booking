@@ -48,11 +48,17 @@ class TokenInterceptor extends Interceptor {
 
         final refreshResponse = await dio.post(
           '$baseUrl/auth/refresh',
-          data: {'refreshToken': refreshToken},
+          data: {'refresh_token': refreshToken},
         );
 
         if (refreshResponse.statusCode == 200) {
-          final newAccessToken = refreshResponse.data['accessToken'];
+          final responseData =
+              refreshResponse.data['data'] as Map<String, dynamic>?;
+          final newAccessToken = responseData?['access_token'] as String?;
+
+          if (newAccessToken == null || newAccessToken.isEmpty) {
+            return handler.next(err);
+          }
 
           await secureStorage.write(key: 'access_token', value: newAccessToken);
           logger.i('✅ Token refreshed successfully');
@@ -109,6 +115,9 @@ class DioClient {
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         contentType: Headers.jsonContentType,
+        headers: const {
+          'ngrok-skip-browser-warning': 'true',
+        },
         responseType: ResponseType.json,
       ),
     );
@@ -123,21 +132,13 @@ class DioClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        logPrint: (message) => Logger().d(message),
         retries: 3,
         retryDelays: const [
-          Duration(milliseconds: 500),
           Duration(seconds: 1),
           Duration(seconds: 2),
+          Duration(seconds: 3),
         ],
-        retryEvaluator: (error, attempt) {
-          // Avoid retrying auth errors to prevent loops.
-          final status = error.response?.statusCode;
-          if (status == 401 || status == 403) {
-            return false;
-          }
-          return true;
-        },
+        logPrint: print,
       ),
     );
   }

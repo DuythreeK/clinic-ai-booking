@@ -1,24 +1,15 @@
 import {
   Controller,
   Post,
-  Get,
   Patch,
   Delete,
   Body,
   Param,
-  Query,
   UseGuards,
   HttpCode,
 } from '@nestjs/common';
 import { AppointmentsService } from './appointments.service';
-import {
-  CreateAppointmentDto,
-  UpdateAppointmentDto,
-  UpdateAppointmentStatusDto,
-  AddDoctorNotesDto,
-  RescheduleAppointmentDto,
-  AppointmentFilterDto,
-} from './dto/appointment.dto';
+import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dto';
 import { JwtGuard } from '@/common/guards/jwt.guard';
 import { RolesGuard } from '@/common/guards/roles.guard';
 import { Roles } from '@/common/decorators/roles.decorator';
@@ -30,61 +21,33 @@ import { UserRole } from '@prisma/client';
 export class AppointmentsController {
   constructor(private appointmentsService: AppointmentsService) {}
 
-  @Get()
-  @Roles(UserRole.ADMIN, UserRole.DOCTOR)
-  async getAppointments(
-    @Query('patientId') patientId?: string,
-    @Query('doctorId') doctorId?: string,
-    @Query('status') status?: string,
-    @Query('fromDate') fromDate?: string,
-    @Query('toDate') toDate?: string,
-  ) {
-    const filter: AppointmentFilterDto = {
-      patientId,
-      doctorId,
-      status,
-      fromDate,
-      toDate,
-    };
-    return this.appointmentsService.getAppointments(filter);
-  }
-
-  @Get('patient/my-appointments')
-  @Roles(UserRole.PATIENT)
-  async getMyAppointments(
-    @CurrentUser('sub') userId: string,
-    @Query('status') status?: string,
-  ) {
-    return this.appointmentsService.getPatientAppointments(userId, status);
-  }
-
-  @Get('doctor/my-appointments')
-  @Roles(UserRole.DOCTOR)
-  async getMyDoctorAppointments(
-    @CurrentUser('sub') userId: string,
-    @Query('status') status?: string,
-  ) {
-    return this.appointmentsService.getDoctorAppointments(userId, status);
-  }
-
-  @Get(':id')
-  async getAppointmentById(@Param('id') id: string) {
-    return this.appointmentsService.getAppointmentById(id);
-  }
-
   @Post()
-  @Roles(UserRole.PATIENT)
-  async createAppointment(
-    @CurrentUser('sub') userId: string,
+  @Roles(UserRole.patient)
+  async create(
+    @CurrentUser('sub') patientId: string,
     @Body() dto: CreateAppointmentDto,
   ) {
-    return this.appointmentsService.createAppointment(dto.patientId, dto);
+    return this.appointmentsService.createAppointment(patientId, dto);
+  }
+
+  @Get('my')
+  @Roles(UserRole.patient)
+  async getMyAppointments(@CurrentUser('sub') patientId: string) {
+    return this.appointmentsService.getMyAppointments(patientId);
+  }
+
+  @Get('doctor')
+  @Roles(UserRole.doctor)
+  async getDoctorAppointments(@CurrentUser('sub') doctorId: string) {
+    return this.appointmentsService.getDoctorAppointments(doctorId);
   }
 
   @Patch(':id')
-  @Roles(UserRole.PATIENT)
-  async updateAppointment(
-    @Param('id') id: string,
+  @Roles(UserRole.patient, UserRole.doctor)
+  async update(
+    @Param('id') appointmentId: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: UserRole,
     @Body() dto: UpdateAppointmentDto,
   ) {
     return this.appointmentsService.updateAppointment(id, dto);
@@ -125,9 +88,18 @@ export class AppointmentsController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN)
-  async deleteAppointment(@Param('id') id: string) {
-    return this.appointmentsService.deleteAppointment(id);
+  @HttpCode(200)
+  @Roles(UserRole.patient, UserRole.doctor)
+  async cancel(
+    @Param('id') appointmentId: string,
+    @CurrentUser('sub') userId: string,
+    @CurrentUser('role') role: UserRole,
+  ) {
+    return this.appointmentsService.cancelAppointment(
+      appointmentId,
+      userId,
+      role,
+    );
   }
 }
 

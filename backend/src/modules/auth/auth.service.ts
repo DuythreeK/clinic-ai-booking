@@ -1,13 +1,23 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
-import * as crypto from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
-import { RegisterDto, LoginDto } from './dto/auth.dto';
-import { UserRole } from '@prisma/client';
+import {
+  ForgotPasswordRequest,
+  LoginRequest,
+  RegisterRequest,
+  ResetPasswordRequest,
+} from './dto/auth.dto';
+import { PasswordResetStatus, UserRole, UserStatus } from '@prisma/client';
 
 interface JwtPayload {
-  sub: string; // user.id
+  sub: string;
   email: string;
   role: UserRole;
 }
@@ -19,59 +29,58 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    // Check if user exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+  async register(dto: RegisterRequest) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: {
+        OR: [{ email: dto.email }, { phone: dto.phone }],
+      },
     });
+
     if (existingUser) {
-      throw new BadRequestException('User with this email already exists');
+      const duplicateField =
+        existingUser.email === dto.email ? 'email' : 'phone';
+      throw new ConflictException(
+        `User with this ${duplicateField} already exists`,
+      );
     }
 
-    // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Create user (as Patient by default)
     const user = await this.prisma.user.create({
       data: {
+        role: dto.role,
+        full_name: dto.full_name,
         email: dto.email,
-        password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
         phone: dto.phone,
-        role: UserRole.PATIENT,
-        patient: {
-          create: {}, // Create empty patient profile
-        },
+        password_hash: hashedPassword,
+        status: UserStatus.active,
       },
       select: {
-        id: true,
+        user_id: true,
         email: true,
-        firstName: true,
-        lastName: true,
+        phone: true,
+        full_name: true,
         role: true,
+        status: true,
+        created_at: true,
       },
     });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
-
     return {
-      ...tokens,
-      user,
+      success: true,
+      data: user,
     };
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginRequest) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: {
-        id: true,
+        user_id: true,
         email: true,
-        password: true,
-        firstName: true,
-        lastName: true,
+        password_hash: true,
         role: true,
+        status: true,
       },
     });
 
@@ -79,115 +88,286 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const passwordMatch = await bcrypt.compare(dto.password, user.password);
+    if (user.status !== UserStatus.active) {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    const passwordMatch = await bcrypt.compare(dto.password, user.password_hash);
     if (!passwordMatch) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+    const tokens = await this.generateTokens(user.user_id, user.email, user.role);
 
     return {
-      ...tokens,
-      user: {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        role: user.role,
+      success: true,
+      data: {
+        user_id: user.user_id,
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        token_type: 'Bearer',
+        expires_in: this.getAccessTokenTtlSeconds(),
       },
     };
   }
 
   async refresh(refreshToken: string) {
+    let payload: JwtPayload;
+
     try {
-      const payload = await this.jwtService.verifyAsync(refreshToken, {
+      payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {
         secret: process.env.JWT_REFRESH_SECRET,
       });
-
-      // Check if token is revoked
-      const tokenRecord = await this.prisma.refreshToken.findUnique({
-        where: { tokenHash: this.hashToken(refreshToken) },
-      });
-
-      if (!tokenRecord || tokenRecord.revokedAt) {
-        throw new UnauthorizedException('Token revoked or invalid');
-      }
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: payload.sub },
-        select: {
-          id: true,
-          email: true,
-          role: true,
-        },
-      });
-
-      if (!user) {
-        throw new UnauthorizedException('User not found');
-      }
-
-      const newAccessToken = this.jwtService.sign(
-        {
-          sub: user.id,
-          email: user.email,
-          role: user.role,
-        } as any,
-      );
-
-      return { accessToken: newAccessToken };
-    } catch (error) {
+    } catch {
       throw new UnauthorizedException('Invalid refresh token');
     }
-  }
 
-  async logout(userId: string, refreshToken: string) {
-    // Mark refresh token as revoked
-    await this.prisma.refreshToken.update(
-      {
-        where: { tokenHash: this.hashToken(refreshToken) },
-        data: { revokedAt: new Date() },
+    const userId = this.toBigIntId(payload.sub);
+
+    const tokenRecord = await this.prisma.refreshToken.findFirst({
+      where: {
+        token: refreshToken,
+        user_id: userId,
+        is_revoked: 0,
       },
-    ).catch(() => {
-      // Token might not exist, ignore
     });
 
-    return { message: 'Logged out successfully' };
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Token revoked or invalid');
+    }
+
+    if (tokenRecord.expires_at <= new Date()) {
+      await this.prisma.refreshToken.update({
+        where: { id: tokenRecord.id },
+        data: { is_revoked: 1 },
+      });
+      throw new UnauthorizedException('Refresh token has expired');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: userId },
+      select: {
+        user_id: true,
+        email: true,
+        role: true,
+        status: true,
+      },
+    });
+
+    if (!user || user.status !== UserStatus.active) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
+
+    await this.prisma.refreshToken.update({
+      where: { id: tokenRecord.id },
+      data: { is_revoked: 1 },
+    });
+
+    const newTokens = await this.generateTokens(user.user_id, user.email, user.role);
+
+    return {
+      success: true,
+      data: {
+        access_token: newTokens.access_token,
+        refresh_token: newTokens.refresh_token,
+        expires_in: this.getAccessTokenTtlSeconds(),
+      },
+    };
   }
 
-  private async generateTokens(
-    userId: string,
-    email: string,
-    role: UserRole,
-  ) {
-    const payload = {
-      sub: userId,
-      email,
-      role,
-    };
+  async forgotPassword(dto: ForgotPasswordRequest) {
+    const user = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+      select: {
+        user_id: true,
+        email: true,
+      },
+    });
 
-    const accessToken = this.jwtService.sign(payload as any);
+    if (!user) {
+      throw new NotFoundException('Email not found');
+    }
 
-    const refreshToken = this.jwtService.sign(payload as any);
+    const resetToken = this.createPasswordResetToken();
+    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Store hashed refresh token in DB
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days
-
-    await this.prisma.refreshToken.create({
+    await this.prisma.passwordResetToken.create({
       data: {
-        tokenHash: this.hashToken(refreshToken),
-        userId,
-        expiresAt,
+        user_id: user.user_id,
+        token: resetToken,
+        status: PasswordResetStatus.PENDING,
+        expires_at: expiresAt,
       },
     });
 
     return {
-      accessToken,
-      refreshToken,
+      success: true,
+      message: 'OTP sent to registered email/phone',
+      data: {
+        masked_email: this.maskEmail(user.email),
+        retry_after: 60,
+      },
     };
   }
 
-  private hashToken(token: string): string {
-    return crypto.createHash('sha256').update(token).digest('hex');
+  async resetPassword(dto: ResetPasswordRequest) {
+    const tokenRecord = await this.prisma.passwordResetToken.findUnique({
+      where: { token: dto.token },
+      include: {
+        user: {
+          select: {
+            user_id: true,
+          },
+        },
+      },
+    });
+
+    if (!tokenRecord) {
+      throw new NotFoundException('Token not found');
+    }
+
+    if (tokenRecord.status !== PasswordResetStatus.PENDING) {
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    if (tokenRecord.expires_at <= new Date()) {
+      await this.prisma.passwordResetToken.update({
+        where: { id: tokenRecord.id },
+        data: { status: PasswordResetStatus.EXPIRED },
+      });
+      throw new UnauthorizedException('Invalid or expired token');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.new_password, 10);
+
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { user_id: tokenRecord.user.user_id },
+        data: { password_hash: passwordHash },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: tokenRecord.id },
+        data: {
+          status: PasswordResetStatus.USED,
+          used_at: new Date(),
+        },
+      }),
+    ]);
+
+    return {
+      success: true,
+      message: 'Password reset successfully',
+    };
+  }
+
+  async logout(userId: string) {
+    const parsedUserId = this.toBigIntId(userId);
+
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        user_id: parsedUserId,
+        is_revoked: 0,
+      },
+      data: {
+        is_revoked: 1,
+      },
+    });
+
+    return { success: true, message: 'Logout successful' };
+  }
+
+  private async generateTokens(
+    userId: bigint,
+    email: string,
+    role: UserRole,
+  ) {
+    const payload: JwtPayload = {
+      sub: userId.toString(),
+      email,
+      role,
+    };
+
+    const access_token = this.jwtService.sign(payload, {
+      secret: process.env.JWT_SECRET,
+      expiresIn: this.getAccessTokenTtlSeconds(),
+    });
+
+    const refresh_token = this.jwtService.sign(payload, {
+      secret: process.env.JWT_REFRESH_SECRET,
+      expiresIn: this.durationToSeconds(process.env.JWT_REFRESH_EXPIRES_IN || '7d'),
+    });
+
+    const expires_at = new Date(Date.now() + this.getRefreshTokenTtlMs());
+
+    await this.prisma.refreshToken.create({
+      data: {
+        user_id: userId,
+        token: refresh_token,
+        expires_at,
+        is_revoked: 0,
+      },
+    });
+
+    return {
+      access_token,
+      refresh_token,
+    };
+  }
+
+  private createPasswordResetToken(): string {
+    // Numeric OTP-like token for simple manual verification workflows.
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  private maskEmail(email: string): string {
+    const [name, domain] = email.split('@');
+    if (!name || !domain) {
+      return email;
+    }
+    if (name.length <= 2) {
+      return `${name[0] || '*'}***@${domain}`;
+    }
+    return `${name.slice(0, 2)}***@${domain}`;
+  }
+
+  private toBigIntId(userId: string): bigint {
+    try {
+      return BigInt(userId);
+    } catch {
+      throw new BadRequestException('Invalid user id format');
+    }
+  }
+
+  private getAccessTokenTtlSeconds(): number {
+    return this.durationToSeconds(process.env.JWT_EXPIRES_IN || '15m');
+  }
+
+  private getRefreshTokenTtlMs(): number {
+    return this.durationToSeconds(process.env.JWT_REFRESH_EXPIRES_IN || '7d') * 1000;
+  }
+
+  private durationToSeconds(value: string): number {
+    const match = value.trim().match(/^(\d+)([smhd]?)$/i);
+    if (!match) {
+      return 900;
+    }
+
+    const amount = Number(match[1]);
+    const unit = (match[2] || 's').toLowerCase();
+
+    if (unit === 's') {
+      return amount;
+    }
+    if (unit === 'm') {
+      return amount * 60;
+    }
+    if (unit === 'h') {
+      return amount * 3600;
+    }
+    if (unit === 'd') {
+      return amount * 86400;
+    }
+
+    return 900;
   }
 }

@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// This is your Prisma schema file
 
 generator client {
   provider = "prisma-client-js"
@@ -10,301 +9,594 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ============================================================================
-// ENUM TYPES
-// ============================================================================
-
-enum UserRole {
-  PATIENT
-  DOCTOR
-  ADMIN
-}
-
-enum AppointmentStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-  COMPLETED
-  NO_SHOW
-}
-
-enum UrgencyLevel {
-  THUONG
-  NEN_DI_SOM
-  KHAN
-}
-
-// ============================================================================
-// USER & AUTH
-// ============================================================================
+// --- 1. QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT ---
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String   // bcrypt hashed
-  firstName String?
-  lastName  String?
-  phone     String?
-  avatar    String?
-  role      UserRole @default(PATIENT)
-  isActive  Boolean  @default(true)
+  user_id       BigInt    @id @default(autoincrement())
+  role          UserRole
+  full_name     String    @db.VarChar(150)
+  email         String    @unique @db.VarChar(150)
+  phone         String    @unique @db.VarChar(20)
+  password_hash String    @db.VarChar(255)
+  avatar_url    String?   @db.VarChar(255)
+  status        UserStatus @default(active)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  // Quan hệ 1-N [cite: 330-350]
+  patient_profiles      PatientProfile[]
+  refresh_tokens        RefreshToken[]
+  password_reset_tokens PasswordResetToken[]
+  doctor                Doctor?
+  appointments          Appointment[]
+  status_logs           AppointmentStatusLog[]
+  reviews               DoctorReview[]
+  submitted_forms       PreVisitForm[]         @relation("SubmittedByUser")
+  reviewed_forms        PreVisitForm[]         @relation("ReviewedByUser")
+  notifications         Notification[]
+  ai_triage_sessions    AiTriageSession[]
 
-  // Relations
-  refreshTokens RefreshToken[]
-  fcmTokens     FcmToken[]
-  patient       PatientProfile?
-  doctor        Doctor?
-  admin         AdminProfile?
+  @@map("tblUser")
+}
 
-  @@map("users")
+enum UserRole {
+  admin
+  doctor
+  patient
+}
+
+enum UserStatus {
+  active
+  inactive
+  blocked
 }
 
 model RefreshToken {
-  id        String   @id @default(cuid())
-  tokenHash String   @unique // Hash of refresh token
-  userId    String
-  expiresAt DateTime
-  revokedAt DateTime? // For logout
+  id         BigInt   @id @default(autoincrement())
+  user_id    BigInt
+  token      String   @unique @db.VarChar(512)
+  expires_at DateTime
+  is_revoked Int      @default(0) @db.TinyInt
+  created_at DateTime @default(now())
 
-  createdAt DateTime @default(now())
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("refresh_tokens")
+  @@map("tblRefreshTokens")
 }
 
-model FcmToken {
-  id    String @id @default(cuid())
-  token String @unique // Firebase Cloud Messaging token
-  userId String
+model PasswordResetToken {
+  id         BigInt           @id @default(autoincrement())
+  user_id    BigInt
+  token      String           @unique @db.VarChar(512)
+  status     PasswordResetStatus @default(PENDING)
+  expires_at DateTime
+  used_at    DateTime?
+  created_at DateTime         @default(now())
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@map("fcm_tokens")
+  @@map("tblPasswordResetTokens")
 }
 
-model AdminProfile {
-  id     String @id @default(cuid())
-  userId String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("admin_profiles")
+enum PasswordResetStatus {
+  PENDING
+  USED
+  EXPIRED
 }
 
-// ============================================================================
-// PATIENT
-// ============================================================================
+// --- 2. HỒ SƠ BỆNH NHÂN & Y TẾ ---
 
 model PatientProfile {
-  id              String  @id @default(cuid())
-  userId          String  @unique
-  dateOfBirth     DateTime?
-  gender          String? // M, F, O
-  address         String?
-  city            String?
-  country         String?
-  emergencyPhone  String?
-  medicalHistory  String? // JSON string or text
-  allergies       String? // JSON string or text
-  currentMedications String? // JSON string
+  patient_id          BigInt   @id @default(autoincrement())
+  user_id             BigInt
+  full_name           String   @db.VarChar(150)
+  phone_number        String?  @unique @db.VarChar(20)
+  gender              Gender?
+  date_of_birth       DateTime? @db.Date
+  blood_type          String?  @db.VarChar(10)
+  occupation          String?  @db.VarChar(100)
+  ethnicity           String?  @db.VarChar(100)
+  nationality         String?  @db.VarChar(100)
+  address_detail      String?  @db.VarChar(255)
+  province            String?  @db.VarChar(100)
+  district            String?  @db.VarChar(100)
+  ward                String?  @db.VarChar(100)
+  medical_conditions  String?  @db.Text
+  allergies           String?  @db.Text
+  emergency_contact   String?  @db.VarChar(100)
+  relationship_to_user String? @db.VarChar(50)
+  is_primary          Int      @default(0) @db.TinyInt
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  appointments   Appointment[]
+  medical_records MedicalRecord[]
 
-  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  appointments Appointment[]
-
-  @@map("patient_profiles")
+  @@map("tblPatientProfile")
 }
 
-// ============================================================================
-// DOCTOR & SPECIALTIES
-// ============================================================================
-
-model Doctor {
-  id              String   @id @default(cuid())
-  userId          String   @unique
-  licenseNumber   String   @unique
-  specialtyId     String?
-  isApproved      Boolean  @default(false)
-  bio             String?
-  yearsExperience Int      @default(0)
-  rating          Float    @default(0) // Out of 5
-  totalReviews    Int      @default(0)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  specialty         Specialty?      @relation(fields: [specialtyId], references: [id])
-  doctorClinics     DoctorClinic[]
-  slots             Slot[]
-  appointments      Appointment[]
-
-  @@index([specialtyId])
-  @@index([isApproved])
-  @@map("doctors")
+enum Gender {
+  male
+  female
+  other
 }
+
+// --- 3. CƠ SỞ VẬT CHẤT & CHUYÊN KHOA ---
 
 model Specialty {
-  id          String @id @default(cuid())
-  name        String @unique
-  description String?
-  icon        String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  specialty_id BigInt  @id @default(autoincrement())
+  name         String  @unique @db.VarChar(150)
+  description  String? @db.Text
+  is_active    Int     @default(1) @db.TinyInt
 
   doctors Doctor[]
 
-  @@map("specialties")
+  @@map("tblSpecialty")
 }
 
-// ============================================================================
-// CLINIC & LOCATIONS
-// ============================================================================
+model Facility {
+  facility_id    BigInt       @id @default(autoincrement())
+  name           String       @db.VarChar(200)
+  facility_type  FacilityType
+  phone          String?      @db.VarChar(20)
+  email          String?      @db.VarChar(150)
+  address_detail String       @db.VarChar(255)
+  province       String?      @db.VarChar(100)
+  district       String?      @db.VarChar(100)
+  ward           String?      @db.VarChar(100)
+  opening_hours  String?      @db.VarChar(255)
+  rating_avg     Decimal      @default(0.0) @db.Decimal(2, 1)
+  is_active      Int          @default(1) @db.TinyInt
+  created_at     DateTime     @default(now())
+  updated_at     DateTime     @updatedAt
 
-model Clinic {
-  id      String @id @default(cuid())
-  name    String
-  address String
-  city    String
-  country String
-  phone   String?
-  email   String?
-  hours   String? // JSON string with opening hours
+  doctors      Doctor[]
+  services     Service[]
+  slots        Slot[]
+  appointments Appointment[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  doctors DoctorClinic[]
-  slots   Slot[]
-
-  @@map("clinics")
+  @@map("tblFacility")
 }
 
-model DoctorClinic {
-  id       String @id @default(cuid())
-  doctorId String
-  clinicId String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  clinic Clinic @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-
-  @@unique([doctorId, clinicId])
-  @@index([clinicId])
-  @@map("doctor_clinics")
+enum FacilityType {
+  hospital
+  clinic
+  vaccination_center
 }
 
-// ============================================================================
-// SLOTS & APPOINTMENTS
-// ============================================================================
+// --- 4. BÁC SĨ & DỊCH VỤ ---
+
+model Doctor {
+  doctor_id        BigInt   @id @default(autoincrement())
+  user_id          BigInt   @unique
+  full_name        String   @db.VarChar(150)
+  specialty_id     BigInt
+  facility_id      BigInt
+  title            String?  @db.VarChar(100)
+  bio              String?  @db.Text
+  experience_years Int?
+  avatar_url       String?  @db.VarChar(255)
+  consultation_fee Decimal? @db.Decimal(12, 2)
+  is_active        Int      @default(1) @db.TinyInt
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  user      User      @relation(fields: [user_id], references: [user_id])
+  specialty Specialty @relation(fields: [specialty_id], references: [specialty_id])
+  facility  Facility  @relation(fields: [facility_id], references: [facility_id])
+
+  appointments    Appointment[]
+  slots           Slot[]
+  medical_records MedicalRecord[]
+  reviews         DoctorReview[]
+
+  @@map("tblDoctor")
+}
+
+model Service {
+  service_id       BigInt   @id @default(autoincrement())
+  facility_id      BigInt
+  name             String   @db.VarChar(200)
+  description      String?  @db.Text
+  price            Decimal  @db.Decimal(12, 2)
+  duration_minutes Int?
+  is_active        Int      @default(1) @db.TinyInt
+
+  facility Facility @relation(fields: [facility_id], references: [facility_id], onDelete: Cascade)
+  appointments Appointment[]
+  vaccines     ServiceVaccine[]
+
+  @@map("tblService")
+}
+
+model Vaccine {
+  vaccine_id        BigInt  @id @default(autoincrement())
+  name              String  @unique @db.VarChar(200)
+  manufacturer      String? @db.VarChar(150)
+  country_of_origin String? @db.VarChar(100)
+  dose_count        Int?
+  description       String? @db.Text
+  is_active         Int     @default(1) @db.TinyInt
+
+  services ServiceVaccine[]
+
+  @@map("tblVaccine")
+}
+
+model ServiceVaccine {
+  service_id BigInt
+  vaccine_id BigInt
+  quantity   Int    @default(1)
+
+  service Service @relation(fields: [service_id], references: [service_id])
+  vaccine Vaccine @relation(fields: [vaccine_id], references: [vaccine_id])
+
+  @@id([service_id, vaccine_id])
+  @@map("tblServiceVaccine")
+}
+
+// --- 5. LỊCH HẸN & QUY TRÌNH KHÁM ---
 
 model Slot {
-  id        String   @id @default(cuid())
-  doctorId  String
-  clinicId  String
-  startAt   DateTime
-  endAt     DateTime
-  isBlocked Boolean  @default(false)
+  slot_id          BigInt     @id @default(autoincrement())
+  facility_id      BigInt
+  doctor_id        BigInt
+  slot_date        DateTime   @db.Date
+  start_time       DateTime   @db.Time
+  end_time         DateTime   @db.Time
+  duration_minutes Int        @default(30)
+  available_count  Int        @default(10)
+  status           SlotStatus @default(AVAILABLE)
+  is_active        Int        @default(1) @db.TinyInt
+  created_at       DateTime   @default(now())
+  updated_at       DateTime   @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  facility Facility @relation(fields: [facility_id], references: [facility_id])
+  doctor   Doctor   @relation(fields: [doctor_id], references: [doctor_id])
+  appointment Appointment?
 
-  doctor        Doctor         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
-  clinic        Clinic         @relation(fields: [clinicId], references: [id], onDelete: Cascade)
-  appointments  Appointment[]
+  @@map("tblSlots")
+}
 
-  // Unique constraint: prevent double-booking same doctor/clinic/time
-  @@unique([doctorId, clinicId, startAt, endAt])
-  @@index([doctorId])
-  @@index([clinicId])
-  @@index([startAt, endAt])
-  @@map("slots")
+enum SlotStatus {
+  AVAILABLE
+  FULL
+  CANCELLED
+  INACTIVE
 }
 
 model Appointment {
-  id             String            @id @default(cuid())
-  patientId      String
-  doctorId       String
-  slotId         String            @unique // One appointment per slot
-  status         AppointmentStatus @default(PENDING)
-  reason         String?           // Chief complaint
-  attachments    String?           // JSON string array of file URLs
-  triageJson     String?           // JSON from AI triage
-  previsitSummary String?          // AI-generated summary
-  doctorNotes    String?
-  doctorAdvice   String?           // Prescription, advice
-  rescheduledFrom String?          // Previous appointment ID if rescheduled
+  appointment_id   BigInt          @id @default(autoincrement())
+  appointment_code String          @unique @db.VarChar(30)
+  user_id          BigInt
+  patient_id       BigInt
+  facility_id      BigInt
+  doctor_id        BigInt?
+  slot_id          BigInt          @unique
+  service_id       BigInt?
+  pre_visit_form_id BigInt?        @unique
+  appointment_type AppointmentType
+  appointment_date DateTime        @db.Date
+  appointment_time DateTime        @db.Time
+  status           AppointmentStatus @default(pending)
+  symptoms_note    String?         @db.Text
+  note             String?         @db.Text
+  total_amount     Decimal         @db.Decimal(12, 2)
+  
+  cancellation_reason       String?  @db.VarChar(255)
+  cancellation_requested_by BigInt?
+  cancellation_requested_at DateTime?
+  cancellation_approved_by  BigInt?
+  cancellation_approved_at  DateTime?
+  
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  user     User           @relation(fields: [user_id], references: [user_id])
+  patient  PatientProfile @relation(fields: [patient_id], references: [patient_id])
+  facility Facility       @relation(fields: [facility_id], references: [facility_id])
+  doctor   Doctor?        @relation(fields: [doctor_id], references: [doctor_id])
+  slot     Slot           @relation(fields: [slot_id], references: [slot_id])
+  service  Service?       @relation(fields: [service_id], references: [service_id])
 
-  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
-  doctor  Doctor         @relation(fields: [doctorId], references: [id], onDelete: Restrict)
-  slot    Slot           @relation(fields: [slotId], references: [id], onDelete: Restrict)
+  pre_visit_form          PreVisitForm?
+  medical_record          MedicalRecord?
+  vaccination_registration VaccinationRegistration?
+  payments                Payment[]
+  status_logs             AppointmentStatusLog[]
+  notifications           Notification[]
+  review                  DoctorReview?
+  ai_triage_session       AiTriageSession?
 
-  @@index([patientId])
-  @@index([doctorId])
-  @@index([status])
-  @@index([createdAt])
-  @@map("appointments")
+  @@map("tblAppointment")
 }
 
-// ============================================================================
-// AI & TRIAGE CACHE (optional, for optimization)
-// ============================================================================
-
-model TriageResult {
-  id                String   @id @default(cuid())
-  appointmentId     String?  // Link to appointment if saved
-  symptoms          String   // JSON string of input
-  recommendedSpecialties String // JSON array
-  urgencyLevel      UrgencyLevel
-  followUpQuestions String   // JSON array
-  disclaimer        String?
-  modelUsed         String?  // Which LLM model
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([appointmentId])
-  @@map("triage_results")
+enum AppointmentType {
+  consultation
+  vaccination
 }
 
-// ============================================================================
-// AUDIT LOG (optional, for admin)
-// ============================================================================
-
-model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?  // Who performed action
-  action    String   // CREATE, UPDATE, DELETE, LOGIN, etc.
-  entity    String   // User, Doctor, Appointment, etc.
-  entityId  String?  // ID of affected entity
-  details   String?  // JSON string with change details
-  ipAddress String?
-  userAgent String?
-
-  createdAt DateTime @default(now())
-
-  @@index([userId])
-  @@index([entity])
-  @@index([createdAt])
-  @@map("audit_logs")
+enum AppointmentStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+  no_show
 }
+
+model AppointmentStatusLog {
+  id              BigInt   @id @default(autoincrement())
+  appointment_id  BigInt
+  changed_by      BigInt
+  changed_by_role ChangerRole
+  from_status     String?
+  to_status       String
+  reason          String?  @db.VarChar(255)
+  metadata        Json?
+  created_at      DateTime @default(now())
+
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  user        User        @relation(fields: [changed_by], references: [user_id])
+
+  @@map("tblAppointmentStatusLogs")
+}
+
+enum ChangerRole {
+  patient
+  doctor
+  admin
+  receptionist
+}
+
+// --- 6. THANH TOÁN, THÔNG BÁO & AI TRIAGE ---
+
+model Payment {
+  payment_id       BigInt        @id @default(autoincrement())
+  appointment_id   BigInt
+  payment_method   PaymentMethod
+  amount           Decimal       @db.Decimal(12, 2)
+  transaction_code String?       @unique @db.VarChar(100)
+  status           PaymentStatus @default(pending)
+  paid_at          DateTime?
+  refund_amount    Decimal?      @default(0) @db.Decimal(12, 2)
+  refund_reason    String?       @db.VarChar(255)
+  refunded_at      DateTime?
+  retry_count      Int           @default(0)
+  last_retry_at    DateTime?
+  error_message    String?       @db.Text
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id], onDelete: Cascade)
+
+  @@map("tblPayment")
+}
+
+enum PaymentMethod {
+  cash
+  vnpay
+  momo
+  zalopay
+  credit_card
+  bank_transfer
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+  refunded
+  refunding
+}
+
+model Notification {
+  id              BigInt             @id @default(autoincrement())
+  user_id         BigInt
+  appointment_id  BigInt?
+  type            NotificationType
+  channel         NotificationChannel
+  title           String             @db.VarChar(200)
+  message         String             @db.Text
+  delivery_status DeliveryStatus     @default(pending)
+  is_read         Int                @default(0) @db.TinyInt
+  read_at         DateTime?
+  sent_at         DateTime?
+  retry_count     Int                @default(0)
+  last_retry_at   DateTime?
+  error_message   String?            @db.Text
+  created_at      DateTime           @default(now())
+
+  user        User         @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
+
+  @@map("tblNotifications")
+}
+
+enum NotificationType {
+  appointment_reminder
+  appointment_confirmed
+  appointment_cancelled
+  appointment_completed
+  system
+  promotional
+}
+
+enum NotificationChannel {
+  sms
+  email
+  push
+  in_app
+}
+
+enum DeliveryStatus {
+  pending
+  sent
+  delivered
+  failed
+}
+
+// --- 7. BỔ SUNG: MEDICAL RECORD, REVIEW, AI TRIAGE ---
+
+model MedicalRecord {
+  record_id         BigInt   @id @default(autoincrement())
+  appointment_id    BigInt   @unique
+  patient_id        BigInt
+  doctor_id         BigInt
+  pre_visit_form_id BigInt?
+  symptoms          String?  @db.Text
+  diagnosis         String   @db.Text
+  icd10_codes       String?  @db.Text
+  vital_signs       Json?
+  treatment_plan    String?  @db.Text
+  prescription      Json?
+  follow_up_date    DateTime? @db.Date
+  attachments       Json?
+  is_locked         Int      @default(0) @db.TinyInt
+  locked_at         DateTime?
+  locked_by_user_id BigInt?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  patient     PatientProfile @relation(fields: [patient_id], references: [patient_id])
+  doctor      Doctor      @relation(fields: [doctor_id], references: [doctor_id])
+
+  @@map("tblMedicalRecord")
+}
+
+model DoctorReview {
+  review_id      BigInt   @id @default(autoincrement())
+  doctor_id      BigInt
+  user_id        BigInt
+  appointment_id BigInt?  @unique
+  rating         Int      @db.TinyInt
+  comment        String?  @db.Text
+  is_visible     Int      @default(1) @db.TinyInt
+  admin_reply    String?  @db.Text
+  admin_reply_at DateTime?
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  doctor      Doctor      @relation(fields: [doctor_id], references: [doctor_id])
+  user        User        @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
+
+  @@map("tblDoctorReview")
+}
+
+model PreVisitForm {
+  id              BigInt     @id @default(autoincrement())
+  appointment_id  BigInt     @unique
+  form_version    String     @default("1.0") @db.VarChar(10)
+  chief_complaint String     @db.Text
+  symptoms        String?    @db.Text
+  medical_history String?    @db.Text
+  current_medications String? @db.Text
+  allergies       String?    @db.Text
+  extra_notes     String?    @db.Text
+  status          FormStatus @default(DRAFT)
+  submitted_by_user_id BigInt?
+  submitted_at    DateTime?
+  reviewed_by_user_id  BigInt?
+  reviewed_at     DateTime?
+  review_notes    String?    @db.Text
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  submitted_by User?       @relation("SubmittedByUser", fields: [submitted_by_user_id], references: [user_id])
+  reviewed_by  User?       @relation("ReviewedByUser", fields: [reviewed_by_user_id], references: [user_id])
+
+  @@map("tblPreVisitForms")
+}
+
+enum FormStatus {
+  DRAFT
+  SUBMITTED
+  REVIEWED
+}
+
+model VaccinationRegistration {
+  vaccination_registration_id BigInt   @id @default(autoincrement())
+  appointment_id              BigInt   @unique
+  contact_phone               String   @db.VarChar(20)
+  contact_email               String?  @db.VarChar(150)
+  screening_status            ScreeningStatus @default(pending)
+  allergy_history             String?  @db.Text
+  underlying_disease          String?  @db.Text
+  current_medications         String?  @db.Text
+  previous_vaccination_history String? @db.Text
+  screening_result            String?  @db.Text
+  screened_by_user_id         BigInt?
+  screened_at                 DateTime?
+  is_eligible_approved        Int      @default(0) @db.TinyInt
+  created_at                  DateTime @default(now())
+  updated_at                  DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+
+  @@map("tblVaccinationRegistration")
+}
+
+enum ScreeningStatus {
+  pending
+  in_progress
+  eligible
+  ineligible
+  need_review
+  approved
+}
+
+model AiTriageSession {
+  id                     BigInt       @id @default(autoincrement())
+  user_id                BigInt
+  appointment_id         BigInt?      @unique
+  status                 TriageStatus @default(IN_PROGRESS)
+  symptoms_input         String?      @db.Text
+  urgency_level          UrgencyLevel?
+  recommended_specialties Json?
+  pre_visit_summary      Json?
+  total_messages         Int          @default(0)
+  is_completed           Int          @default(0) @db.TinyInt
+  abandoned_at           DateTime?
+  created_at             DateTime     @default(now())
+  updated_at             DateTime     @updatedAt
+
+  user        User         @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
+  messages    AiTriageMessage[]
+
+  @@map("tblAiTriageSessions")
+}
+
+enum TriageStatus {
+  IN_PROGRESS
+  COMPLETED
+  ABANDONED
+}
+
+enum UrgencyLevel {
+  NORMAL
+  SOON
+  URGENT
+}
+
+model AiTriageMessage {
+  id         BigInt   @id @default(autoincrement())
+  session_id BigInt
+  sender     SenderRole
+  content    String   @db.Text
+  metadata   Json?
+  created_at DateTime @default(now())
+
+  session AiTriageSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
+
+  @@map("tblAiTriageMessages")
+}
+
+enum SenderRole {
+  PATIENT
+  AI
+}
+
