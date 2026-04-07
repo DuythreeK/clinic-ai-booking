@@ -2,16 +2,19 @@ import { Module, ValidationPipe } from '@nestjs/common';
 import { APP_PIPE } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
-import { AuthModule } from './modules/auth/auth.module';
-import { AppointmentsModule } from './modules/appointments/appointments.module';
-import { AiModule } from './modules/ai/ai.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
-import { DoctorsModule } from './modules/doctors/doctors.module';
-import { PatientsModule } from './modules/patients/patients.module';
-import { UsersModule } from './modules/users/users.module';
-import { SpecialtiesModule } from './modules/specialties/specialties.module';
-import { SlotsModule } from './modules/slots/slots.module';
-import { ClinicsModule } from './modules/clinics/clinics.module';
+import { AuthModule } from './admin/auth/auth.module';
+import { UsersModule } from './admin/users/users.module';
+import { SpecialtiesModule } from './admin/specialties/specialties.module';
+import { DoctorsModule } from './admin/doctors/doctors.module';
+import { RoomsModule } from './admin/rooms/rooms.module';
+import { SchedulesModule } from './admin/schedules/schedules.module';
+import { PatientsModule } from './admin/patients/patients.module';
+import { AppointmentsModule } from './admin/appointments/appointments.module';
+import { MedicalRecordsModule } from './admin/medical-records/medical-records.module';
+import { ReviewsModule } from './admin/reviews/reviews.module';
+import { NotificationsModule } from './admin/notifications/notifications.module';
+import { SettingsModule } from './admin/settings/settings.module';
+import { StatsModule } from './admin/stats/stats.module';
 
 @Module({
   imports: [
@@ -21,15 +24,18 @@ import { ClinicsModule } from './modules/clinics/clinics.module';
     }),
     PrismaModule,
     AuthModule,
-    AppointmentsModule,
-    AiModule,
-    NotificationsModule,
-    DoctorsModule,
-    PatientsModule,
     UsersModule,
     SpecialtiesModule,
-    SlotsModule,
-    ClinicsModule,
+    DoctorsModule,
+    RoomsModule,
+    SchedulesModule,
+    PatientsModule,
+    AppointmentsModule,
+    MedicalRecordsModule,
+    ReviewsModule,
+    NotificationsModule,
+    SettingsModule,
+    StatsModule,
   ],
   controllers: [],
   providers: [
