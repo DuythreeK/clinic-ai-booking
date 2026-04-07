@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/services/auth_service.dart';
@@ -40,9 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
       const _ComingSoonPage(
-        icon: Icons.vaccines_rounded,
-        title: 'Lich tiem',
-        subtitle: 'Khu vuc nay se hien thi danh sach lich tiem cua ban.',
+        icon: Icons.calendar_month_rounded,
+        title: 'Lich hen',
+        subtitle: 'Khu vuc nay se hien thi lich hen va lich tai kham cua ban.',
       ),
       const _ComingSoonPage(
         icon: Icons.chat_bubble_rounded,
@@ -92,13 +92,18 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _MainBottomNav(
         currentIndex: _currentIndex,
         onTap: (index) {
-          if (index == 4) {
+          if (index == 3) {
+            context.push('/vaccination-booking');
+            return;
+          }
+
+          if (index == 5) {
             context.push('/ai-triage');
             return;
           }
 
           setState(() {
-            _currentIndex = index;
+            _currentIndex = index > 3 ? index - 1 : index;
           });
         },
       ),
@@ -127,6 +132,7 @@ class _MainBottomNav extends StatelessWidget {
       Icons.home_rounded,
       Icons.favorite_rounded,
       Icons.calendar_month_rounded,
+      Icons.vaccines_rounded,
       Icons.chat_bubble_rounded,
       Icons.auto_awesome_rounded,
     ];
@@ -148,7 +154,8 @@ class _MainBottomNav extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (index) {
-          final isSelected = index == currentIndex && index != 4;
+          final pageIndex = index > 3 ? index - 1 : index;
+          final isSelected = index != 3 && index != 5 && pageIndex == currentIndex;
           return InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () => onTap(index),
@@ -248,3 +255,6 @@ class _ComingSoonPage extends StatelessWidget {
     );
   }
 }
+
+
+
