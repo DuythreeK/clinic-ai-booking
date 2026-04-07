@@ -48,11 +48,17 @@ class TokenInterceptor extends Interceptor {
 
         final refreshResponse = await dio.post(
           '$baseUrl/auth/refresh',
-          data: {'refreshToken': refreshToken},
+          data: {'refresh_token': refreshToken},
         );
 
         if (refreshResponse.statusCode == 200) {
-          final newAccessToken = refreshResponse.data['accessToken'];
+          final responseData =
+              refreshResponse.data['data'] as Map<String, dynamic>?;
+          final newAccessToken = responseData?['access_token'] as String?;
+
+          if (newAccessToken == null || newAccessToken.isEmpty) {
+            return handler.next(err);
+          }
 
           await secureStorage.write(key: 'access_token', value: newAccessToken);
           logger.i('✅ Token refreshed successfully');
@@ -101,7 +107,8 @@ class DioClient {
   late final Dio _dio;
   final FlutterSecureStorage secureStorage;
 
-  DioClient({required this.secureStorage}) {
+  DioClient({FlutterSecureStorage? secureStorage})
+      : secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
@@ -114,7 +121,7 @@ class DioClient {
 
     // Add interceptors
     _dio.interceptors.add(TokenInterceptor(
-      secureStorage: secureStorage,
+      secureStorage: this.secureStorage,
       dio: _dio,
     ));
 
@@ -122,6 +129,12 @@ class DioClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
+        retries: 3,
+        retryDelays: const [
+          Duration(seconds: 1),
+          Duration(seconds: 2),
+          Duration(seconds: 3),
+        ],
         logPrint: print,
       ),
     );
@@ -222,3 +235,4 @@ class DioClient {
     );
   }
 }
+

@@ -1,261 +1,248 @@
-import 'package:flutter/material.dart';
-import '../../clinics/screens/clinic_list_screen.dart';
+﻿import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../auth/services/auth_service.dart';
+import 'doctor_hub_models.dart';
+import 'featured_doctors_screen.dart';
+import 'my_doctors_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    required this.authService,
+    this.initialTab = 0,
+    this.prefilledSpecialty,
+  });
+
+  final AuthService authService;
+  final int initialTab;
+  final String? prefilledSpecialty;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _currentIndex = 0;
+  late int _currentIndex;
 
-  // Danh sách các màn hình tương ứng với các tab bên dưới
-  final List<Widget> _pages = [
-    const HomeContent(), // Trang chủ (Giao diện chính bạn gửi)
-    const Center(child: Text("Yêu thích")),
-    const ClinicListScreen(), // Nút hình cái kim tiêm sẽ mở trang Phòng khám của bạn
-    const Center(child: Text("Tin nhắn")),
-    const Center(child: Text("Cá nhân")),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialTab.clamp(0, 3);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final pages = [
+      FeaturedDoctorsScreen(
+        initialKeyword: widget.prefilledSpecialty,
+        onOpenDoctor: _openDoctor,
+      ),
+      MyDoctorsScreen(onOpenDoctor: _openDoctor),
+      const _ComingSoonPage(
+        icon: Icons.vaccines_rounded,
+        title: 'Lich tiem',
+        subtitle: 'Khu vuc nay se hien thi danh sach lich tiem cua ban.',
+      ),
+      const _ComingSoonPage(
+        icon: Icons.chat_bubble_rounded,
+        title: 'Tin nhan',
+        subtitle: 'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
+      ),
+    ];
+
     return Scaffold(
-      body: _pages[_currentIndex],
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  // Widget Thanh điều hướng dưới cùng giống ảnh
-  Widget _buildBottomNavigationBar() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
+      backgroundColor: const Color(0xFFF4FAFF),
+      body: Stack(
         children: [
-          _navItem(Icons.home, 0),
-          _navItem(Icons.favorite_border, 1),
-          // Nút giữa đặc biệt (Hình cái kim tiêm/y tế)
-          _navItem(Icons.vaccines, 2, isSpecial: true),
-          _navItem(Icons.chat_bubble_outline, 3),
-          _navItem(Icons.auto_awesome_outlined, 4),
-        ],
-      ),
-    );
-  }
-
-  Widget _navItem(IconData icon, int index, {bool isSpecial = false}) {
-    bool isSelected = _currentIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
-      child: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: isSpecial && isSelected
-            ? const BoxDecoration(color: Color(0xFF2CB9D8), shape: BoxShape.circle)
-            : null,
-        child: Icon(
-          icon,
-          color: isSelected ? (isSpecial ? Colors.white : const Color(0xFF2CB9D8)) : Colors.grey,
-          size: isSpecial ? 30 : 28,
-        ),
-      ),
-    );
-  }
-}
-
-// --- PHẦN NỘI DUNG CHÍNH CỦA TRANG CHỦ ---
-class HomeContent extends StatelessWidget {
-  const HomeContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          _buildSectionTitle("Phòng khám hiện có"),
-          _buildClinicCategories(),
-          _buildSectionTitle("Phòng khám nổi bật", hasViewAll: true),
-          _buildFeaturedClinics(),
-          _buildSectionTitle("Phòng khám của tôi", hasViewAll: true),
-          _buildMyClinics(),
-        ],
-      ),
-    );
-  }
-
-  // 1. Header Gradient xanh
-  Widget _buildHeader() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 30),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF00B4D8), Color(0xFF48CAE4)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(30)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const CircleAvatar(radius: 25, backgroundColor: Colors.white, child: Icon(Icons.person, color: Colors.grey)),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: const [
-                      Text("Hi Dũng!", style: TextStyle(color: Colors.white70, fontSize: 16)),
-                      Text("Tìm phòng khám của bạn", style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                    ],
+          IndexedStack(index: _currentIndex, children: pages),
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.only(top: 10, right: 16),
+                child: InkWell(
+                  onTap: () => context.push('/profile'),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.94),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x150B4764),
+                          blurRadius: 14,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.person_outline_rounded,
+                      color: Color(0xFF5D718A),
+                    ),
                   ),
-                ],
-              ),
-              const Icon(Icons.notifications_none, color: Colors.white, size: 30),
-            ],
-          ),
-          const SizedBox(height: 25),
-          // Thanh tìm kiếm
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-            child: const TextField(
-              decoration: InputDecoration(
-                hintText: "Tìm kiếm....",
-                border: InputBorder.none,
-                icon: Icon(Icons.search, color: Colors.grey),
-                suffixIcon: Icon(Icons.close, color: Colors.grey, size: 20),
+                ),
               ),
             ),
           ),
         ],
       ),
+      bottomNavigationBar: _MainBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          if (index == 4) {
+            context.push('/ai-triage');
+            return;
+          }
+
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
     );
   }
 
-  Widget _buildSectionTitle(String title, {bool hasViewAll = false}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 25, 20, 15),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF333333))),
-          if (hasViewAll) const Text("Xem >", style: TextStyle(color: Colors.grey, fontSize: 14)),
+  void _openDoctor(DoctorProfile doctor) {
+    context.push('/doctor/${doctor.id}');
+  }
+}
+
+class _MainBottomNav extends StatelessWidget {
+  const _MainBottomNav({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  final int currentIndex;
+  final ValueChanged<int> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const selected = Color(0xFF2DC7C4);
+    const unselected = Color(0xFF94A3B8);
+    final items = <IconData>[
+      Icons.home_rounded,
+      Icons.favorite_rounded,
+      Icons.calendar_month_rounded,
+      Icons.chat_bubble_rounded,
+      Icons.auto_awesome_rounded,
+    ];
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x180A4A6A),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
         ],
       ),
-    );
-  }
-
-  // 2. Các icon chuyên khoa (đã đổi thành icon phòng khám)
-  Widget _buildClinicCategories() {
-    final List<Map<String, dynamic>> cats = [
-      {"icon": Icons.local_hospital, "color": Colors.indigo},
-      {"icon": Icons.medical_services, "color": Colors.teal},
-      {"icon": Icons.biotech, "color": Colors.orange},
-      {"icon": Icons.personal_video, "color": Colors.red},
-    ];
-    return SizedBox(
-      height: 100,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 20),
-        itemCount: cats.length,
-        itemBuilder: (context, i) => Container(
-          width: 85,
-          margin: const EdgeInsets.only(right: 15),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cats[i]['color'].withOpacity(0.7), cats[i]['color']]),
-            borderRadius: BorderRadius.circular(15),
-          ),
-          child: Icon(cats[i]['icon'], color: Colors.white, size: 40),
-        ),
-      ),
-    );
-  }
-
-  // 3. Danh sách phòng khám nổi bật
-  Widget _buildFeaturedClinics() {
-    return SizedBox(
-      height: 250,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.only(left: 20),
-        itemCount: 3,
-        itemBuilder: (context, i) => Container(
-          width: 180,
-          margin: const EdgeInsets.only(right: 15),
-          decoration: BoxDecoration(
-            color: Colors.white,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (index) {
+          final isSelected = index == currentIndex && index != 4;
+          return InkWell(
             borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF0F0F0),
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  child: const Center(child: Icon(Icons.image, size: 50, color: Colors.grey)),
-                ),
+            onTap: () => onTap(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              width: 54,
+              height: 44,
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0x162DC7C4) : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
               ),
-              Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text("Phòng khám PTIT", style: TextStyle(fontWeight: FontWeight.bold)),
-                    const Text("Đa khoa", style: TextStyle(color: Colors.cyan, fontSize: 12)),
-                    Row(
-                      children: const [
-                        Icon(Icons.star, color: Colors.orange, size: 14),
-                        Icon(Icons.star, color: Colors.orange, size: 14),
-                        Icon(Icons.star, color: Colors.orange, size: 14),
-                        Text(" 4.0", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ],
-                    )
-                  ],
-                ),
-              )
-            ],
-          ),
-        ),
+              child: Icon(
+                items[index],
+                color: isSelected ? selected : unselected,
+                size: 24,
+              ),
+            ),
+          );
+        }),
       ),
     );
   }
+}
 
-  // 4. Phòng khám của tôi (Dưới cùng)
-  Widget _buildMyClinics() {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      itemCount: 2,
-      itemBuilder: (context, i) => Container(
-        margin: const EdgeInsets.only(bottom: 15),
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(15)),
-        child: Row(
-          children: [
-            Container(width: 60, height: 60, decoration: BoxDecoration(color: Colors.grey[200], borderRadius: BorderRadius.circular(10)), child: const Icon(Icons.local_hospital)),
-            const SizedBox(width: 15),
-            const Expanded(child: Text("Bệnh viện Bạch Mai", style: TextStyle(fontWeight: FontWeight.bold))),
-            const Icon(Icons.favorite, color: Colors.red, size: 20),
-          ],
+class _ComingSoonPage extends StatelessWidget {
+  const _ComingSoonPage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFEAF9FF), Color(0xFFF8FEFF)],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x160B4564),
+                    blurRadius: 26,
+                    offset: Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 34,
+                    backgroundColor: const Color(0x152DC7C4),
+                    child: Icon(icon, size: 34, color: const Color(0xFF22B8B3)),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF20304A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.55,
+                      color: Color(0xFF7A8CA5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

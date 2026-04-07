@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 
 import 'core/api/dio_client.dart';
 import 'core/storage/auth_storage.dart';
@@ -18,8 +19,8 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late AuthService authService;
-  late bool isAuthenticated;
+  GoRouter? _router;
+  bool _isInitializing = true;
 
   @override
   void initState() {
@@ -32,32 +33,68 @@ class _MyAppState extends State<MyApp> {
     final dioClient = DioClient(secureStorage: secureStorage);
     final authStorage = AuthStorage();
 
-    authService = AuthService(
+    final authService = AuthService(
       dioClient: dioClient,
       authStorage: authStorage,
     );
 
-    isAuthenticated = await authService.isAuthenticated();
-    setState(() {});
+    final isAuthenticated = await authService.isAuthenticated();
+
+    if (!mounted) {
+      return;
+    }
+
+    setState(() {
+      _router = createAppRouter(
+        authService: authService,
+        isAuthenticated: isAuthenticated,
+      );
+      _isInitializing = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isInitializing || _router == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFFE3F2FD), Color(0xFFE8F5E9)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp.router(
       title: 'Clinic AI Booking',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF00695C),
+          brightness: Brightness.light,
+        ),
         useMaterial3: true,
-        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF5F8FA),
         appBarTheme: const AppBarTheme(
           centerTitle: true,
           elevation: 0,
+          backgroundColor: Colors.transparent,
+          surfaceTintColor: Colors.transparent,
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
-          fillColor: Colors.grey[100],
+          fillColor: Colors.white,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
           contentPadding: const EdgeInsets.symmetric(
@@ -67,21 +104,16 @@ class _MyAppState extends State<MyApp> {
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
+            backgroundColor: const Color(0xFF00695C),
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(14),
             ),
             padding: const EdgeInsets.symmetric(vertical: 12),
           ),
         ),
       ),
-      darkTheme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
-      routerConfig: appRouter,
+      routerConfig: _router,
       debugShowCheckedModeBanner: false,
     );
   }
