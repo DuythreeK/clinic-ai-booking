@@ -140,6 +140,15 @@ class PersonalInfoScreen extends StatelessWidget {
                           ],
                         ),
                       ),
+                      const SizedBox(height: 18),
+                      const _SectionLabel('Tien ich'),
+                      const SizedBox(height: 10),
+                      _QuickActionCard(
+                        icon: Icons.receipt_long_rounded,
+                        title: 'Lich su phieu kham',
+                        subtitle: 'Xem lai cac lan kham, chi tiet phieu va danh gia',
+                        onTap: () => context.push('/medical-history'),
+                      ),
                     ],
                   ),
                 ),
@@ -465,6 +474,90 @@ class _EditCard extends StatelessWidget {
         ],
       ),
       child: Column(children: children),
+    );
+  }
+}
+
+class _QuickActionCard extends StatelessWidget {
+  const _QuickActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x10084B6B),
+              blurRadius: 18,
+              offset: Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: const Color(0x1420C8C2),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                icon,
+                color: const Color(0xFF20BEB7),
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF24364E),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.45,
+                      color: Color(0xFF7D90A7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            const Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 16,
+              color: Color(0xFF97A8BC),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

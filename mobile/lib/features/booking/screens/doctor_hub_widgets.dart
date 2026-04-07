@@ -303,6 +303,22 @@ class DoctorCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE9FBF4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                doctor.priceLabel,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF18B76A),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -318,7 +334,7 @@ class DoctorCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       ...List.generate(

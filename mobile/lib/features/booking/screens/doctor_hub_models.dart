@@ -21,6 +21,7 @@ class DoctorProfile {
     required this.imageUrl,
     required this.rating,
     required this.reviewCount,
+    required this.priceValue,
     required this.priceLabel,
     required this.bookingToday,
     required this.yearsExperience,
@@ -42,6 +43,7 @@ class DoctorProfile {
   final String imageUrl;
   final double rating;
   final int reviewCount;
+  final int priceValue;
   final String priceLabel;
   final int bookingToday;
   final int yearsExperience;
@@ -70,7 +72,8 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80',
       rating: 4.8,
       reviewCount: 2821,
-      priceLabel: '100.000d/10p',
+      priceValue: 100000,
+      priceLabel: '100.000d/lan',
       bookingToday: 36,
       yearsExperience: 25,
       patientsLabel: '2821 quan tam',
@@ -107,6 +110,7 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?auto=format&fit=crop&w=900&q=80',
       rating: 4.7,
       reviewCount: 1944,
+      priceValue: 120000,
       priceLabel: '120.000d/lan',
       bookingToday: 33,
       yearsExperience: 9,
@@ -143,6 +147,7 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80',
       rating: 4.6,
       reviewCount: 1680,
+      priceValue: 150000,
       priceLabel: '150.000d/lan',
       bookingToday: 29,
       yearsExperience: 8,
@@ -173,6 +178,7 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=80',
       rating: 4.3,
       reviewCount: 1208,
+      priceValue: 90000,
       priceLabel: '90.000d/lan',
       bookingToday: 20,
       yearsExperience: 11,
@@ -208,7 +214,8 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=900&q=80',
       rating: 4.4,
       reviewCount: 1462,
-      priceLabel: '130.000d/15p',
+      priceValue: 130000,
+      priceLabel: '130.000d/lan',
       bookingToday: 18,
       yearsExperience: 13,
       patientsLabel: '1462 quan tam',
@@ -238,7 +245,8 @@ class DoctorCatalog extends ChangeNotifier {
       imageUrl: 'https://images.unsplash.com/photo-1612531386530-97286d97c2d2?auto=format&fit=crop&w=900&q=80',
       rating: 4.2,
       reviewCount: 1020,
-      priceLabel: '95.000d/10p',
+      priceValue: 95000,
+      priceLabel: '95.000d/lan',
       bookingToday: 17,
       yearsExperience: 10,
       patientsLabel: '1020 quan tam',

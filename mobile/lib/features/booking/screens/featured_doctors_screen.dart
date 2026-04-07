@@ -99,10 +99,10 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
         doctors.sort((a, b) => a.nextAvailable.compareTo(b.nextAvailable));
         break;
       case 'Gia kham tang dan':
-        doctors.sort((a, b) => a.priceLabel.compareTo(b.priceLabel));
+        doctors.sort((a, b) => a.priceValue.compareTo(b.priceValue));
         break;
       case 'Gia kham giam dan':
-        doctors.sort((a, b) => b.priceLabel.compareTo(a.priceLabel));
+        doctors.sort((a, b) => b.priceValue.compareTo(a.priceValue));
         break;
       default:
         doctors.sort((a, b) => b.bookingToday.compareTo(a.bookingToday));
