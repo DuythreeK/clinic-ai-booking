@@ -24,6 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final passwordController = TextEditingController();
   bool obscurePassword = true;
   bool isLoading = false;
+  bool _obscurePassword = true;
   String? errorMessage;
 
   Future<void> _handleLogin() async {

@@ -5,7 +5,10 @@ import 'features/ai/screens/ai_triage_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/auth/services/auth_service.dart';
+import 'features/booking/screens/doctor_detail_screen.dart';
+import 'features/booking/screens/doctor_hub_models.dart';
 import 'features/booking/screens/home_screen.dart';
+import 'features/profile/screens/personal_info_screen.dart';
 
 GoRouter createAppRouter({
   required AuthService authService,
@@ -44,6 +47,32 @@ GoRouter createAppRouter({
         path: '/ai-triage',
         name: 'ai-triage',
         builder: (context, state) => AiTriageScreen(authService: authService),
+      ),
+      GoRoute(
+        path: '/doctor/:id',
+        name: 'doctor-detail',
+        builder: (context, state) {
+          final id = state.pathParameters['id'] ?? '';
+          final doctor = DoctorCatalog.instance.findById(id);
+
+          if (doctor == null) {
+            return const Scaffold(
+              body: Center(child: Text('Doctor not found')),
+            );
+          }
+
+          return DoctorDetailScreen(doctor: doctor);
+        },
+      ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        builder: (context, state) => const PersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: '/profile/edit',
+        name: 'profile-edit',
+        builder: (context, state) => const EditPersonalInfoScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(

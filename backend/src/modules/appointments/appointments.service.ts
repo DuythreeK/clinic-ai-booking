@@ -2,11 +2,12 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dto';
-import { AppointmentStatus, UserRole } from '@prisma/client';
+import { AppointmentStatus, AppointmentType } from '@prisma/client';
+import { okResponse } from '@/common/utils/api-response';
+import { formatDateOnly, formatTimeOnly, toNumberId } from '@/common/utils/formatters';
 
 @Injectable()
 export class AppointmentsService {
@@ -20,59 +21,51 @@ export class AppointmentsService {
     }
   }
 
-  async createAppointment(
-    patientId: string,
-    dto: CreateAppointmentDto,
-  ) {
-    const userId = this.toBigIntId(patientId, 'user id');
-    const slotId = this.toBigIntId(dto.slot_id, 'slot_id');
+  async createAppointment(userId: string, dto: CreateAppointmentDto) {
+    const patientId = this.toBigIntId(dto.patientId, 'patientId');
+    const slotId = this.toBigIntId(dto.slotId, 'slotId');
+    const facilityId = this.toBigIntId(dto.facilityId, 'facilityId');
 
-    // Validate slot exists and is available.
+    const patient = await this.prisma.patientProfile.findUnique({
+      where: { patient_id: patientId },
+    });
+
+    if (!patient || patient.user_id !== this.toBigIntId(userId, 'userId')) {
+      throw new NotFoundException('Patient profile not found');
+    }
+
     const slot = await this.prisma.slot.findUnique({
       where: { slot_id: slotId },
       include: { doctor: true },
     });
 
-    if (!slot) {
+    if (!slot || slot.is_active !== 1) {
       throw new NotFoundException('Slot not found');
     }
 
-    if (slot.status !== 'AVAILABLE' || slot.is_active !== 1 || slot.available_count <= 0) {
+    if (slot.facility_id !== facilityId) {
+      throw new BadRequestException('Slot does not belong to facility');
+    }
+
+    if (slot.status !== 'AVAILABLE' || slot.available_count <= 0) {
       throw new BadRequestException('Slot is not available');
     }
 
-    // One appointment per slot because slot_id is unique in Appointment.
     const existingAppointment = await this.prisma.appointment.findUnique({
       where: { slot_id: slotId },
     });
 
     if (existingAppointment) {
-      throw new BadRequestException('Slot already booked');
+      throw new BadRequestException('Slot is already booked');
     }
 
-    // Resolve patient profile for patient role, fallback to dto.patient_id when provided.
-    let patientProfileId: bigint | null = null;
-    if (dto.patient_id) {
-      patientProfileId = this.toBigIntId(dto.patient_id, 'patient_id');
-    } else {
-      const primaryProfile = await this.prisma.patientProfile.findFirst({
-        where: {
-          user_id: userId,
-          is_primary: 1,
-        },
-        select: { patient_id: true },
-      });
-      if (!primaryProfile) {
-        throw new BadRequestException('No primary patient profile found for this user');
-      }
-      patientProfileId = primaryProfile.patient_id;
-    }
-
-    const appointmentDate = new Date(slot.slot_date);
-    const appointmentTime = new Date(slot.start_time);
+    const service = dto.serviceId
+      ? await this.prisma.service.findUnique({
+          where: { service_id: this.toBigIntId(dto.serviceId, 'serviceId') },
+        })
+      : null;
 
     const appointment = await this.prisma.$transaction(async (tx) => {
-      // Double-check within transaction.
       const check = await tx.appointment.findUnique({
         where: { slot_id: slotId },
       });
@@ -80,158 +73,112 @@ export class AppointmentsService {
         throw new BadRequestException('Slot was just booked');
       }
 
-      return tx.appointment.create({
+      const createdAppointment = await tx.appointment.create({
         data: {
           appointment_code: `APT-${Date.now()}`,
-          user_id: userId,
-          patient_id: patientProfileId,
+          user_id: this.toBigIntId(userId, 'userId'),
+          patient_id: patientId,
           facility_id: slot.facility_id,
           doctor_id: slot.doctor_id,
           slot_id: slotId,
-          appointment_type: 'consultation',
-          appointment_date: appointmentDate,
-          appointment_time: appointmentTime,
+          service_id: service?.service_id,
+          appointment_type:
+            dto.appointmentType === 'consultation'
+              ? AppointmentType.consultation
+              : AppointmentType.vaccination,
+          appointment_date: slot.slot_date,
+          appointment_time: slot.start_time,
           status: AppointmentStatus.pending,
-          symptoms_note: dto.attachments ? JSON.stringify(dto.attachments) : null,
+          symptoms_note: dto.symptomsNote,
           note: dto.note,
-          total_amount: slot.doctor.consultation_fee ?? 0,
+          total_amount: service?.price ?? 0,
         },
+      });
+
+      await tx.slot.update({
+        where: { slot_id: slotId },
+        data: {
+          available_count: { decrement: 1 },
+          status: slot.available_count - 1 <= 0 ? 'FULL' : undefined,
+        },
+      });
+
+      return tx.appointment.findUniqueOrThrow({
+        where: { appointment_id: createdAppointment.appointment_id },
         include: {
-          slot: { include: { facility: true } },
-          doctor: true,
           patient: true,
+          doctor: true,
+          facility: true,
+          service: true,
+          slot: true,
         },
       });
     });
 
-    return appointment;
-  }
-
-  async getMyAppointments(patientId: string) {
-    const userId = this.toBigIntId(patientId, 'user id');
-
-    return this.prisma.appointment.findMany({
-      where: { user_id: userId },
-      include: {
-        slot: { include: { facility: true } },
-        doctor: { include: { user: true } },
-      },
-      orderBy: { created_at: 'desc' },
+    return okResponse('Create appointment successfully', {
+      id: toNumberId(appointment.appointment_id),
+      appointmentCode: appointment.appointment_code,
+      userId: toNumberId(appointment.user_id),
+      patientId: toNumberId(appointment.patient_id),
+      facilityId: toNumberId(appointment.facility_id),
+      serviceId: appointment.service_id ? toNumberId(appointment.service_id) : null,
+      slotId: toNumberId(appointment.slot_id),
+      appointmentType: appointment.appointment_type,
+      appointmentDate: formatDateOnly(appointment.appointment_date),
+      appointmentTime: formatTimeOnly(appointment.appointment_time),
+      status: appointment.status,
+      paymentStatus: 'pending',
+      totalAmount: Number(appointment.total_amount),
+      note: appointment.note,
+      createdAt: appointment.created_at,
     });
   }
 
-  async getDoctorAppointments(doctorId: string) {
-    const userId = this.toBigIntId(doctorId, 'user id');
-
-    // Get doctor by linked user_id first.
-    const doctor = await this.prisma.doctor.findUnique({
-      where: { user_id: userId },
-    });
-
-    if (!doctor) {
-      throw new NotFoundException('Doctor profile not found');
-    }
-
-    return this.prisma.appointment.findMany({
-      where: { doctor_id: doctor.doctor_id },
-      include: {
-        slot: { include: { facility: true } },
-        patient: { include: { user: true } },
-      },
-      orderBy: { created_at: 'desc' },
-    });
-  }
-
-  async updateAppointment(
-    appointmentId: string,
-    userId: string,
-    userRole: UserRole,
-    dto: UpdateAppointmentDto,
-  ) {
-    const parsedAppointmentId = this.toBigIntId(appointmentId, 'appointment id');
-    const parsedUserId = this.toBigIntId(userId, 'user id');
-
+  async getAppointmentById(userId: string, appointmentId: string) {
     const appointment = await this.prisma.appointment.findUnique({
-      where: { appointment_id: parsedAppointmentId },
-      include: { doctor: true, patient: true },
+      where: { appointment_id: this.toBigIntId(appointmentId, 'appointmentId') },
+      include: {
+        patient: true,
+        doctor: true,
+        facility: true,
+        service: true,
+        slot: true,
+      },
     });
 
-    if (!appointment) {
+    if (!appointment || appointment.user_id !== this.toBigIntId(userId, 'userId')) {
       throw new NotFoundException('Appointment not found');
     }
 
-    // Authorization check.
-    if (userRole === UserRole.doctor && appointment.doctor?.user_id !== parsedUserId) {
-      throw new ForbiddenException(
-        'Only the assigned doctor can update this appointment',
-      );
-    }
-
-    if (userRole === UserRole.patient && appointment.patient.user_id !== parsedUserId) {
-      throw new ForbiddenException(
-        'Only the patient can update this appointment',
-      );
-    }
-
-    return this.prisma.appointment.update({
-      where: { appointment_id: parsedAppointmentId },
-      data: {
-        status: dto.status ? (dto.status as AppointmentStatus) : undefined,
-        note: dto.note,
-        symptoms_note: dto.symptoms_note,
-      },
-      include: {
-        slot: { include: { facility: true } },
-        doctor: { include: { user: true } },
-        patient: { include: { user: true } },
-      },
-    });
-  }
-
-  async cancelAppointment(
-    appointmentId: string,
-    userId: string,
-    userRole: UserRole,
-  ) {
-    const parsedAppointmentId = this.toBigIntId(appointmentId, 'appointment id');
-    const parsedUserId = this.toBigIntId(userId, 'user id');
-
-    const appointment = await this.prisma.appointment.findUnique({
-      where: { appointment_id: parsedAppointmentId },
-      include: { doctor: true, patient: true },
-    });
-
-    if (!appointment) {
-      throw new NotFoundException('Appointment not found');
-    }
-
-    // Check authorization
-    if (
-      userRole === UserRole.patient &&
-      appointment.patient.user_id !== parsedUserId
-    ) {
-      throw new ForbiddenException('Only the patient can cancel');
-    }
-
-    if (
-      userRole === UserRole.doctor &&
-      appointment.doctor?.user_id !== parsedUserId
-    ) {
-      throw new ForbiddenException('Not authorized');
-    }
-
-    if (
-      appointment.status === AppointmentStatus.completed ||
-      appointment.status === AppointmentStatus.cancelled
-    ) {
-      throw new BadRequestException(
-        'Cannot cancel completed or already cancelled appointment',
-      );
-    }
-
-    return this.prisma.appointment.update({
-      where: { appointment_id: parsedAppointmentId },
-      data: { status: AppointmentStatus.cancelled },
+    return okResponse('Get appointment detail successfully', {
+      id: toNumberId(appointment.appointment_id),
+      appointmentCode: appointment.appointment_code,
+      appointmentType: appointment.appointment_type,
+      appointmentDate: formatDateOnly(appointment.appointment_date),
+      appointmentTime: formatTimeOnly(appointment.appointment_time),
+      status: appointment.status,
+      note: appointment.note,
+      totalAmount: Number(appointment.total_amount),
+      patient: appointment.patient
+        ? {
+            id: toNumberId(appointment.patient.patient_id),
+            fullName: appointment.patient.full_name,
+          }
+        : null,
+      facility: appointment.facility
+        ? {
+            id: toNumberId(appointment.facility.facility_id),
+            name: appointment.facility.name,
+          }
+        : null,
+      service: appointment.service
+        ? {
+            id: toNumberId(appointment.service.service_id),
+            name: appointment.service.name,
+            price: Number(appointment.service.price),
+          }
+        : null,
     });
   }
 }
+

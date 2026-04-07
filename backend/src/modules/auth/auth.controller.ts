@@ -6,6 +6,7 @@ import {
   HttpCode,
   UseGuards,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import {
   ForgotPasswordRequest,
@@ -18,6 +19,7 @@ import { JwtGuard } from '@/common/guards/jwt.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @Controller('auth')
+@ApiTags('Auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
 

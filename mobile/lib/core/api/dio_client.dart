@@ -107,23 +107,21 @@ class DioClient {
   late final Dio _dio;
   final FlutterSecureStorage secureStorage;
 
-  DioClient({required this.secureStorage}) {
+  DioClient({FlutterSecureStorage? secureStorage})
+      : secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl,
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         contentType: Headers.jsonContentType,
-        headers: const {
-          'ngrok-skip-browser-warning': 'true',
-        },
         responseType: ResponseType.json,
       ),
     );
 
     // Add interceptors
     _dio.interceptors.add(TokenInterceptor(
-      secureStorage: secureStorage,
+      secureStorage: this.secureStorage,
       dio: _dio,
     ));
 
@@ -237,3 +235,4 @@ class DioClient {
     );
   }
 }
+
