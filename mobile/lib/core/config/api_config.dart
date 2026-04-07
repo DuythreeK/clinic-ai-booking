@@ -1,4 +1,4 @@
-const String baseUrl = 'http://localhost:3000';
+const String baseUrl = 'http://10.0.2.2:3000';
 
 // Change these for different environments
 const String apiBaseUrl = '$baseUrl/api';

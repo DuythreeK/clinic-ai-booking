@@ -1,8 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:dio_smart_retry/dio_smart_retry.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 
-import 'api_config.dart';
+import '../config/api_config.dart';
 
 class TokenInterceptor extends Interceptor {
   final FlutterSecureStorage secureStorage;
@@ -121,7 +122,6 @@ class DioClient {
     _dio.interceptors.add(
       RetryInterceptor(
         dio: _dio,
-        logger: Logger(),
         logPrint: print,
       ),
     );

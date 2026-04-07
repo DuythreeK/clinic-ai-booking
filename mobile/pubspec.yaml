@@ -14,7 +14,7 @@ dependencies:
 
   # HTTP & API
   dio: ^5.3.1
-  dio_retry: ^4.3.0
+
   
   # State Management
   provider: ^6.0.0
@@ -42,6 +42,7 @@ dependencies:
   # Firebase (for FCM)
   firebase_core: ^2.24.0
   firebase_messaging: ^14.6.0
+  dio_smart_retry: ^7.0.1
 
 dev_dependencies:
   flutter_test:
