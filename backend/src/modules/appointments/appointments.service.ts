@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dto';
 import { AppointmentStatus, AppointmentType } from '@prisma/client';
@@ -19,6 +20,10 @@ export class AppointmentsService {
     } catch {
       throw new BadRequestException(`Invalid ${fieldName}`);
     }
+  }
+
+  private createAppointmentCode() {
+    return `APT-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
   }
 
   async createAppointment(userId: string, dto: CreateAppointmentDto) {
@@ -47,18 +52,6 @@ export class AppointmentsService {
       throw new BadRequestException('Slot does not belong to facility');
     }
 
-    if (slot.status !== 'AVAILABLE' || slot.available_count <= 0) {
-      throw new BadRequestException('Slot is not available');
-    }
-
-    const existingAppointment = await this.prisma.appointment.findUnique({
-      where: { slot_id: slotId },
-    });
-
-    if (existingAppointment) {
-      throw new BadRequestException('Slot is already booked');
-    }
-
     const service = dto.serviceId
       ? await this.prisma.service.findUnique({
           where: { service_id: this.toBigIntId(dto.serviceId, 'serviceId') },
@@ -66,16 +59,55 @@ export class AppointmentsService {
       : null;
 
     const appointment = await this.prisma.$transaction(async (tx) => {
-      const check = await tx.appointment.findUnique({
-        where: { slot_id: slotId },
+      const duplicate = await tx.appointment.findFirst({
+        where: {
+          slot_id: slotId,
+          patient_id: patientId,
+          status: {
+            not: AppointmentStatus.cancelled,
+          },
+        },
       });
-      if (check) {
-        throw new BadRequestException('Slot was just booked');
+      if (duplicate) {
+        throw new BadRequestException('Bệnh nhân đã có lịch ở khung giờ này');
+      }
+
+      const updatedSlot = await tx.slot.updateMany({
+        where: {
+          slot_id: slotId,
+          facility_id: facilityId,
+          is_active: 1,
+          status: 'AVAILABLE',
+          available_count: { gt: 0 },
+        },
+        data: {
+          available_count: { decrement: 1 },
+        },
+      });
+
+      if (updatedSlot.count === 0) {
+        throw new BadRequestException('Slot đã hết chỗ');
+      }
+
+      const latestSlot = await tx.slot.findUnique({
+        where: { slot_id: slotId },
+        select: { available_count: true },
+      });
+
+      if (!latestSlot) {
+        throw new BadRequestException('Slot đã hết chỗ');
+      }
+
+      if (latestSlot.available_count <= 0) {
+        await tx.slot.update({
+          where: { slot_id: slotId },
+          data: { status: 'FULL' },
+        });
       }
 
       const createdAppointment = await tx.appointment.create({
         data: {
-          appointment_code: `APT-${Date.now()}`,
+          appointment_code: this.createAppointmentCode(),
           user_id: this.toBigIntId(userId, 'userId'),
           patient_id: patientId,
           facility_id: slot.facility_id,
@@ -92,14 +124,6 @@ export class AppointmentsService {
           symptoms_note: dto.symptomsNote,
           note: dto.note,
           total_amount: slot.doctor?.consultation_fee ?? service?.price ?? 0,
-        },
-      });
-
-      await tx.slot.update({
-        where: { slot_id: slotId },
-        data: {
-          available_count: { decrement: 1 },
-          status: slot.available_count - 1 <= 0 ? 'FULL' : undefined,
         },
       });
 

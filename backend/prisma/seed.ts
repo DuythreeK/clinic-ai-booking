@@ -28,6 +28,34 @@ const atTime = (baseDate: Date, hours: number, minutes: number) => {
   return value;
 };
 
+const createHourlySlots = async (
+  prisma: PrismaClient,
+  facilityId: bigint,
+  doctorId: bigint,
+  dates: Date[],
+  morningCount = 6,
+  afternoonCount = 4,
+) => {
+  const tasks = dates.flatMap((date) =>
+    Array.from({ length: 10 }, (_, index) => 7 + index).map((hour) =>
+      prisma.slot.create({
+        data: {
+          facility_id: facilityId,
+          doctor_id: doctorId,
+          slot_date: date,
+          start_time: atTime(date, hour, 0),
+          end_time: atTime(date, hour + 1, 0),
+          duration_minutes: 60,
+          available_count: hour < 12 ? morningCount : afternoonCount,
+          status: SlotStatus.AVAILABLE,
+        },
+      }),
+    ),
+  );
+
+  return Promise.all(tasks);
+};
+
 async function clearDatabase() {
   await prisma.aiTriageMessage.deleteMany();
   await prisma.aiTriageSession.deleteMany();
@@ -182,8 +210,8 @@ async function main() {
   ]);
 
   const services = {
-    hepB: await prisma.service.create({ data: { facility_id: facilities.nhiHaNoi.facility_id, name: 'Tiêm chủng Viêm gan siêu vi B người lớn', description: 'Thanh toán tại cơ sở', price: 0, duration_minutes: 30, vaccines: { create: [{ vaccine_id: hepB.vaccine_id, quantity: 1 }] } } }),
-    vaccination: await prisma.service.create({ data: { facility_id: facilities.tiemChungCanTho.facility_id, name: 'Tiêm ngừa', description: 'Thanh toán tại BV', price: 160000, duration_minutes: 30, vaccines: { create: [{ vaccine_id: flu.vaccine_id, quantity: 1 }] } } }),
+    hepB: await prisma.service.create({ data: { facility_id: facilities.nhiHaNoi.facility_id, name: 'Tiêm chủng Viêm gan siêu vi B người lớn', description: 'Thanh toán tại cơ sở', price: 150000, duration_minutes: 30, vaccines: { create: [{ vaccine_id: hepB.vaccine_id, quantity: 1 }] } } }),
+    vaccination: await prisma.service.create({ data: { facility_id: facilities.tiemChungCanTho.facility_id, name: 'Tiêm ngừa cúm mùa', description: 'Thanh toán tại BV', price: 160000, duration_minutes: 30, vaccines: { create: [{ vaccine_id: flu.vaccine_id, quantity: 1 }] } } }),
     hpv: await prisma.service.create({ data: { facility_id: facilities.daLieuSaiGon.facility_id, name: 'Gói Vaccine HPV (Gói 1)', description: 'Thanh toán tại cơ sở', price: 7300000, duration_minutes: 45, vaccines: { create: [{ vaccine_id: hpv.vaccine_id, quantity: 1 }] } } }),
     skin: await prisma.service.create({ data: { facility_id: facilities.daLieuSaiGon.facility_id, name: 'Khám da liễu tổng quát', description: 'Thanh toán tại cơ sở', price: 140000, duration_minutes: 20 } }),
     child: await prisma.service.create({ data: { facility_id: facilities.nhiHaNoi.facility_id, name: 'Khám nhi tổng quát', description: 'Thanh toán tại cơ sở', price: 110000, duration_minutes: 20 } }),
@@ -194,6 +222,9 @@ async function main() {
   const twoDaysAgo = new Date(today); twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
   const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
   const dayAfterTomorrow = new Date(today); dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 2);
+  const threeDaysAfter = new Date(today); threeDaysAfter.setDate(threeDaysAfter.getDate() + 3);
+  const fourDaysAfter = new Date(today); fourDaysAfter.setDate(fourDaysAfter.getDate() + 4);
+  const fiveDaysAfter = new Date(today); fiveDaysAfter.setDate(fiveDaysAfter.getDate() + 5);
 
   const slots = {
     comp1: await prisma.slot.create({ data: { facility_id: doctorRecords.cardio.facility_id, doctor_id: doctorRecords.cardio.doctor_id, slot_date: twoDaysAgo, start_time: atTime(twoDaysAgo, 8, 0), end_time: atTime(twoDaysAgo, 8, 30), duration_minutes: 30, available_count: 0, status: SlotStatus.FULL } }),
@@ -205,7 +236,53 @@ async function main() {
     next2: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: tomorrow, start_time: atTime(tomorrow, 7, 0), end_time: atTime(tomorrow, 8, 0), duration_minutes: 60, available_count: 6, status: SlotStatus.AVAILABLE } }),
     next3: await prisma.slot.create({ data: { facility_id: doctorRecords.skin.facility_id, doctor_id: doctorRecords.skin.doctor_id, slot_date: tomorrow, start_time: atTime(tomorrow, 13, 0), end_time: atTime(tomorrow, 13, 30), duration_minutes: 30, available_count: 4, status: SlotStatus.AVAILABLE } }),
     next4: await prisma.slot.create({ data: { facility_id: doctorRecords.child.facility_id, doctor_id: doctorRecords.child.doctor_id, slot_date: dayAfterTomorrow, start_time: atTime(dayAfterTomorrow, 15, 0), end_time: atTime(dayAfterTomorrow, 15, 30), duration_minutes: 30, available_count: 4, status: SlotStatus.AVAILABLE } }),
+    vac1: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: tomorrow, start_time: atTime(tomorrow, 8, 0), end_time: atTime(tomorrow, 8, 30), duration_minutes: 30, available_count: 6, status: SlotStatus.AVAILABLE } }),
+    vac2: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: tomorrow, start_time: atTime(tomorrow, 9, 0), end_time: atTime(tomorrow, 9, 30), duration_minutes: 30, available_count: 5, status: SlotStatus.AVAILABLE } }),
+    vac3: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: dayAfterTomorrow, start_time: atTime(dayAfterTomorrow, 7, 0), end_time: atTime(dayAfterTomorrow, 7, 30), duration_minutes: 30, available_count: 6, status: SlotStatus.AVAILABLE } }),
+    vac4: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: dayAfterTomorrow, start_time: atTime(dayAfterTomorrow, 10, 0), end_time: atTime(dayAfterTomorrow, 10, 30), duration_minutes: 30, available_count: 5, status: SlotStatus.AVAILABLE } }),
+    vac5: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: threeDaysAfter, start_time: atTime(threeDaysAfter, 8, 30), end_time: atTime(threeDaysAfter, 9, 0), duration_minutes: 30, available_count: 6, status: SlotStatus.AVAILABLE } }),
+    vac6: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: threeDaysAfter, start_time: atTime(threeDaysAfter, 13, 30), end_time: atTime(threeDaysAfter, 14, 0), duration_minutes: 30, available_count: 4, status: SlotStatus.AVAILABLE } }),
+    vac7: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: fourDaysAfter, start_time: atTime(fourDaysAfter, 7, 30), end_time: atTime(fourDaysAfter, 8, 0), duration_minutes: 30, available_count: 6, status: SlotStatus.AVAILABLE } }),
+    vac8: await prisma.slot.create({ data: { facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_date: fourDaysAfter, start_time: atTime(fourDaysAfter, 15, 0), end_time: atTime(fourDaysAfter, 15, 30), duration_minutes: 30, available_count: 4, status: SlotStatus.AVAILABLE } }),
   };
+
+  await Promise.all(
+    [tomorrow, dayAfterTomorrow, threeDaysAfter, fourDaysAfter, fiveDaysAfter].flatMap((date, dateIndex) =>
+      Array.from({ length: 10 }, (_, index) => 7 + index)
+        .filter((hour) => !(dateIndex === 0 && hour === 7))
+        .map((hour) =>
+          prisma.slot.create({
+            data: {
+              facility_id: doctorRecords.vaccine.facility_id,
+              doctor_id: doctorRecords.vaccine.doctor_id,
+              slot_date: date,
+              start_time: atTime(date, hour, 0),
+              end_time: atTime(date, hour + 1, 0),
+              duration_minutes: 60,
+              available_count: hour < 12 ? 6 : 4,
+              status: SlotStatus.AVAILABLE,
+            },
+          }),
+        ),
+    ),
+  );
+
+  await Promise.all([
+    createHourlySlots(prisma, facilities.daLieuSaiGon.facility_id, doctorRecords.skin.doctor_id, [
+      tomorrow,
+      dayAfterTomorrow,
+      threeDaysAfter,
+      fourDaysAfter,
+      fiveDaysAfter,
+    ]),
+    createHourlySlots(prisma, facilities.nhiHaNoi.facility_id, doctorRecords.neuro.doctor_id, [
+      tomorrow,
+      dayAfterTomorrow,
+      threeDaysAfter,
+      fourDaysAfter,
+      fiveDaysAfter,
+    ]),
+  ]);
 
   const completed1 = await prisma.appointment.create({ data: { appointment_code: 'APT-DEMO-0001', user_id: patient.user_id, patient_id: primaryProfile.patient_id, facility_id: doctorRecords.cardio.facility_id, doctor_id: doctorRecords.cardio.doctor_id, slot_id: slots.comp1.slot_id, appointment_type: AppointmentType.consultation, appointment_date: twoDaysAgo, appointment_time: atTime(twoDaysAgo, 8, 0), status: AppointmentStatus.completed, symptoms_note: 'Đau bụng âm ỉ, buồn nôn và mệt mỏi.', note: 'Tái khám nếu triệu chứng kéo dài.', total_amount: 102000 } });
   const completed2 = await prisma.appointment.create({ data: { appointment_code: 'APT-DEMO-0002', user_id: patient.user_id, patient_id: primaryProfile.patient_id, facility_id: doctorRecords.dentalGeneral.facility_id, doctor_id: doctorRecords.dentalGeneral.doctor_id, slot_id: slots.comp2.slot_id, appointment_type: AppointmentType.consultation, appointment_date: yesterday, appointment_time: atTime(yesterday, 9, 0), status: AppointmentStatus.completed, symptoms_note: 'Đau nhức khoang miệng, khó ăn nhai.', note: 'Theo dõi thêm sau 3 ngày.', total_amount: 100000 } });
@@ -218,7 +295,7 @@ async function main() {
     { appointment_code: 'APT-TODAY-0005', user_id: patient.user_id, patient_id: childProfile.patient_id, facility_id: doctorRecords.child.facility_id, doctor_id: doctorRecords.child.doctor_id, slot_id: slots.next4.slot_id, appointment_type: AppointmentType.consultation, appointment_date: dayAfterTomorrow, appointment_time: atTime(dayAfterTomorrow, 15, 0), status: AppointmentStatus.confirmed, total_amount: 110000 },
   ] });
 
-  const vaccinationAppointment = await prisma.appointment.create({ data: { appointment_code: 'APT-VAC-0001', user_id: patient.user_id, patient_id: childProfile.patient_id, facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_id: slots.next2.slot_id, service_id: services.vaccination.service_id, appointment_type: AppointmentType.vaccination, appointment_date: tomorrow, appointment_time: atTime(tomorrow, 7, 0), status: AppointmentStatus.pending, note: 'Tiêm ngừa định kỳ', total_amount: 160000 } });
+  const vaccinationAppointment = await prisma.appointment.create({ data: { appointment_code: 'APT-VAC-0001', user_id: patient.user_id, patient_id: childProfile.patient_id, facility_id: doctorRecords.vaccine.facility_id, doctor_id: doctorRecords.vaccine.doctor_id, slot_id: slots.next2.slot_id, service_id: services.vaccination.service_id, appointment_type: AppointmentType.vaccination, appointment_date: tomorrow, appointment_time: atTime(tomorrow, 7, 0), status: AppointmentStatus.pending, note: 'Tiêm ngừa cúm mùa định kỳ', total_amount: 160000 } });
 
   await prisma.payment.createMany({ data: [
     { appointment_id: completed1.appointment_id, payment_method: PaymentMethod.cash, amount: 102000, transaction_code: 'PAY-DEMO-0001', status: PaymentStatus.success, paid_at: new Date(twoDaysAgo) },
