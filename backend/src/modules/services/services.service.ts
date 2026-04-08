@@ -142,7 +142,7 @@ export class ServicesService {
         facilityId: service.facilityId,
         isActive: 1,
         status: 'AVAILABLE',
-        slot_date: rangeFrom || rangeTo
+        slotDate: rangeFrom || rangeTo
           ? {
               gte: rangeFrom,
               lte: rangeTo,
@@ -153,16 +153,16 @@ export class ServicesService {
         doctor: true,
         facility: true,
       },
-      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
+      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
     });
 
     return okResponse('Get available slots successfully', {
       serviceId: toNumberId(service.serviceId),
-      date: date ?? formatDateOnly(slots[0]?.slot_date),
+      date: date ?? formatDateOnly(slots[0]?.slotDate),
       slots: slots.map((slot) => ({
         slotId: toNumberId(slot.slotId),
-        startTime: formatTimeOnly(slot.start_time),
-        endTime: formatTimeOnly(slot.end_time),
+        startTime: formatTimeOnly(slot.startTime),
+        endTime: formatTimeOnly(slot.endTime),
         availableCount: slot.available_count,
         status: slot.status === 'AVAILABLE' ? 'available' : slot.status.toLowerCase(),
       })),

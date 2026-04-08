@@ -1,4 +1,4 @@
-const String serverBaseUrl = 'http://localhost:3000';
+const String serverBaseUrl = 'http://10.0.2.2:3000';
 const String baseUrl = '$serverBaseUrl/api';
 
 // Feature URLs

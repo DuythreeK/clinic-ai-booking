@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/api/dio_client.dart';
-
+import 'dart:async';
 class SlotSelectionScreen extends StatefulWidget {
   const SlotSelectionScreen({
     super.key,
@@ -27,6 +27,11 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   bool _loadingSlots = false;
   String? _slotError;
   Map<String, List<_SlotItem>> _slotsByDate = <String, List<_SlotItem>>{};
+  Map<int, int> _tempLockedSlots = {}; // slotId -> giây còn lại
+  Timer? _lockTimer;
+  Timer? _refreshTimer;
+
+
 
   static const List<String> _reminders = [
     '10 phút',
@@ -41,7 +46,41 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     super.initState();
     _selectedDate = DateTime.now();
     _loadSlotsForCurrentMonth();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted && !_loadingSlots) {
+        _loadSlotsForCurrentMonth();
+      }
+    });
   }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    _lockTimer?.cancel(); // Hủy timer khi thoát màn hình để tránh lỗi leak memory
+    super.dispose();
+  }
+
+  // --- DÁN HÀM NÀY VÀO SAU INITSTATE HOẶC TRƯỚC BUILD ---
+  void _startTempLock(int slotId) {
+    setState(() {
+      _tempLockedSlots[slotId] = 300; // 5 phút = 300 giây
+    });
+
+    _lockTimer?.cancel();
+    _lockTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) return;
+      setState(() {
+        // Giảm 1 giây cho tất cả các slot đang khóa
+        _tempLockedSlots.updateAll((id, sec) => sec - 1);
+        // Xóa slot khỏi Map nếu hết thời gian
+        _tempLockedSlots.removeWhere((id, sec) => sec <= 0);
+        // Nếu không còn slot nào bị khóa thì tắt luôn timer
+        if (_tempLockedSlots.isEmpty) timer.cancel();
+      });
+    });
+  }
+  // ---------------------------------------------------
+
 
   List<_SlotItem> get _timeSlots {
     final dateKey = _dateOnly(_selectedDate);
@@ -80,18 +119,33 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
       for (final item in items) {
         if (item is! Map<String, dynamic>) continue;
+        debugPrint('Slot ID: ${item['slotId']} - isActive: ${item['isActive']}');
+        final slotIdRaw = item['slotId'];
+        final slotDateRaw = item['slotDate'];
+        final startTimeRaw = item['startTime'];
+        final statusRaw = item['status'] ?? 'available';
 
-        final slotIdRaw = item['slot_id'];
-        final slotDateRaw = item['slot_date'];
-        final startTimeRaw = item['start_time'];
+        final appointmentData = item['appointment'];
+        bool hasBooking = false;
+        if (appointmentData != null) {
+          if (appointmentData is List) {
+            hasBooking = appointmentData.isNotEmpty;
+          } else {
+            // Nếu là 1 object đơn lẻ gửi về, coi như đã có lịch
+            hasBooking = true;
+          }
+        }
         if (slotIdRaw == null || slotDateRaw == null || startTimeRaw == null) continue;
 
         final key = _extractDateKey(slotDateRaw.toString());
         final value = _extractTimeHHmm(startTimeRaw.toString());
         final id = int.tryParse(slotIdRaw.toString()) ?? 0;
         if (key == null || value == null || id == 0) continue;
-
-        byDate.putIfAbsent(key, () => <_SlotItem>[]).add(_SlotItem(id, value));
+        final dynamic activeValue = item['isActive'];
+        final bool isActiveRaw = (activeValue == 1 || activeValue == true);
+        byDate.putIfAbsent(key, () => <_SlotItem>[]).add(
+          _SlotItem(id, value, statusRaw.toString(), hasBooking, isActiveRaw),
+        );
       }
 
       debugPrint('[SlotSelection] Parsed ${byDate.length} date entries: ${byDate.keys.toList()}');
@@ -136,21 +190,37 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   }
 
   void _selectSlot() {
+    // 1. Chặn bấm liên tục khi đang xử lý
     if (_selectingSlot) return;
 
+    // 2. GIỮ NGUYÊN: Kiểm tra nếu chưa chọn slot thì báo lỗi và dừng lại
     if (_selectedSlot == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vui lòng chọn giờ khám')),
+        const SnackBar(
+          content: Text('Vui lòng chọn giờ khám'),
+          backgroundColor: Colors.redAccent,
+        ),
       );
       return;
     }
 
-    _selectingSlot = true;
+    // 3. Nếu đã chọn slot hợp lệ, tiến hành khóa vàng và chuyển màn hình
+    final slotId = _selectedSlot!.id;
+
+    // Kích hoạt bộ đếm ngược 5 phút ngay trên UI máy này
+    _startTempLock(slotId);
+
+    setState(() {
+      _selectingSlot = true;
+    });
+
+    // 4. Trả dữ liệu về màn hình Flow (Xác nhận đặt lịch)
+    // Các key: 'date', 'time', 'slotId' phải khớp 100% với bên BookingFlowScreen nhận
     Navigator.of(context).pop(
       {
         'date': _selectedDate,
         'time': _selectedSlot!.time,
-        'slotId': _selectedSlot!.id,
+        'slotId': slotId,
         'reminder': _selectedReminder,
       },
     );
@@ -438,29 +508,78 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             final slot = _timeSlots[index];
             final time = slot.time;
             final isSelected = _selectedSlot?.id == slot.id;
+            final int? remainingSec = _tempLockedSlots[slot.id];
+            final bool isDatabaseInactive = slot.isActive == false;
+            Color bgColor;
+            bool isClickable = true;
+            String statusLabel = '';
+            final bool isVang = !slot.isActive;
+            // LOGIC MỚI: Cứ có appointment hoặc status FULL là ĐỎ
+            if (slot.hasAppointment || slot.status.toUpperCase() == 'FULL' || slot.status.toUpperCase() == 'BUSY') {
+              bgColor = Colors.red.shade400;
+              statusLabel = 'Đã đặt';
+              isClickable = false;
+            } else if (isVang || (remainingSec != null && remainingSec > 0)) {
+              bgColor = Colors.orange.shade400; // CHẮC CHẮN VÀNG
+              isClickable = false;
+              statusLabel = remainingSec != null ? 'Đếm ngược...' : 'Đang giữ...';
+            } else {
+              bgColor = isSelected ? const Color(0xFF1BC47D) : Colors.grey.shade100;
+              isClickable = true;
+            }if (slot.hasAppointment || slot.status.toUpperCase() == 'FULL') {
+              bgColor = Colors.red.shade400;
+              statusLabel = 'Đã đặt';
+              isClickable = false;
+            }
+            // 2. KIỂM TRA VÀNG (Giữ chỗ)
+            // Ưu tiên đếm ngược local trước, sau đó mới tới trạng thái từ DB
+            else if ((remainingSec != null && remainingSec > 0) || isDatabaseInactive) {
+              bgColor = Colors.orange.shade400;
+              isClickable = false;
+
+              if (remainingSec != null && remainingSec > 0) {
+                final m = (remainingSec / 60).floor();
+                final s = remainingSec % 60;
+                statusLabel = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+              } else {
+                statusLabel = 'Đang giữ...';
+              }
+            }
+            // 3. TRẠNG THÁI TRỐNG
+            else {
+              bgColor = isSelected ? const Color(0xFF1BC47D) : Colors.grey.shade100;
+              isClickable = true;
+              statusLabel = '';
+            }
 
             return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedSlot = slot;
-                });
-              },
+              onTap: isClickable ? () {
+                setState(() { _selectedSlot = slot; });
+              } : null,
               child: Container(
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? const Color(0xFF1BC47D)
-                      : Colors.grey.shade100,
+                  color: bgColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 alignment: Alignment.center,
-                child: Text(
-                  time,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isSelected ? Colors.white : Colors.black,
-                  ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      time,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: (isSelected || !isClickable) ? Colors.white : Colors.black,
+                      ),
+                    ),
+                    if (statusLabel.isNotEmpty)
+                      Text(
+                        statusLabel,
+                        style: const TextStyle(fontSize: 8, color: Colors.white),
+                      ),
+                  ],
                 ),
               ),
             );
@@ -614,8 +733,10 @@ String? _extractTimeHHmm(String raw) {
 class _SlotItem {
   final int id;
   final String time;
-
-  _SlotItem(this.id, this.time);
+  final String status;
+  final bool hasAppointment;
+  final bool isActive;
+  _SlotItem(this.id, this.time, this.status, this.hasAppointment, this.isActive);
 
   @override
   bool operator ==(Object other) =>

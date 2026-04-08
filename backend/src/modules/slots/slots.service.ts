@@ -25,9 +25,9 @@ export class SlotsService {
       data: {
         doctorId: this.toBigIntId(dto.doctorId),
         facilityId: this.toBigIntId(dto.clinicId),
-        slot_date: slotDate,
-        start_time: startAt,
-        end_time: endAt,
+        slotDate: slotDate,
+        startTime: startAt,
+        endTime: endAt,
         duration_minutes: durationMinutes,
         status: dto.isBlocked ? 'INACTIVE' : 'AVAILABLE',
         isActive: dto.isBlocked ? 0 : 1,
@@ -50,14 +50,14 @@ export class SlotsService {
     if (clinicId) where.facilityId = this.toBigIntId(clinicId);
 
     if (fromDate || toDate) {
-      where.slot_date = {};
-      if (fromDate) where.slot_date.gte = new Date(fromDate);
-      if (toDate) where.slot_date.lte = new Date(toDate);
+      where.slotDate = {};
+      if (fromDate) where.slotDate.gte = new Date(fromDate);
+      if (toDate) where.slotDate.lte = new Date(toDate);
     }
 
     return this.prisma.slot.findMany({
       where,
-      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
+      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
     });
   }
 
@@ -93,14 +93,17 @@ export class SlotsService {
       where: {
         doctorId: this.toBigIntId(doctorId),
         facilityId: this.toBigIntId(clinicId),
-        status: 'AVAILABLE',
-        isActive: 1,
-        slot_date: {
+
+
+        slotDate: {
           gte: new Date(fromDate),
           lte: new Date(toDate),
         },
       },
-      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
+      include: {
+        appointment: true, // Lôi dữ liệu lịch hẹn ra để Flutter check
+      },
+      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
     });
   }
 }

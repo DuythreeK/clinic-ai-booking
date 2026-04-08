@@ -29,8 +29,8 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
     final user = await widget.authService.getCurrentUser();
     if (user != null && mounted) {
       setState(() {
-        if (user['full_name'] != null && user['full_name'].toString().isNotEmpty) {
-          _userName = user['full_name'].toString();
+        if (user['fullName'] != null && user['fullName'].toString().isNotEmpty) {
+          _userName = user['fullName'].toString();
         }
         if (user['phone'] != null && user['phone'].toString().isNotEmpty) {
           _userPhone = user['phone'].toString();

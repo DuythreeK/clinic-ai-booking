@@ -28,7 +28,7 @@ async function upsertUser(params: {
   return prisma.user.upsert({
     where: { email: params.email },
     update: {
-      full_name: params.fullName,
+      fullName: params.fullName,
       phone: params.phone,
       role: params.role,
       password_hash: passwordHash,
@@ -37,7 +37,7 @@ async function upsertUser(params: {
     },
     create: {
       email: params.email,
-      full_name: params.fullName,
+      fullName: params.fullName,
       phone: params.phone,
       role: params.role,
       password_hash: passwordHash,
@@ -50,7 +50,7 @@ async function upsertUser(params: {
 async function ensurePrimaryPatientProfile(userId: bigint, fullName: string, phone: string) {
   const existing = await prisma.patientProfile.findFirst({
     where: {
-      user_id: userId,
+      userId: userId,
       is_primary: 1,
     },
   });
@@ -61,8 +61,8 @@ async function ensurePrimaryPatientProfile(userId: bigint, fullName: string, pho
 
   return prisma.patientProfile.create({
     data: {
-      user_id: userId,
-      full_name: fullName,
+      userId: userId,
+      fullName: fullName,
       phone_number: phone,
       is_primary: 1,
       gender: 'male',
@@ -81,10 +81,10 @@ async function ensureSlotsForDoctor(
 
   await prisma.slot.deleteMany({
     where: {
-      doctor_id: doctorId,
-      facility_id: facilityId,
+      doctorId: doctorId,
+      facilityId: facilityId,
       appointment: null,
-      slot_date: {
+      slotDate: {
         gte: from,
         lte: to,
       },
@@ -92,15 +92,15 @@ async function ensureSlotsForDoctor(
   });
 
   const rows: Array<{
-    facility_id: bigint;
-    doctor_id: bigint;
-    slot_date: Date;
-    start_time: Date;
-    end_time: Date;
+    facilityId: bigint;
+    doctorId: bigint;
+    slotDate: Date;
+    startTime: Date;
+    endTime: Date;
     duration_minutes: number;
     available_count: number;
     status: 'AVAILABLE';
-    is_active: number;
+    isActive: number;
   }> = [];
 
   for (let i = 1; i <= 7; i++) {
@@ -112,15 +112,15 @@ async function ensureSlotsForDoctor(
       const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m + 30, 0);
 
       rows.push({
-        facility_id: facilityId,
-        doctor_id: doctorId,
-        slot_date: dayStart,
-        start_time: start,
-        end_time: end,
+        facilityId: facilityId,
+        doctorId: doctorId,
+        slotDate: dayStart,
+        startTime: start,
+        endTime: end,
         duration_minutes: 30,
         available_count: 10,
         status: 'AVAILABLE',
-        is_active: 1,
+        isActive: 1,
       });
     }
   }
@@ -138,7 +138,7 @@ async function ensureServiceForFacility(
 ) {
   const existing = await prisma.service.findFirst({
     where: {
-      facility_id: facilityId,
+      facilityId: facilityId,
       name,
     },
   });
@@ -149,11 +149,11 @@ async function ensureServiceForFacility(
 
   return prisma.service.create({
     data: {
-      facility_id: facilityId,
+      facilityId: facilityId,
       name,
       price,
       duration_minutes: durationMinutes,
-      is_active: 1,
+      isActive: 1,
     },
   });
 }
@@ -163,35 +163,35 @@ async function main() {
 
   const specialtyGeneral = await prisma.specialty.upsert({
     where: { name: 'Tong quat' },
-    update: { description: 'Kham tong quat', is_active: 1 },
-    create: { name: 'Tong quat', description: 'Kham tong quat', is_active: 1 },
+    update: { description: 'Kham tong quat', isActive: 1 },
+    create: { name: 'Tong quat', description: 'Kham tong quat', isActive: 1 },
   });
 
   const specialtyCardio = await prisma.specialty.upsert({
     where: { name: 'Tim mach' },
-    update: { description: 'Chuyen khoa tim mach', is_active: 1 },
-    create: { name: 'Tim mach', description: 'Chuyen khoa tim mach', is_active: 1 },
+    update: { description: 'Chuyen khoa tim mach', isActive: 1 },
+    create: { name: 'Tim mach', description: 'Chuyen khoa tim mach', isActive: 1 },
   });
 
   const specialtyDerm = await prisma.specialty.upsert({
     where: { name: 'Da lieu' },
-    update: { description: 'Chuyen khoa da lieu', is_active: 1 },
-    create: { name: 'Da lieu', description: 'Chuyen khoa da lieu', is_active: 1 },
+    update: { description: 'Chuyen khoa da lieu', isActive: 1 },
+    create: { name: 'Da lieu', description: 'Chuyen khoa da lieu', isActive: 1 },
   });
 
   const specialtyPediatrics = await prisma.specialty.upsert({
     where: { name: 'Nhi khoa' },
-    update: { description: 'Chuyen khoa nhi', is_active: 1 },
-    create: { name: 'Nhi khoa', description: 'Chuyen khoa nhi', is_active: 1 },
+    update: { description: 'Chuyen khoa nhi', isActive: 1 },
+    create: { name: 'Nhi khoa', description: 'Chuyen khoa nhi', isActive: 1 },
   });
 
   const specialtyEnt = await prisma.specialty.upsert({
     where: { name: 'Tai mui hong' },
-    update: { description: 'Chuyen khoa tai mui hong', is_active: 1 },
+    update: { description: 'Chuyen khoa tai mui hong', isActive: 1 },
     create: {
       name: 'Tai mui hong',
       description: 'Chuyen khoa tai mui hong',
-      is_active: 1,
+      isActive: 1,
     },
   });
 
@@ -208,7 +208,7 @@ async function main() {
         district: 'Quan 1',
         ward: 'Ben Nghe',
         opening_hours: '08:00-20:00',
-        is_active: 1,
+        isActive: 1,
       },
     });
   }
@@ -226,7 +226,7 @@ async function main() {
         district: 'Phu Nhuan',
         ward: 'Phuong 9',
         opening_hours: '07:00-21:00',
-        is_active: 1,
+        isActive: 1,
       },
     });
   }
@@ -244,7 +244,7 @@ async function main() {
         district: 'Thu Duc',
         ward: 'Linh Chieu',
         opening_hours: '08:00-17:00',
-        is_active: 1,
+        isActive: 1,
       },
     });
   }
@@ -262,7 +262,7 @@ async function main() {
         district: 'Binh Thanh',
         ward: 'Phuong 15',
         opening_hours: '08:00-17:00',
-        is_active: 1,
+        isActive: 1,
       },
     });
   }
@@ -322,164 +322,164 @@ async function main() {
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserA.user_id },
+    where: { userId: doctorUserA.userId },
     update: {
-      full_name: 'Bac si Nguyen Van A',
+      fullName: 'Bac si Nguyen Van A',
       specialty_id: specialtyGeneral.specialty_id,
-      facility_id: facilityA.facility_id,
+      facilityId: facilityA.facilityId,
       title: 'Bac si Tong quat',
       bio: '10 nam kinh nghiem kham tong quat',
       experience_years: 10,
         avatar_url: DOCTOR_AVATAR_A,
       consultation_fee: 200000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserA.user_id,
-      full_name: 'Bac si Nguyen Van A',
+      userId: doctorUserA.userId,
+      fullName: 'Bac si Nguyen Van A',
       specialty_id: specialtyGeneral.specialty_id,
-      facility_id: facilityA.facility_id,
+      facilityId: facilityA.facilityId,
       title: 'Bac si Tong quat',
       bio: '10 nam kinh nghiem kham tong quat',
       experience_years: 10,
         avatar_url: DOCTOR_AVATAR_A,
       consultation_fee: 200000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserB.user_id },
+    where: { userId: doctorUserB.userId },
     update: {
-      full_name: 'Bac si Tran Thi B',
+      fullName: 'Bac si Tran Thi B',
       specialty_id: specialtyCardio.specialty_id,
-      facility_id: facilityA.facility_id,
+      facilityId: facilityA.facilityId,
       title: 'Bac si Tim mach',
       bio: '12 nam kinh nghiem tim mach',
       experience_years: 12,
         avatar_url: DOCTOR_AVATAR_B,
       consultation_fee: 350000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserB.user_id,
-      full_name: 'Bac si Tran Thi B',
+      userId: doctorUserB.userId,
+      fullName: 'Bac si Tran Thi B',
       specialty_id: specialtyCardio.specialty_id,
-      facility_id: facilityA.facility_id,
+      facilityId: facilityA.facilityId,
       title: 'Bac si Tim mach',
       bio: '12 nam kinh nghiem tim mach',
       experience_years: 12,
         avatar_url: DOCTOR_AVATAR_B,
       consultation_fee: 350000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserC.user_id },
+    where: { userId: doctorUserC.userId },
     update: {
-      full_name: 'Bac si Le Duy C',
+      fullName: 'Bac si Le Duy C',
       specialty_id: specialtyDerm.specialty_id,
-      facility_id: facilityB.facility_id,
+      facilityId: facilityB.facilityId,
       title: 'Bac si Da lieu',
       bio: '8 nam kinh nghiem da lieu',
       experience_years: 8,
         avatar_url: DOCTOR_AVATAR_C,
       consultation_fee: 280000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserC.user_id,
-      full_name: 'Bac si Le Duy C',
+      userId: doctorUserC.userId,
+      fullName: 'Bac si Le Duy C',
       specialty_id: specialtyDerm.specialty_id,
-      facility_id: facilityB.facility_id,
+      facilityId: facilityB.facilityId,
       title: 'Bac si Da lieu',
       bio: '8 nam kinh nghiem da lieu',
       experience_years: 8,
         avatar_url: DOCTOR_AVATAR_C,
       consultation_fee: 280000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserD.user_id },
+    where: { userId: doctorUserD.userId },
     update: {
-      full_name: 'Bac si Pham Thi D',
+      fullName: 'Bac si Pham Thi D',
       specialty_id: specialtyPediatrics.specialty_id,
-      facility_id: facilityC.facility_id,
+      facilityId: facilityC.facilityId,
       title: 'Bac si Nhi khoa',
       bio: '9 nam kinh nghiem nhi khoa',
       experience_years: 9,
         avatar_url: DOCTOR_AVATAR_D,
       consultation_fee: 260000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserD.user_id,
-      full_name: 'Bac si Pham Thi D',
+      userId: doctorUserD.userId,
+      fullName: 'Bac si Pham Thi D',
       specialty_id: specialtyPediatrics.specialty_id,
-      facility_id: facilityC.facility_id,
+      facilityId: facilityC.facilityId,
       title: 'Bac si Nhi khoa',
       bio: '9 nam kinh nghiem nhi khoa',
       experience_years: 9,
         avatar_url: DOCTOR_AVATAR_D,
       consultation_fee: 260000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserE.user_id },
+    where: { userId: doctorUserE.userId },
     update: {
-      full_name: 'Bac si Nguyen Van E',
+      fullName: 'Bac si Nguyen Van E',
       specialty_id: specialtyEnt.specialty_id,
-      facility_id: facilityD.facility_id,
+      facilityId: facilityD.facilityId,
       title: 'Bac si Tai Mui Hong',
       bio: '11 nam kinh nghiem tai mui hong',
       experience_years: 11,
         avatar_url: DOCTOR_AVATAR_E,
       consultation_fee: 300000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserE.user_id,
-      full_name: 'Bac si Nguyen Van E',
+      userId: doctorUserE.userId,
+      fullName: 'Bac si Nguyen Van E',
       specialty_id: specialtyEnt.specialty_id,
-      facility_id: facilityD.facility_id,
+      facilityId: facilityD.facilityId,
       title: 'Bac si Tai Mui Hong',
       bio: '11 nam kinh nghiem tai mui hong',
       experience_years: 11,
         avatar_url: DOCTOR_AVATAR_E,
       consultation_fee: 300000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
   await prisma.doctor.upsert({
-    where: { user_id: doctorUserF.user_id },
+    where: { userId: doctorUserF.userId },
     update: {
-      full_name: 'Bac si Tran Thi F',
+      fullName: 'Bac si Tran Thi F',
       specialty_id: specialtyGeneral.specialty_id,
-      facility_id: facilityC.facility_id,
+      facilityId: facilityC.facilityId,
       title: 'Bac si Noi tong hop',
       bio: '7 nam kinh nghiem noi tong hop',
       experience_years: 7,
         avatar_url: DOCTOR_AVATAR_F,
       consultation_fee: 240000,
-      is_active: 1,
+      isActive: 1,
     },
     create: {
-      user_id: doctorUserF.user_id,
-      full_name: 'Bac si Tran Thi F',
+      userId: doctorUserF.userId,
+      fullName: 'Bac si Tran Thi F',
       specialty_id: specialtyGeneral.specialty_id,
-      facility_id: facilityC.facility_id,
+      facilityId: facilityC.facilityId,
       title: 'Bac si Noi tong hop',
       bio: '7 nam kinh nghiem noi tong hop',
       experience_years: 7,
         avatar_url: DOCTOR_AVATAR_F,
       consultation_fee: 240000,
-      is_active: 1,
+      isActive: 1,
     },
   });
 
@@ -490,15 +490,15 @@ async function main() {
     role: UserRole.patient,
     password: '12345678',
   });
-  await ensurePrimaryPatientProfile(patientUser.user_id, 'Nguyen Van Patient A', '0909999999');
+  await ensurePrimaryPatientProfile(patientUser.userId, 'Nguyen Van Patient A', '0909999999');
 
   const [doctorA, doctorB, doctorC, doctorD, doctorE, doctorF] = await Promise.all([
-    prisma.doctor.findUnique({ where: { user_id: doctorUserA.user_id } }),
-    prisma.doctor.findUnique({ where: { user_id: doctorUserB.user_id } }),
-    prisma.doctor.findUnique({ where: { user_id: doctorUserC.user_id } }),
-    prisma.doctor.findUnique({ where: { user_id: doctorUserD.user_id } }),
-    prisma.doctor.findUnique({ where: { user_id: doctorUserE.user_id } }),
-    prisma.doctor.findUnique({ where: { user_id: doctorUserF.user_id } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserA.userId } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserB.userId } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserC.userId } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserD.userId } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserE.userId } }),
+    prisma.doctor.findUnique({ where: { userId: doctorUserF.userId } }),
   ]);
 
   // Gio hanh chinh: 08:00-11:30 va 13:00-16:30
@@ -508,36 +508,36 @@ async function main() {
   ];
 
   if (doctorA != null) {
-    await ensureSlotsForDoctor(doctorA.doctor_id, facilityA.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorA.doctorId, facilityA.facilityId, businessHourBlocks);
   }
 
   if (doctorB != null) {
-    await ensureSlotsForDoctor(doctorB.doctor_id, facilityA.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorB.doctorId, facilityA.facilityId, businessHourBlocks);
   }
 
   if (doctorC != null) {
-    await ensureSlotsForDoctor(doctorC.doctor_id, facilityB.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorC.doctorId, facilityB.facilityId, businessHourBlocks);
   }
 
   if (doctorD != null) {
-    await ensureSlotsForDoctor(doctorD.doctor_id, facilityC.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorD.doctorId, facilityC.facilityId, businessHourBlocks);
   }
 
   if (doctorE != null) {
-    await ensureSlotsForDoctor(doctorE.doctor_id, facilityD.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorE.doctorId, facilityD.facilityId, businessHourBlocks);
   }
 
   if (doctorF != null) {
-    await ensureSlotsForDoctor(doctorF.doctor_id, facilityC.facility_id, businessHourBlocks);
+    await ensureSlotsForDoctor(doctorF.doctorId, facilityC.facilityId, businessHourBlocks);
   }
 
-  await ensureServiceForFacility(facilityA.facility_id, 'Kham tong quat', 200000, 30);
-  await ensureServiceForFacility(facilityB.facility_id, 'Kham da lieu', 280000, 30);
-  await ensureServiceForFacility(facilityC.facility_id, 'Kham nhi tong quat', 260000, 30);
-  await ensureServiceForFacility(facilityD.facility_id, 'Kham tai mui hong', 300000, 30);
+  await ensureServiceForFacility(facilityA.facilityId, 'Kham tong quat', 200000, 30);
+  await ensureServiceForFacility(facilityB.facilityId, 'Kham da lieu', 280000, 30);
+  await ensureServiceForFacility(facilityC.facilityId, 'Kham nhi tong quat', 260000, 30);
+  await ensureServiceForFacility(facilityD.facilityId, 'Kham tai mui hong', 300000, 30);
 
-  const facilityCount = await prisma.facility.count({ where: { is_active: 1 } });
-  const doctorCount = await prisma.doctor.count({ where: { is_active: 1 } });
+  const facilityCount = await prisma.facility.count({ where: { isActive: 1 } });
+  const doctorCount = await prisma.doctor.count({ where: { isActive: 1 } });
   console.log(
     `Seed complete. Facilities: ${facilityCount}, Doctors: ${doctorCount}. Slots are in business hours.`,
   );

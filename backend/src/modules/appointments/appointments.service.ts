@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateAppointmentDto, UpdateAppointmentDto } from './dto/appointment.dto';
-import { AppointmentStatus, AppointmentType } from '@prisma/client';
+
 import { okResponse } from '@/common/utils/api-response';
 import { formatDateOnly, formatTimeOnly, toNumberId } from '@/common/utils/formatters';
-
+import { SlotStatus, AppointmentStatus, AppointmentType } from '@prisma/client';
 @Injectable()
 export class AppointmentsService {
   constructor(private prisma: PrismaService) {}
@@ -27,23 +27,23 @@ export class AppointmentsService {
     const facilityId = this.toBigIntId(dto.facilityId, 'facilityId');
 
     const patient = await this.prisma.patientProfile.findUnique({
-      where: { patient_id: patientId },
+      where: { patientId: patientId },
     });
 
-    if (!patient || patient.user_id !== this.toBigIntId(userId, 'userId')) {
+    if (!patient || patient.userId !== this.toBigIntId(userId, 'userId')) {
       throw new NotFoundException('Patient profile not found');
     }
 
     const slot = await this.prisma.slot.findUnique({
-      where: { slot_id: slotId },
+      where: { slotId: slotId },
       include: { doctor: true },
     });
 
-    if (!slot || slot.is_active !== 1) {
+    if (!slot || slot.isActive !== 1) {
       throw new NotFoundException('Slot not found');
     }
 
-    if (slot.facility_id !== facilityId) {
+    if (slot.facilityId !== facilityId) {
       throw new BadRequestException('Slot does not belong to facility');
     }
 
@@ -52,7 +52,7 @@ export class AppointmentsService {
     }
 
     const existingAppointment = await this.prisma.appointment.findUnique({
-      where: { slot_id: slotId },
+      where: { slotId: slotId },
     });
 
     if (existingAppointment) {
@@ -61,13 +61,14 @@ export class AppointmentsService {
 
     const service = dto.serviceId
       ? await this.prisma.service.findUnique({
-          where: { service_id: this.toBigIntId(dto.serviceId, 'serviceId') },
+          where: { serviceId: this.toBigIntId(dto.serviceId, 'serviceId') },
         })
       : null;
 
     const appointment = await this.prisma.$transaction(async (tx) => {
+      console.log('--- ĐANG TẠO LỊCH HẸN VÀ KHÓA SLOT ---');
       const check = await tx.appointment.findUnique({
-        where: { slot_id: slotId },
+        where: { slotId: slotId },
       });
       if (check) {
         throw new BadRequestException('Slot was just booked');
@@ -75,36 +76,37 @@ export class AppointmentsService {
 
       const createdAppointment = await tx.appointment.create({
         data: {
-          appointment_code: `APT-${Date.now()}`,
-          user_id: this.toBigIntId(userId, 'userId'),
-          patient_id: patientId,
-          facility_id: slot.facility_id,
-          doctor_id: slot.doctor_id,
-          slot_id: slotId,
-          service_id: service?.service_id,
+          appointmentCode: `APT-${Date.now()}`,
+          userId: this.toBigIntId(userId, 'userId'),
+          patientId: patientId,
+          facilityId: slot.facilityId,
+          doctorId: slot.doctorId,
+          slotId: slotId,
+          serviceId: service?.serviceId,
           appointment_type:
             dto.appointmentType === 'consultation'
               ? AppointmentType.consultation
               : AppointmentType.vaccination,
-          appointment_date: slot.slot_date,
-          appointment_time: slot.start_time,
+          appointmentDate: slot.slotDate,
+          appointmentTime: slot.startTime,
           status: AppointmentStatus.pending,
           symptoms_note: dto.symptomsNote,
           note: dto.note,
-          total_amount: slot.doctor?.consultation_fee ?? service?.price ?? 0,
+          totalAmount: slot.doctor?.consultation_fee ?? service?.price ?? 0,
         },
       });
 
       await tx.slot.update({
-        where: { slot_id: slotId },
+        where: { slotId: slotId },
         data: {
-          available_count: { decrement: 1 },
-          status: slot.available_count - 1 <= 0 ? 'FULL' : undefined,
+          isActive: 0, // Đổi sang PENDING để Flutter hiện MÀU VÀNG
+          status: SlotStatus.AVAILABLE,
+          available_count: { decrement: 1 }
         },
       });
-
+      console.log(`--- ĐÃ KHÓA SLOT ${slotId} THÀNH CÔNG ---`);
       return tx.appointment.findUniqueOrThrow({
-        where: { appointment_id: createdAppointment.appointment_id },
+        where: { appointmentId: createdAppointment.appointmentId },
         include: {
           patient: true,
           doctor: true,
@@ -115,28 +117,57 @@ export class AppointmentsService {
       });
     });
 
+    // Chèn sau khi kết thúc transaction
+    setTimeout(async () => {
+      try {
+        const currentAppt = await this.prisma.appointment.findUnique({
+          where: { appointmentId: appointment.appointmentId },
+        });
+
+        // Nếu vẫn là pending tức là chưa thanh toán xong
+        if (currentAppt && currentAppt.status === AppointmentStatus.pending) {
+          await this.prisma.$transaction([
+            this.prisma.appointment.update({
+              where: { appointmentId: appointment.appointmentId },
+              data: { status: 'cancelled' as any },
+            }),
+            this.prisma.slot.update({
+              where: { slotId: slotId },
+              data: {
+                isActive: 1, // Mở khóa lại slot về trạng thái hoạt động
+                available_count: { increment: 1 }
+              },
+            }),
+          ]);
+          console.log(`[Timer] Đã kích hoạt lại slot ${slotId} do hết hạn thanh toán.`);
+        }
+      } catch (error) {
+        console.error('[Timer Error] Lỗi nhả slot:', error);
+      }
+    }, 300000); // 5 phút
+
     return okResponse('Create appointment successfully', {
-      id: toNumberId(appointment.appointment_id),
-      appointmentCode: appointment.appointment_code,
-      userId: toNumberId(appointment.user_id),
-      patientId: toNumberId(appointment.patient_id),
-      facilityId: toNumberId(appointment.facility_id),
-      serviceId: appointment.service_id ? toNumberId(appointment.service_id) : null,
-      slotId: toNumberId(appointment.slot_id),
+      id: toNumberId(appointment.appointmentId),
+      appointmentCode: appointment.appointmentCode,
+      userId: toNumberId(appointment.userId),
+      patientId: toNumberId(appointment.patientId),
+      facilityId: toNumberId(appointment.facilityId),
+      serviceId: appointment.serviceId ? toNumberId(appointment.serviceId) : null,
+      slotId: toNumberId(appointment.slotId),
       appointmentType: appointment.appointment_type,
-      appointmentDate: formatDateOnly(appointment.appointment_date),
-      appointmentTime: formatTimeOnly(appointment.appointment_time),
+      appointmentDate: formatDateOnly(appointment.appointmentDate),
+      appointmentTime: formatTimeOnly(appointment.appointmentTime),
       status: appointment.status,
       paymentStatus: 'pending',
-      totalAmount: Number(appointment.total_amount),
+      totalAmount: Number(appointment.totalAmount),
       note: appointment.note,
-      createdAt: appointment.created_at,
+      createdAt: appointment.createdAt,
     });
   }
 
   async getAppointmentById(userId: string, appointmentId: string) {
     const appointment = await this.prisma.appointment.findUnique({
-      where: { appointment_id: this.toBigIntId(appointmentId, 'appointmentId') },
+      where: { appointmentId: this.toBigIntId(appointmentId, 'appointmentId') },
       include: {
         patient: true,
         doctor: true,
@@ -146,34 +177,34 @@ export class AppointmentsService {
       },
     });
 
-    if (!appointment || appointment.user_id !== this.toBigIntId(userId, 'userId')) {
+    if (!appointment || appointment.userId !== this.toBigIntId(userId, 'userId')) {
       throw new NotFoundException('Appointment not found');
     }
 
     return okResponse('Get appointment detail successfully', {
-      id: toNumberId(appointment.appointment_id),
-      appointmentCode: appointment.appointment_code,
+      id: toNumberId(appointment.appointmentId),
+      appointmentCode: appointment.appointmentCode,
       appointmentType: appointment.appointment_type,
-      appointmentDate: formatDateOnly(appointment.appointment_date),
-      appointmentTime: formatTimeOnly(appointment.appointment_time),
+      appointmentDate: formatDateOnly(appointment.appointmentDate),
+      appointmentTime: formatTimeOnly(appointment.appointmentTime),
       status: appointment.status,
       note: appointment.note,
-      totalAmount: Number(appointment.total_amount),
+      totalAmount: Number(appointment.totalAmount),
       patient: appointment.patient
         ? {
-            id: toNumberId(appointment.patient.patient_id),
-            fullName: appointment.patient.full_name,
+            id: toNumberId(appointment.patient.patientId),
+            fullName: appointment.patient.fullName,
           }
         : null,
       facility: appointment.facility
         ? {
-            id: toNumberId(appointment.facility.facility_id),
+            id: toNumberId(appointment.facility.facilityId),
             name: appointment.facility.name,
           }
         : null,
       service: appointment.service
         ? {
-            id: toNumberId(appointment.service.service_id),
+            id: toNumberId(appointment.service.serviceId),
             name: appointment.service.name,
             price: Number(appointment.service.price),
           }
@@ -182,7 +213,7 @@ export class AppointmentsService {
   }
   async getUserAppointments(userId: string) {
     const appointments = await this.prisma.appointment.findMany({
-      where: { user_id: this.toBigIntId(userId, 'userId') },
+      where: { userId: this.toBigIntId(userId, 'userId') },
       include: {
         patient: true,
         doctor: {
@@ -193,38 +224,38 @@ export class AppointmentsService {
         slot: true,
       },
       orderBy: [
-        { appointment_date: 'desc' },
-        { appointment_time: 'desc' },
+        { appointmentDate: 'desc' },
+        { appointmentTime: 'desc' },
       ],
     });
 
     return okResponse('Get user appointments successfully', appointments.map(apt => ({
-      id: toNumberId(apt.appointment_id),
-      appointmentCode: apt.appointment_code,
+      id: toNumberId(apt.appointmentId),
+      appointmentCode: apt.appointmentCode,
       appointmentType: apt.appointment_type,
-      appointmentDate: formatDateOnly(apt.appointment_date),
-      appointmentTime: formatTimeOnly(apt.appointment_time),
+      appointmentDate: formatDateOnly(apt.appointmentDate),
+      appointmentTime: formatTimeOnly(apt.appointmentTime),
       status: apt.status,
       note: apt.note,
       symptomsNote: apt.symptoms_note,
-      totalAmount: Number(apt.total_amount),
+      totalAmount: Number(apt.totalAmount),
       doctor: apt.doctor
         ? {
-            id: toNumberId(apt.doctor.doctor_id),
-            name: apt.doctor.full_name,
+            id: toNumberId(apt.doctor.doctorId),
+            name: apt.doctor.fullName,
             specialty: apt.doctor.specialty?.name,
             imageUrl: apt.doctor.avatar_url,
           }
         : null,
       patient: apt.patient
         ? {
-            id: toNumberId(apt.patient.patient_id),
-            fullName: apt.patient.full_name,
+            id: toNumberId(apt.patient.patientId),
+            fullName: apt.patient.fullName,
           }
         : null,
       service: apt.service
         ? {
-            id: toNumberId(apt.service.service_id),
+            id: toNumberId(apt.service.serviceId),
             name: apt.service.name,
           }
         : null,

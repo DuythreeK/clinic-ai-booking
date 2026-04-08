@@ -325,6 +325,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   Future<void> _submitBooking() async {
+    print('--- BẮT ĐẦU SUBMIT BOOKING ---');
     final patient = _selectedPatient;
     final facility = _selectedFacility;
     final doctor = _selectedDoctor;
@@ -372,6 +373,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         appointmentDate: slotDate,
         note: _noteCtrl.text.trim(),
       );
+
 
       final appointmentId = appointment.id;
       if (appointmentId == null) {

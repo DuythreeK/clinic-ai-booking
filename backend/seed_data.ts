@@ -9,19 +9,19 @@ async function main() {
   const user = await prisma.user.findFirst();
   if (user) {
     const existingPatient = await prisma.patientProfile.findFirst({
-      where: { user_id: user.user_id }
+      where: { userId: user.userId }
     });
 
     if (!existingPatient) {
       await prisma.patientProfile.create({
         data: {
-          user_id: user.user_id,
-          full_name: user.full_name,
+          userId: user.userId,
+          fullName: user.fullName,
           phone_number: user.phone || '0123456789',
           is_primary: 1,
         }
       });
-      console.log('Created patient profile for user', user.user_id);
+      console.log('Created patient profile for user', user.userId);
     } else {
       console.log('Patient profile already exists');
     }
@@ -31,23 +31,23 @@ async function main() {
   const facilities = await prisma.facility.findMany();
   for (const facility of facilities) {
     const existingService = await prisma.service.findFirst({
-      where: { facility_id: facility.facility_id }
+      where: { facilityId: facility.facilityId }
     });
 
     if (!existingService) {
       await prisma.service.create({
         data: {
-          facility_id: facility.facility_id,
+          facilityId: facility.facilityId,
           name: 'Khám Tổng Quát',
           description: 'Dịch vụ khám tổng quát định kỳ',
           price: 500000,
           duration_minutes: 30,
-          is_active: 1
+          isActive: 1
         }
       });
-      console.log('Created service for facility', facility.facility_id);
+      console.log('Created service for facility', facility.facilityId);
     } else {
-      console.log('Service already exists for facility', facility.facility_id);
+      console.log('Service already exists for facility', facility.facilityId);
     }
   }
 }

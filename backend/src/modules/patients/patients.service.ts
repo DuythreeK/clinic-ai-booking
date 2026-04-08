@@ -85,7 +85,7 @@ export class PatientsService {
 
     return okResponse(
       'Get patient profiles successfully',
-      profiles.map((profile) => ({
+      profiles.map((profile: any) => ({
         id: Number(profile.patientId),
         fullName: profile.fullName,
         phoneNumber: profile.phone_number,

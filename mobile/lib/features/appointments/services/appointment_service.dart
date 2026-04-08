@@ -23,14 +23,14 @@ class BookingAppointment {
 
   factory BookingAppointment.fromJson(Map<String, dynamic> json) {
     return BookingAppointment(
-      appointmentId: (json['appointment_id'] as num?)?.toInt() ?? 0,
-      slotId: (json['slot_id'] as num?)?.toInt() ?? 0,
-      facilityId: (json['facility_id'] as num?)?.toInt() ?? 0,
+      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
+      slotId: (json['slotId'] as num?)?.toInt() ?? 0,
+      facilityId: (json['facilityId'] as num?)?.toInt() ?? 0,
       appointmentType: (json['appointment_type'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
-      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
-      appointmentCode: json['appointment_code']?.toString(),
-      doctorId: (json['doctor_id'] as num?)?.toInt(),
+      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
+      appointmentCode: json['appointmentCode']?.toString(),
+      doctorId: (json['doctorId'] as num?)?.toInt(),
     );
   }
 }
@@ -57,7 +57,7 @@ class BookingPayment {
   factory BookingPayment.fromJson(Map<String, dynamic> json) {
     return BookingPayment(
       paymentId: (json['payment_id'] as num?)?.toInt() ?? 0,
-      appointmentId: (json['appointment_id'] as num?)?.toInt() ?? 0,
+      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
       paymentMethod: (json['payment_method'] ?? '').toString(),
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       status: (json['status'] ?? '').toString(),
@@ -86,16 +86,16 @@ class AppointmentService {
     final response = await dioClient.post(
       '/appointments',
       data: {
-        'patient_id': patientId,
-        'facility_id': facilityId,
-        if (doctorId != null) 'doctor_id': doctorId,
-        'slot_id': slotId,
+        'patientId': patientId,
+        'facilityId': facilityId,
+        if (doctorId != null) 'doctorId': doctorId,
+        'slotId': slotId,
         'appointment_type': appointmentType,
-        if (serviceId != null) 'service_id': serviceId,
+        if (serviceId != null) 'serviceId': serviceId,
         if (triageSessionId != null) 'triage_session_id': triageSessionId,
         if (symptomsNote != null && symptomsNote.isNotEmpty)
           'symptoms_note': symptomsNote,
-        'total_amount': totalAmount,
+        'totalAmount': totalAmount,
       },
     );
 

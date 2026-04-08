@@ -49,18 +49,39 @@ export class PaymentsService {
       throw new NotFoundException('Payment not found');
     }
 
-    const updated = await this.prisma.payment.update({
-      where: { payment_id: payment.payment_id },
-      data: {
-        status: dto.status as any,
-        error_message: dto.errorMessage,
-        paid_at: dto.status === 'success' ? new Date() : undefined,
-      },
-    });
+    const result = await this.prisma.$transaction(async (tx) => {
+        // 1. Cập nhật trạng thái Payment
+        const updatedPayment = await tx.payment.update({
+          where: { payment_id: payment.payment_id },
+          data: {
+            status: dto.status as any,
+            error_message: dto.errorMessage,
+            paid_at: dto.status === 'success' ? new Date() : undefined,
+          },
+        });
+
+        // 2. Nếu thanh toán THÀNH CÔNG, cập nhật Appointment và Slot
+        if (dto.status === 'success') {
+          // Đổi trạng thái lịch hẹn sang 'confirmed'
+          const appointment = await tx.appointment.update({
+            where: { appointmentId: payment.appointmentId },
+            data: { status: 'confirmed' as any }, // 'confirmed' hoặc trạng thái bạn quy định
+          });
+
+          // Đổi trạng thái Slot sang 'FULL' để hiện MÀU ĐỎ trên Flutter
+          await tx.slot.update({
+            where: { slotId: appointment.slotId },
+            data: { status: 'FULL' },
+          });
+        }
+        // Nếu thanh toán THẤT BẠI, bạn có thể giữ nguyên 'pending' hoặc hủy tùy kịch bản
+
+        return updatedPayment;
+      });
 
     return okResponse('Payment callback processed successfully', {
-      appointmentId: toNumberId(updated.appointmentId),
-      paymentStatus: updated.status,
+      appointmentId: toNumberId(result.appointmentId),
+      paymentStatus: result.status,
     });
   }
 }

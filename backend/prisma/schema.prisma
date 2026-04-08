@@ -242,9 +242,9 @@ model Slot {
   slotId          BigInt     @id @default(autoincrement())
   facilityId      BigInt
   doctorId        BigInt
-  slot_date        DateTime   @db.Date
-  start_time       DateTime   @db.Time
-  end_time         DateTime   @db.Time
+  slotDate        DateTime   @db.Date
+  startTime       DateTime   @db.Time
+  endTime         DateTime   @db.Time
   duration_minutes Int        @default(30)
   available_count  Int        @default(10)
   status           SlotStatus @default(AVAILABLE)
