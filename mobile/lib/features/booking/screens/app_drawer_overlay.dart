@@ -18,6 +18,7 @@ class AppDrawerOverlay extends StatefulWidget {
 class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
   String _userName = 'Nguyễn Văn A';
   String _userPhone = '081892319321';
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
 
   Future<void> _loadUser() async {
     final user = await widget.authService.getCurrentUser();
+    final role = await widget.authService.getCurrentUserRole();
     if (user != null && mounted) {
       setState(() {
         if (user['full_name'] != null && user['full_name'].toString().isNotEmpty) {
@@ -35,6 +37,11 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
         if (user['phone'] != null && user['phone'].toString().isNotEmpty) {
           _userPhone = user['phone'].toString();
         }
+        _isAdmin = role == 'admin';
+      });
+    } else if (mounted) {
+      setState(() {
+        _isAdmin = role == 'admin';
       });
     }
   }
@@ -154,10 +161,11 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
                           _buildMenuItem(Icons.verified_user_outlined, 'Chính sách &\nBảo mật', onTap: () {}),
                           _buildMenuItem(Icons.help_outline, 'Trung tâm trợ\ngiúp', onTap: () {}),
                           _buildMenuItem(Icons.settings, 'Cài đặt', onTap: () {}),
-                          _buildMenuItem(Icons.tune_rounded, 'Điều chỉnh chỗ cho lịch tiêm (Admin)', onTap: () {
-                            Navigator.of(context).pop();
-                            context.push('/admin/slots-capacity');
-                          }),
+                          if (_isAdmin)
+                            _buildMenuItem(Icons.tune_rounded, 'Điều chỉnh chỗ cho lịch tiêm (Admin)', onTap: () {
+                              Navigator.of(context).pop();
+                              context.push('/admin/slots-capacity');
+                            }),
                         ],
                       ),
                     ),
