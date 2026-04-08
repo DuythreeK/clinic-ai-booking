@@ -1,4 +1,4 @@
-﻿import 'package:vietnam_provinces/vietnam_provinces.dart';
+﻿import '../data/vietnam_address_data.dart';
 
 class VietnamAddressCatalog {
   VietnamAddressCatalog._();
@@ -7,85 +7,73 @@ class VietnamAddressCatalog {
   static const String districtPlaceholder = 'Chọn Quận/Huyện';
   static const String wardPlaceholder = 'Chọn Phường/Xã';
 
-  static bool _initialized = false;
-  static Future<void>? _initFuture;
+  static List<VietnamProvinceData> provinces() => vietnamAddressData;
 
-  static Future<void> ensureInitialized() {
-    return _initFuture ??= VietnamProvinces.initialize().then((_) {
-      _initialized = true;
-    });
-  }
-
-  static List<dynamic> provinces() {
-    if (!_initialized) return const [];
-    return VietnamProvinces.getProvinces();
-  }
-
-  static dynamic provinceByName(String name) {
-    if (!_initialized) return null;
-    final normalized = name.trim().toLowerCase();
+  static VietnamProvinceData? provinceByName(String name) {
+    final normalized = _normalizeProvinceQuery(name);
     if (normalized.isEmpty) return null;
-    for (final province in provinces()) {
-      final provinceName = _nameOf(province).toLowerCase();
-      if (provinceName == normalized) return province;
+    for (final province in vietnamAddressData) {
+      if (_normalize(province.name) == normalized) return province;
     }
-    final queried = VietnamProvinces.getProvinces(query: name.trim());
-    if (queried.isNotEmpty) return queried.first;
     return null;
   }
 
-  static List<dynamic> districtsByProvinceName(String provinceName) {
-    if (!_initialized) return const [];
+  static List<VietnamDistrictData> districtsByProvinceName(String provinceName) {
     final province = provinceByName(provinceName);
-    final provinceCode = _codeOf(province);
-    if (provinceCode == null) return const [];
-    return VietnamProvinces.getDistricts(provinceCode: provinceCode);
+    return province?.districts ?? const [];
   }
 
-  static dynamic districtByName(String provinceName, String districtName) {
-    if (!_initialized) return null;
-    final normalized = districtName.trim().toLowerCase();
+  static VietnamDistrictData? districtByName(String provinceName, String districtName) {
+    final normalized = _normalize(districtName);
     if (normalized.isEmpty) return null;
     for (final district in districtsByProvinceName(provinceName)) {
-      final itemName = _nameOf(district).toLowerCase();
-      if (itemName == normalized) return district;
-    }
-    final province = provinceByName(provinceName);
-    final provinceCode = _codeOf(province);
-    if (provinceCode != null) {
-      final queried = VietnamProvinces.getDistricts(
-        provinceCode: provinceCode,
-        query: districtName.trim(),
-      );
-      if (queried.isNotEmpty) return queried.first;
+      if (_normalize(district.name) == normalized) return district;
     }
     return null;
   }
 
-  static List<dynamic> wardsBySelection(String provinceName, String districtName) {
-    if (!_initialized) return const [];
-    final province = provinceByName(provinceName);
+  static List<VietnamWardData> wardsBySelection(String provinceName, String districtName) {
     final district = districtByName(provinceName, districtName);
-    final provinceCode = _codeOf(province);
-    final districtCode = _codeOf(district);
-    if (provinceCode == null || districtCode == null) return const [];
-    return VietnamProvinces.getWards(
-      provinceCode: provinceCode,
-      districtCode: districtCode,
-    );
+    return district?.wards ?? const [];
   }
 
-  static String displayName(dynamic item) => _nameOf(item);
-
-  static String _nameOf(dynamic item) {
-    if (item == null) return '';
-    final name = item.name;
-    return name?.toString() ?? '';
+  static String displayName(dynamic item) {
+    if (item is VietnamProvinceData) return item.name;
+    if (item is VietnamDistrictData) return item.name;
+    if (item is VietnamWardData) return item.name;
+    return item?.toString() ?? '';
   }
 
-  static int? _codeOf(dynamic item) {
-    if (item == null) return null;
-    final code = item.code;
-    return int.tryParse(code?.toString() ?? '');
+  static String _normalizeProvinceQuery(String value) {
+    final normalized = _normalize(value);
+    if (normalized.isEmpty) return '';
+    if (normalized == 'tp hcm' || normalized == 'tp.hcm' || normalized == 'hcm' || normalized == 'ho chi minh') {
+      return _normalize('Thành phố Hồ Chí Minh');
+    }
+    if (normalized == 'tp ha noi' || normalized == 'hanoi') {
+      return _normalize('Thành phố Hà Nội');
+    }
+    if (normalized == 'can tho') {
+      return _normalize('Thành phố Cần Thơ');
+    }
+    return normalized;
+  }
+
+  static String _normalize(String input) {
+    var text = input.trim().toLowerCase();
+    const replacements = {
+      'à': 'a', 'á': 'a', 'ạ': 'a', 'ả': 'a', 'ã': 'a', 'â': 'a', 'ầ': 'a', 'ấ': 'a', 'ậ': 'a', 'ẩ': 'a', 'ẫ': 'a', 'ă': 'a', 'ằ': 'a', 'ắ': 'a', 'ặ': 'a', 'ẳ': 'a', 'ẵ': 'a',
+      'è': 'e', 'é': 'e', 'ẹ': 'e', 'ẻ': 'e', 'ẽ': 'e', 'ê': 'e', 'ề': 'e', 'ế': 'e', 'ệ': 'e', 'ể': 'e', 'ễ': 'e',
+      'ì': 'i', 'í': 'i', 'ị': 'i', 'ỉ': 'i', 'ĩ': 'i',
+      'ò': 'o', 'ó': 'o', 'ọ': 'o', 'ỏ': 'o', 'õ': 'o', 'ô': 'o', 'ồ': 'o', 'ố': 'o', 'ộ': 'o', 'ổ': 'o', 'ỗ': 'o', 'ơ': 'o', 'ờ': 'o', 'ớ': 'o', 'ợ': 'o', 'ở': 'o', 'ỡ': 'o',
+      'ù': 'u', 'ú': 'u', 'ụ': 'u', 'ủ': 'u', 'ũ': 'u', 'ư': 'u', 'ừ': 'u', 'ứ': 'u', 'ự': 'u', 'ử': 'u', 'ữ': 'u',
+      'ỳ': 'y', 'ý': 'y', 'ỵ': 'y', 'ỷ': 'y', 'ỹ': 'y',
+      'đ': 'd',
+    };
+    for (final entry in replacements.entries) {
+      text = text.replaceAll(entry.key, entry.value);
+    }
+    text = text.replaceAll(RegExp(r'[^a-z0-9]+'), ' ');
+    return text.replaceAll(RegExp(r'\s+'), ' ').trim();
   }
 }

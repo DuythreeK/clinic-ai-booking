@@ -124,30 +124,44 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
 
-                  // Menu Items
-                  _buildMenuItem(Icons.home, 'Trang chủ', onTap: () {
-                    Navigator.of(context).pop();
-                    context.go('/home');
-                  }),
-                  _buildMenuItem(Icons.person, 'Thông tin cá nhân', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/profile');
-                  }),
-                  _buildMenuItem(Icons.calendar_month_outlined, 'Lịch hẹn', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/appointments');
-                  }),
-                  _buildMenuItem(Icons.assignment_outlined, 'Lịch sử phiếu khám', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/history');
-                  }),
-                  _buildMenuItem(Icons.verified_user_outlined, 'Chính sách &\nBảo mật', onTap: () {}),
-                  _buildMenuItem(Icons.help_outline, 'Trung tâm trợ\ngiúp', onTap: () {}),
-                  _buildMenuItem(Icons.settings, 'Cài đặt', onTap: () {}),
-
-                  const Spacer(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Menu Items
+                          _buildMenuItem(Icons.home, 'Trang chủ', onTap: () {
+                            Navigator.of(context).pop();
+                            context.go('/home');
+                          }),
+                          _buildMenuItem(Icons.person, 'Thông tin cá nhân', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/profile');
+                          }),
+                          _buildMenuItem(Icons.folder_shared_outlined, 'Hồ sơ khám', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/medical-profiles');
+                          }),
+                          _buildMenuItem(Icons.calendar_month_outlined, 'Lịch hẹn', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/appointments');
+                          }),
+                          _buildMenuItem(Icons.assignment_outlined, 'Lịch sử phiếu khám', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/history');
+                          }),
+                          _buildMenuItem(Icons.verified_user_outlined, 'Chính sách &\nBảo mật', onTap: () {}),
+                          _buildMenuItem(Icons.help_outline, 'Trung tâm trợ\ngiúp', onTap: () {}),
+                          _buildMenuItem(Icons.settings, 'Cài đặt', onTap: () {}),
+                          _buildMenuItem(Icons.tune_rounded, 'Điều chỉnh chỗ cho lịch tiêm (Admin)', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/admin/slots-capacity');
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   // Logout Button
                   Padding(

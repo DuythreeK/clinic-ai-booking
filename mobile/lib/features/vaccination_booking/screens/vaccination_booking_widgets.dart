@@ -388,18 +388,20 @@ class ChoiceChipPill extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.subtitle,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final String? subtitle;
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
-      child: Container(
+        child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? const Color(0x1220C8C2) : Colors.white,
@@ -408,13 +410,32 @@ class ChoiceChipPill extends StatelessWidget {
             color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.line,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.text,
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.text,
+              ),
+            ),
+            if (subtitle != null && subtitle!.trim().isNotEmpty) ...[
+              const SizedBox(height: 2),
+              Text(
+                subtitle!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.subtext,
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
