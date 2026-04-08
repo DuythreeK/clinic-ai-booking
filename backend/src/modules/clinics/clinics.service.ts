@@ -13,12 +13,53 @@ export class ClinicsService {
       name: facility.name,
       facilityType: facility.facility_type,
       phone: facility.phone,
+      email: facility.email,
       addressDetail: facility.address_detail,
       province: facility.province,
       district: facility.district,
+      ward: facility.ward,
+      address: [
+        facility.address_detail,
+        facility.ward,
+        facility.district,
+        facility.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
       ratingAvg: Number(facility.rating_avg),
       isActive: facility.isActive === 1,
     };
+  }
+
+  async getMobileFacilities(search?: string, facilityType?: string) {
+    const facilities = await this.prisma.facility.findMany({
+      where: {
+        is_active: 1,
+        facility_type: facilityType as any,
+        name: search ? { contains: search } : undefined,
+      },
+      orderBy: [{ rating_avg: 'desc' }, { created_at: 'desc' }],
+    });
+
+    return okResponse(
+      'Get mobile facilities successfully',
+      facilities.map((facility) => ({
+        id: toNumberId(facility.facility_id),
+        name: facility.name,
+        type: facility.facility_type,
+        address: [
+          facility.address_detail,
+          facility.ward,
+          facility.district,
+          facility.province,
+        ]
+          .filter(Boolean)
+          .join(', '),
+        phone: facility.phone,
+        email: facility.email,
+        rating: Number(facility.rating_avg),
+      })),
+    );
   }
 
   async getClinics(page = 1, limit = 10, search?: string, facilityType?: string) {

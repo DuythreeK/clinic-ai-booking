@@ -28,4 +28,9 @@ export class PatientsController {
   async getMyProfiles(@CurrentUser('sub') userId: string) {
     return this.patientsService.getPatientProfiles(userId);
   }
+
+  @Get('mobile')
+  async getMyMobileProfiles(@CurrentUser('sub') userId: string) {
+    return this.patientsService.getMobilePatientProfiles(userId);
+  }
 }

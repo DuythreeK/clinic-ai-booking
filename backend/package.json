@@ -24,6 +24,9 @@
     "db:seed": "ts-node prisma/seed.ts",
     "db:studio": "prisma studio"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@nestjs/common": "^10.2.8",

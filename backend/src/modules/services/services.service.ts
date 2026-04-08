@@ -1,7 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
+import {
+  VaccinationBookingDetailDto,
+  VaccinationPackageDto,
+  VaccinationSlotGroupDto,
+} from './dto/mobile-vaccination.dto';
 import { okResponse, paginatedResponse } from '@/common/utils/api-response';
-import { formatDateOnly, formatTimeOnly, toNumberId } from '@/common/utils/formatters';
+import {
+  formatCurrencyVnd,
+  formatDateOnly,
+  formatTimeOnly,
+  toNumberId,
+} from '@/common/utils/formatters';
 
 @Injectable()
 export class ServicesService {
@@ -9,6 +19,11 @@ export class ServicesService {
 
   private toBigIntId(id: string): bigint {
     return BigInt(id);
+  }
+
+  private weekdayLabel(date: Date) {
+    const labels = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+    return labels[date.getDay()];
   }
 
   private toResponse(service: any) {
@@ -168,4 +183,147 @@ export class ServicesService {
       })),
     });
   }
+
+  async getVaccinationPackages(search?: string, facilityId?: string) {
+    const services = await this.prisma.service.findMany({
+      where: {
+        is_active: 1,
+        facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
+        name: search ? { contains: search } : undefined,
+        vaccines: {
+          some: {},
+        },
+      },
+      include: {
+        facility: true,
+        vaccines: {
+          include: {
+            vaccine: true,
+          },
+        },
+      },
+      orderBy: [{ price: 'asc' }, { name: 'asc' }],
+    });
+
+    const items: VaccinationPackageDto[] = services.map((service) => ({
+      id: toNumberId(service.service_id)!,
+      title: service.name,
+      facilityId: toNumberId(service.facility_id)!,
+      facilityName: service.facility.name,
+      facilityAddress: [
+        service.facility.address_detail,
+        service.facility.ward,
+        service.facility.district,
+        service.facility.province,
+      ]
+        .filter(Boolean)
+        .join(', '),
+      priceValue: Number(service.price),
+      priceLabel: formatCurrencyVnd(Number(service.price), ' VND') ?? '0 VND',
+      note: service.description ?? 'Thanh toán tại cơ sở',
+      badge: service.vaccines[0]?.vaccine.name ?? 'Tiêm chủng',
+    }));
+
+    return okResponse('Get vaccination packages successfully', items);
+  }
+
+  async getVaccinationBookingDetail(
+    id: string,
+    date?: string,
+    fromDate?: string,
+    toDate?: string,
+  ) {
+    const service = await this.prisma.service.findUnique({
+      where: { service_id: this.toBigIntId(id) },
+      include: {
+        facility: true,
+        vaccines: {
+          include: {
+            vaccine: true,
+          },
+        },
+      },
+    });
+
+    if (!service || service.is_active !== 1) {
+      throw new NotFoundException('Service not found');
+    }
+
+    let rangeFrom = fromDate ? new Date(fromDate) : undefined;
+    let rangeTo = toDate ? new Date(toDate) : undefined;
+    if (date) {
+      rangeFrom = new Date(date);
+      rangeTo = new Date(date);
+    }
+
+    const slots = await this.prisma.slot.findMany({
+      where: {
+        facility_id: service.facility_id,
+        is_active: 1,
+        status: 'AVAILABLE',
+        slot_date: rangeFrom || rangeTo
+          ? {
+              gte: rangeFrom,
+              lte: rangeTo,
+            }
+          : undefined,
+      },
+      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
+    });
+
+    const slotGroupMap = new Map<string, VaccinationSlotGroupDto>();
+    for (const slot of slots) {
+      const key = formatDateOnly(slot.slot_date) ?? '';
+      if (!slotGroupMap.has(key)) {
+        slotGroupMap.set(key, {
+          date: key,
+          weekdayLabel: this.weekdayLabel(new Date(slot.slot_date)),
+          morningSlots: [],
+          afternoonSlots: [],
+        });
+      }
+
+      const group = slotGroupMap.get(key)!;
+      const item = {
+        slotId: toNumberId(slot.slot_id)!,
+        startTime: formatTimeOnly(slot.start_time),
+        endTime: formatTimeOnly(slot.end_time),
+        availableCount: slot.available_count,
+      };
+
+      const hour = new Date(slot.start_time).getHours();
+      if (hour < 12) {
+        group.morningSlots.push(item);
+      } else {
+        group.afternoonSlots.push(item);
+      }
+    }
+
+    const detail: VaccinationBookingDetailDto = {
+      serviceId: toNumberId(service.service_id)!,
+      serviceName: service.name,
+      specialty: 'TIÊM NGỪA',
+      servicePriceValue: Number(service.price),
+      servicePriceLabel: formatCurrencyVnd(Number(service.price), ' VND') ?? '0 VND',
+      note: service.description ?? 'Thanh toán tại cơ sở',
+      facility: {
+        id: toNumberId(service.facility.facility_id)!,
+        name: service.facility.name,
+        type: service.facility.facility_type,
+        address: [
+          service.facility.address_detail,
+          service.facility.ward,
+          service.facility.district,
+          service.facility.province,
+        ]
+          .filter(Boolean)
+          .join(', '),
+        rating: Number(service.facility.rating_avg),
+      },
+      slots: [...slotGroupMap.values()],
+    };
+
+    return okResponse('Get vaccination booking detail successfully', detail);
+  }
 }
+

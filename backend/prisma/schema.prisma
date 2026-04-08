@@ -12,15 +12,15 @@ datasource db {
 // --- 1. QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT ---
 
 model User {
-  userId       BigInt    @id @default(autoincrement())
+  user_id       BigInt    @id @default(autoincrement())
   role          UserRole
-  fullName     String    @db.VarChar(150)
+  full_name     String    @db.VarChar(150)
   email         String    @unique @db.VarChar(150)
   phone         String    @unique @db.VarChar(20)
   password_hash String    @db.VarChar(255)
   avatar_url    String?   @db.VarChar(255)
   status        UserStatus @default(active)
-  createdAt    DateTime  @default(now())
+  created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
 
   // Quan hệ 1-N [cite: 330-350]
@@ -53,27 +53,27 @@ enum UserStatus {
 
 model RefreshToken {
   id         BigInt   @id @default(autoincrement())
-  userId    BigInt
+  user_id    BigInt
   token      String   @unique @db.VarChar(512)
-  expiresAt DateTime
+  expires_at DateTime
   is_revoked Int      @default(0) @db.TinyInt
-  createdAt DateTime @default(now())
+  created_at DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@map("tblRefreshTokens")
 }
 
 model PasswordResetToken {
   id         BigInt           @id @default(autoincrement())
-  userId    BigInt
+  user_id    BigInt
   token      String           @unique @db.VarChar(512)
   status     PasswordResetStatus @default(PENDING)
-  expiresAt DateTime
+  expires_at DateTime
   used_at    DateTime?
-  createdAt DateTime         @default(now())
+  created_at DateTime         @default(now())
 
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
   @@map("tblPasswordResetTokens")
 }
@@ -87,12 +87,15 @@ enum PasswordResetStatus {
 // --- 2. HỒ SƠ BỆNH NHÂN & Y TẾ ---
 
 model PatientProfile {
-  patientId          BigInt   @id @default(autoincrement())
-  userId             BigInt
-  fullName           String   @db.VarChar(150)
-  phone_number        String?  @unique @db.VarChar(20)
-  gender              Gender?
-  date_of_birth       DateTime? @db.Date
+    patient_id          BigInt   @id @default(autoincrement())
+    user_id             BigInt
+    full_name           String   @db.VarChar(150)
+    phone_number        String?  @unique @db.VarChar(20)
+    citizen_id          String?  @unique @db.VarChar(30)
+    insurance_number    String?  @db.VarChar(50)
+    email               String?  @db.VarChar(150)
+    gender              Gender?
+    date_of_birth       DateTime? @db.Date
   blood_type          String?  @db.VarChar(10)
   occupation          String?  @db.VarChar(100)
   ethnicity           String?  @db.VarChar(100)
@@ -106,10 +109,10 @@ model PatientProfile {
   emergency_contact   String?  @db.VarChar(100)
   relationship_to_user String? @db.VarChar(50)
   is_primary          Int      @default(0) @db.TinyInt
-  createdAt          DateTime @default(now())
+  created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
   appointments   Appointment[]
   medical_records MedicalRecord[]
 
@@ -128,7 +131,7 @@ model Specialty {
   specialty_id BigInt  @id @default(autoincrement())
   name         String  @unique @db.VarChar(150)
   description  String? @db.Text
-  isActive    Int     @default(1) @db.TinyInt
+  is_active    Int     @default(1) @db.TinyInt
 
   doctors Doctor[]
 
@@ -136,7 +139,7 @@ model Specialty {
 }
 
 model Facility {
-  facilityId    BigInt       @id @default(autoincrement())
+  facility_id    BigInt       @id @default(autoincrement())
   name           String       @db.VarChar(200)
   facility_type  FacilityType
   phone          String?      @db.VarChar(20)
@@ -147,8 +150,8 @@ model Facility {
   ward           String?      @db.VarChar(100)
   opening_hours  String?      @db.VarChar(255)
   rating_avg     Decimal      @default(0.0) @db.Decimal(2, 1)
-  isActive      Int          @default(1) @db.TinyInt
-  createdAt     DateTime     @default(now())
+  is_active      Int          @default(1) @db.TinyInt
+  created_at     DateTime     @default(now())
   updated_at     DateTime     @updatedAt
 
   doctors      Doctor[]
@@ -168,23 +171,23 @@ enum FacilityType {
 // --- 4. BÁC SĨ & DỊCH VỤ ---
 
 model Doctor {
-  doctorId        BigInt   @id @default(autoincrement())
-  userId          BigInt   @unique
-  fullName        String   @db.VarChar(150)
+  doctor_id        BigInt   @id @default(autoincrement())
+  user_id          BigInt   @unique
+  full_name        String   @db.VarChar(150)
   specialty_id     BigInt
-  facilityId      BigInt
+  facility_id      BigInt
   title            String?  @db.VarChar(100)
   bio              String?  @db.Text
   experience_years Int?
   avatar_url       String?  @db.VarChar(255)
   consultation_fee Decimal? @db.Decimal(12, 2)
-  isActive        Int      @default(1) @db.TinyInt
-  createdAt       DateTime @default(now())
+  is_active        Int      @default(1) @db.TinyInt
+  created_at       DateTime @default(now())
   updated_at       DateTime @updatedAt
 
-  user      User      @relation(fields: [userId], references: [userId])
+  user      User      @relation(fields: [user_id], references: [user_id])
   specialty Specialty @relation(fields: [specialty_id], references: [specialty_id])
-  facility  Facility  @relation(fields: [facilityId], references: [facilityId])
+  facility  Facility  @relation(fields: [facility_id], references: [facility_id])
 
   appointments    Appointment[]
   slots           Slot[]
@@ -195,15 +198,15 @@ model Doctor {
 }
 
 model Service {
-  serviceId       BigInt   @id @default(autoincrement())
-  facilityId      BigInt
+  service_id       BigInt   @id @default(autoincrement())
+  facility_id      BigInt
   name             String   @db.VarChar(200)
   description      String?  @db.Text
   price            Decimal  @db.Decimal(12, 2)
   duration_minutes Int?
-  isActive        Int      @default(1) @db.TinyInt
+  is_active        Int      @default(1) @db.TinyInt
 
-  facility Facility @relation(fields: [facilityId], references: [facilityId], onDelete: Cascade)
+  facility Facility @relation(fields: [facility_id], references: [facility_id], onDelete: Cascade)
   appointments Appointment[]
   vaccines     ServiceVaccine[]
 
@@ -217,7 +220,7 @@ model Vaccine {
   country_of_origin String? @db.VarChar(100)
   dose_count        Int?
   description       String? @db.Text
-  isActive         Int     @default(1) @db.TinyInt
+  is_active         Int     @default(1) @db.TinyInt
 
   services ServiceVaccine[]
 
@@ -225,35 +228,35 @@ model Vaccine {
 }
 
 model ServiceVaccine {
-  serviceId BigInt
+  service_id BigInt
   vaccine_id BigInt
   quantity   Int    @default(1)
 
-  service Service @relation(fields: [serviceId], references: [serviceId])
+  service Service @relation(fields: [service_id], references: [service_id])
   vaccine Vaccine @relation(fields: [vaccine_id], references: [vaccine_id])
 
-  @@id([serviceId, vaccine_id])
+  @@id([service_id, vaccine_id])
   @@map("tblServiceVaccine")
 }
 
 // --- 5. LỊCH HẸN & QUY TRÌNH KHÁM ---
 
 model Slot {
-  slotId          BigInt     @id @default(autoincrement())
-  facilityId      BigInt
-  doctorId        BigInt
-  slotDate        DateTime   @db.Date
-  startTime       DateTime   @db.Time
-  endTime         DateTime   @db.Time
+  slot_id          BigInt     @id @default(autoincrement())
+  facility_id      BigInt
+  doctor_id        BigInt
+  slot_date        DateTime   @db.Date
+  start_time       DateTime   @db.Time
+  end_time         DateTime   @db.Time
   duration_minutes Int        @default(30)
   available_count  Int        @default(10)
   status           SlotStatus @default(AVAILABLE)
-  isActive        Int        @default(1) @db.TinyInt
-  createdAt       DateTime   @default(now())
+  is_active        Int        @default(1) @db.TinyInt
+  created_at       DateTime   @default(now())
   updated_at       DateTime   @updatedAt
 
-  facility Facility @relation(fields: [facilityId], references: [facilityId])
-  doctor   Doctor   @relation(fields: [doctorId], references: [doctorId])
+  facility Facility @relation(fields: [facility_id], references: [facility_id])
+  doctor   Doctor   @relation(fields: [doctor_id], references: [doctor_id])
   appointment Appointment?
 
   @@map("tblSlots")
@@ -267,22 +270,22 @@ enum SlotStatus {
 }
 
 model Appointment {
-  appointmentId   BigInt          @id @default(autoincrement())
-  appointmentCode String          @unique @db.VarChar(30)
-  userId          BigInt
-  patientId       BigInt
-  facilityId      BigInt
-  doctorId        BigInt?
-  slotId          BigInt          @unique
-  serviceId       BigInt?
+  appointment_id   BigInt          @id @default(autoincrement())
+  appointment_code String          @unique @db.VarChar(30)
+  user_id          BigInt
+  patient_id       BigInt
+  facility_id      BigInt
+  doctor_id        BigInt?
+  slot_id          BigInt          @unique
+  service_id       BigInt?
   pre_visit_form_id BigInt?        @unique
   appointment_type AppointmentType
-  appointmentDate DateTime        @db.Date
-  appointmentTime DateTime        @db.Time
+  appointment_date DateTime        @db.Date
+  appointment_time DateTime        @db.Time
   status           AppointmentStatus @default(pending)
   symptoms_note    String?         @db.Text
   note             String?         @db.Text
-  totalAmount     Decimal         @db.Decimal(12, 2)
+  total_amount     Decimal         @db.Decimal(12, 2)
   
   cancellation_reason       String?  @db.VarChar(255)
   cancellation_requested_by BigInt?
@@ -290,15 +293,15 @@ model Appointment {
   cancellation_approved_by  BigInt?
   cancellation_approved_at  DateTime?
   
-  createdAt DateTime @default(now())
+  created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
-  user     User           @relation(fields: [userId], references: [userId])
-  patient  PatientProfile @relation(fields: [patientId], references: [patientId])
-  facility Facility       @relation(fields: [facilityId], references: [facilityId])
-  doctor   Doctor?        @relation(fields: [doctorId], references: [doctorId])
-  slot     Slot           @relation(fields: [slotId], references: [slotId])
-  service  Service?       @relation(fields: [serviceId], references: [serviceId])
+  user     User           @relation(fields: [user_id], references: [user_id])
+  patient  PatientProfile @relation(fields: [patient_id], references: [patient_id])
+  facility Facility       @relation(fields: [facility_id], references: [facility_id])
+  doctor   Doctor?        @relation(fields: [doctor_id], references: [doctor_id])
+  slot     Slot           @relation(fields: [slot_id], references: [slot_id])
+  service  Service?       @relation(fields: [service_id], references: [service_id])
 
   pre_visit_form          PreVisitForm?
   medical_record          MedicalRecord?
@@ -327,17 +330,17 @@ enum AppointmentStatus {
 
 model AppointmentStatusLog {
   id              BigInt   @id @default(autoincrement())
-  appointmentId  BigInt
+  appointment_id  BigInt
   changed_by      BigInt
   changed_by_role ChangerRole
   from_status     String?
   to_status       String
   reason          String?  @db.VarChar(255)
   metadata        Json?
-  createdAt      DateTime @default(now())
+  created_at      DateTime @default(now())
 
-  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId])
-  user        User        @relation(fields: [changed_by], references: [userId])
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  user        User        @relation(fields: [changed_by], references: [user_id])
 
   @@map("tblAppointmentStatusLogs")
 }
@@ -353,7 +356,7 @@ enum ChangerRole {
 
 model Payment {
   payment_id       BigInt        @id @default(autoincrement())
-  appointmentId   BigInt
+  appointment_id   BigInt
   payment_method   PaymentMethod
   amount           Decimal       @db.Decimal(12, 2)
   transaction_code String?       @unique @db.VarChar(100)
@@ -365,10 +368,10 @@ model Payment {
   retry_count      Int           @default(0)
   last_retry_at    DateTime?
   error_message    String?       @db.Text
-  createdAt       DateTime      @default(now())
+  created_at       DateTime      @default(now())
   updated_at       DateTime      @updatedAt
 
-  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId], onDelete: Cascade)
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id], onDelete: Cascade)
 
   @@map("tblPayment")
 }
@@ -392,8 +395,8 @@ enum PaymentStatus {
 
 model Notification {
   id              BigInt             @id @default(autoincrement())
-  userId         BigInt
-  appointmentId  BigInt?
+  user_id         BigInt
+  appointment_id  BigInt?
   type            NotificationType
   channel         NotificationChannel
   title           String             @db.VarChar(200)
@@ -405,10 +408,10 @@ model Notification {
   retry_count     Int                @default(0)
   last_retry_at   DateTime?
   error_message   String?            @db.Text
-  createdAt      DateTime           @default(now())
+  created_at      DateTime           @default(now())
 
-  user        User         @relation(fields: [userId], references: [userId])
-  appointment Appointment? @relation(fields: [appointmentId], references: [appointmentId])
+  user        User         @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
 
   @@map("tblNotifications")
 }
@@ -440,9 +443,9 @@ enum DeliveryStatus {
 
 model MedicalRecord {
   record_id         BigInt   @id @default(autoincrement())
-  appointmentId    BigInt   @unique
-  patientId        BigInt
-  doctorId         BigInt
+  appointment_id    BigInt   @unique
+  patient_id        BigInt
+  doctor_id         BigInt
   pre_visit_form_id BigInt?
   symptoms          String?  @db.Text
   diagnosis         String   @db.Text
@@ -454,40 +457,40 @@ model MedicalRecord {
   attachments       Json?
   is_locked         Int      @default(0) @db.TinyInt
   locked_at         DateTime?
-  locked_by_userId BigInt?
-  createdAt        DateTime @default(now())
+  locked_by_user_id BigInt?
+  created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId])
-  patient     PatientProfile @relation(fields: [patientId], references: [patientId])
-  doctor      Doctor      @relation(fields: [doctorId], references: [doctorId])
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  patient     PatientProfile @relation(fields: [patient_id], references: [patient_id])
+  doctor      Doctor      @relation(fields: [doctor_id], references: [doctor_id])
 
   @@map("tblMedicalRecord")
 }
 
 model DoctorReview {
   review_id      BigInt   @id @default(autoincrement())
-  doctorId      BigInt
-  userId        BigInt
-  appointmentId BigInt?  @unique
+  doctor_id      BigInt
+  user_id        BigInt
+  appointment_id BigInt?  @unique
   rating         Int      @db.TinyInt
   comment        String?  @db.Text
   is_visible     Int      @default(1) @db.TinyInt
   admin_reply    String?  @db.Text
   admin_reply_at DateTime?
-  createdAt     DateTime @default(now())
+  created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
-  doctor      Doctor      @relation(fields: [doctorId], references: [doctorId])
-  user        User        @relation(fields: [userId], references: [userId])
-  appointment Appointment? @relation(fields: [appointmentId], references: [appointmentId])
+  doctor      Doctor      @relation(fields: [doctor_id], references: [doctor_id])
+  user        User        @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
 
   @@map("tblDoctorReview")
 }
 
 model PreVisitForm {
   id              BigInt     @id @default(autoincrement())
-  appointmentId  BigInt     @unique
+  appointment_id  BigInt     @unique
   form_version    String     @default("1.0") @db.VarChar(10)
   chief_complaint String     @db.Text
   symptoms        String?    @db.Text
@@ -496,17 +499,17 @@ model PreVisitForm {
   allergies       String?    @db.Text
   extra_notes     String?    @db.Text
   status          FormStatus @default(DRAFT)
-  submitted_by_userId BigInt?
+  submitted_by_user_id BigInt?
   submitted_at    DateTime?
-  reviewed_by_userId  BigInt?
+  reviewed_by_user_id  BigInt?
   reviewed_at     DateTime?
   review_notes    String?    @db.Text
-  createdAt      DateTime   @default(now())
+  created_at      DateTime   @default(now())
   updated_at      DateTime   @updatedAt
 
-  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId])
-  submitted_by User?       @relation("SubmittedByUser", fields: [submitted_by_userId], references: [userId])
-  reviewed_by  User?       @relation("ReviewedByUser", fields: [reviewed_by_userId], references: [userId])
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
+  submitted_by User?       @relation("SubmittedByUser", fields: [submitted_by_user_id], references: [user_id])
+  reviewed_by  User?       @relation("ReviewedByUser", fields: [reviewed_by_user_id], references: [user_id])
 
   @@map("tblPreVisitForms")
 }
@@ -519,7 +522,7 @@ enum FormStatus {
 
 model VaccinationRegistration {
   vaccination_registration_id BigInt   @id @default(autoincrement())
-  appointmentId              BigInt   @unique
+  appointment_id              BigInt   @unique
   contact_phone               String   @db.VarChar(20)
   contact_email               String?  @db.VarChar(150)
   screening_status            ScreeningStatus @default(pending)
@@ -528,13 +531,13 @@ model VaccinationRegistration {
   current_medications         String?  @db.Text
   previous_vaccination_history String? @db.Text
   screening_result            String?  @db.Text
-  screened_by_userId         BigInt?
+  screened_by_user_id         BigInt?
   screened_at                 DateTime?
   is_eligible_approved        Int      @default(0) @db.TinyInt
-  createdAt                  DateTime @default(now())
+  created_at                  DateTime @default(now())
   updated_at                  DateTime @updatedAt
 
-  appointment Appointment @relation(fields: [appointmentId], references: [appointmentId])
+  appointment Appointment @relation(fields: [appointment_id], references: [appointment_id])
 
   @@map("tblVaccinationRegistration")
 }
@@ -550,8 +553,8 @@ enum ScreeningStatus {
 
 model AiTriageSession {
   id                     BigInt       @id @default(autoincrement())
-  userId                BigInt
-  appointmentId         BigInt?      @unique
+  user_id                BigInt
+  appointment_id         BigInt?      @unique
   status                 TriageStatus @default(IN_PROGRESS)
   symptoms_input         String?      @db.Text
   urgency_level          UrgencyLevel?
@@ -560,11 +563,11 @@ model AiTriageSession {
   total_messages         Int          @default(0)
   is_completed           Int          @default(0) @db.TinyInt
   abandoned_at           DateTime?
-  createdAt             DateTime     @default(now())
+  created_at             DateTime     @default(now())
   updated_at             DateTime     @updatedAt
 
-  user        User         @relation(fields: [userId], references: [userId])
-  appointment Appointment? @relation(fields: [appointmentId], references: [appointmentId])
+  user        User         @relation(fields: [user_id], references: [user_id])
+  appointment Appointment? @relation(fields: [appointment_id], references: [appointment_id])
   messages    AiTriageMessage[]
 
   @@map("tblAiTriageSessions")
@@ -588,7 +591,7 @@ model AiTriageMessage {
   sender     SenderRole
   content    String   @db.Text
   metadata   Json?
-  createdAt DateTime @default(now())
+  created_at DateTime @default(now())
 
   session AiTriageSession @relation(fields: [session_id], references: [id], onDelete: Cascade)
 

@@ -1,4 +1,4 @@
-import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class CreatePatientProfileDto {
   @IsString()
@@ -8,6 +8,18 @@ export class CreatePatientProfileDto {
   @IsOptional()
   @IsString()
   phoneNumber?: string;
+
+  @IsString()
+  @MaxLength(30)
+  citizenId!: string;
+
+  @IsString()
+  @MaxLength(50)
+  insuranceNumber!: string;
+
+  @IsEmail()
+  @MaxLength(150)
+  email!: string;
 
   @IsOptional()
   @IsString()
