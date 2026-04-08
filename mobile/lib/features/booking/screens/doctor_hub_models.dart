@@ -1,4 +1,11 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:convert';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../core/api/dio_client.dart';
+import '../../../core/storage/auth_storage.dart';
 
 class FacilityInfo {
   const FacilityInfo({
@@ -10,6 +17,34 @@ class FacilityInfo {
   final String name;
   final String type;
   final String address;
+
+  factory FacilityInfo.fromApi(Map<String, dynamic> json) {
+    return FacilityInfo(
+      name: json['name']?.toString() ?? '',
+      type: json['type']?.toString() ?? '',
+      address: json['address']?.toString() ?? '',
+    );
+  }
+}
+
+class SpecialtyChoice {
+  const SpecialtyChoice({
+    required this.id,
+    required this.name,
+    this.description,
+  });
+
+  final String id;
+  final String name;
+  final String? description;
+
+  factory SpecialtyChoice.fromApi(Map<String, dynamic> json) {
+    return SpecialtyChoice(
+      id: json['id']?.toString() ?? json['specialty_id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString(),
+    );
+  }
 }
 
 class DoctorProfile {
@@ -21,6 +56,7 @@ class DoctorProfile {
     required this.imageUrl,
     required this.rating,
     required this.reviewCount,
+    required this.priceValue,
     required this.priceLabel,
     required this.bookingToday,
     required this.yearsExperience,
@@ -42,18 +78,104 @@ class DoctorProfile {
   final String imageUrl;
   final double rating;
   final int reviewCount;
+  final int priceValue;
   final String priceLabel;
   final int bookingToday;
   final int yearsExperience;
   final String patientsLabel;
   final String nextAvailable;
   final String gender;
-  final String email;
-  final String phone;
+  final String? email;
+  final String? phone;
   final String about;
   final List<String> certifications;
   final List<FacilityInfo> facilities;
   final Color highlight;
+
+  factory DoctorProfile.fromApi(Map<String, dynamic> json) {
+    final facility = json['facility'] as Map<String, dynamic>?;
+    final specialtyRaw = json['specialty'];
+    final specialtyName = specialtyRaw is Map<String, dynamic>
+        ? specialtyRaw['name']?.toString()
+        : specialtyRaw?.toString();
+    final priceValue = (json['priceValue'] as num?)?.toInt() ?? 0;
+    final bookingToday = (json['bookingToday'] as num?)?.toInt() ?? 0;
+    final reviewCount = (json['reviewCount'] as num?)?.toInt() ?? 0;
+    final rating = (json['rating'] as num?)?.toDouble() ?? 0;
+    final yearsExperience = (json['yearsExperience'] as num?)?.toInt() ?? 0;
+
+    return DoctorProfile(
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      specialty: specialtyName ?? 'Chưa cập nhật',
+      focus: json['focus']?.toString() ?? json['title']?.toString() ?? 'Khám tổng quát',
+      imageUrl: json['imageUrl']?.toString() ?? '',
+      rating: rating,
+      reviewCount: reviewCount,
+      priceValue: priceValue,
+      priceLabel: json['priceLabel']?.toString() ?? '${priceValue.toString()}đ/lần',
+      bookingToday: bookingToday,
+      yearsExperience: yearsExperience,
+      patientsLabel: json['patientsLabel']?.toString() ?? '$bookingToday người đã đặt hôm nay',
+      nextAvailable: json['nextAvailable']?.toString() ?? 'Chưa có lịch',
+      gender: json['gender']?.toString() ?? 'Không rõ',
+      email: json['email']?.toString(),
+      phone: json['phone']?.toString(),
+      about: json['about']?.toString() ?? '',
+      certifications: (json['certifications'] as List?)?.whereType<String>().toList() ?? const <String>[],
+      facilities: facility == null ? const <FacilityInfo>[] : [FacilityInfo.fromApi(facility)],
+      highlight: _highlightFromSpecialty(specialtyName),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'name': name,
+      'specialty': specialty,
+      'focus': focus,
+      'imageUrl': imageUrl,
+      'rating': rating,
+      'reviewCount': reviewCount,
+      'priceValue': priceValue,
+      'priceLabel': priceLabel,
+      'bookingToday': bookingToday,
+      'yearsExperience': yearsExperience,
+      'patientsLabel': patientsLabel,
+      'nextAvailable': nextAvailable,
+      'gender': gender,
+      'email': email,
+      'phone': phone,
+      'about': about,
+      'certifications': certifications,
+      'facility': facilities.isEmpty
+          ? null
+          : <String, dynamic>{
+              'name': facilities.first.name,
+              'type': facilities.first.type,
+              'address': facilities.first.address,
+            },
+    };
+  }
+
+  static Color _highlightFromSpecialty(String? specialty) {
+    switch ((specialty ?? '').toLowerCase()) {
+      case 'tim mạch':
+        return const Color(0xFF2DC7C4);
+      case 'nha sĩ':
+        return const Color(0xFFFFB648);
+      case 'thần kinh':
+        return const Color(0xFF8E7AF9);
+      case 'da liễu':
+        return const Color(0xFFFF8C68);
+      case 'nhi khoa':
+        return const Color(0xFF4F8DFD);
+      case 'tiêm chủng':
+        return const Color(0xFF20C8C2);
+      default:
+        return const Color(0xFF20C8C2);
+    }
+  }
 }
 
 class DoctorCatalog extends ChangeNotifier {
@@ -61,214 +183,64 @@ class DoctorCatalog extends ChangeNotifier {
 
   static final DoctorCatalog instance = DoctorCatalog._();
 
-  final List<DoctorProfile> _doctors = const [
-    DoctorProfile(
-      id: 'dr-pediatrician',
-      name: 'Dr. Pediatrician',
-      specialty: 'Tim mach',
-      focus: 'Noi tim mach can thiep',
-      imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80',
-      rating: 4.8,
-      reviewCount: 2821,
-      priceLabel: '100.000d/10p',
-      bookingToday: 36,
-      yearsExperience: 25,
-      patientsLabel: '2821 quan tam',
-      nextAvailable: '10:00 AM ngay mai',
-      gender: 'Male',
-      email: 'paulliston@gmail.com',
-      phone: '0937.444.333',
-      about: 'Bac si chuyen dieu tri benh tim mach va tam soat nguy co dot quy. Lich kham trai dai o nhieu co so de phu hop lich trinh cua benh nhan.',
-      certifications: [
-        'MBBS - Lady Hardinge Medical College, Delhi',
-        'MD (Obstetrics & Gynecology, Delhi)',
-        'MRCOG (London, UK)',
-        'Fellowship in ART and Reproductive Medicine (London)',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Phong kham Da khoa Song Xanh',
-          type: 'Phong kham',
-          address: '74 Nguyen Thi Minh Khai, Quan 3, TP.HCM',
-        ),
-        FacilityInfo(
-          name: 'Benh vien Thanh Pho Thu Duc',
-          type: 'Benh vien',
-          address: '211 Le Van Viet, Thu Duc, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFF2DC7C4),
-    ),
-    DoctorProfile(
-      id: 'dr-fillerup-grab',
-      name: 'Dr. Fillerup Grab',
-      specialty: 'Nha si',
-      focus: 'Chinh nha & phuc hinh rang',
-      imageUrl: 'https://images.unsplash.com/photo-1614608682850-e0d6ed316d47?auto=format&fit=crop&w=900&q=80',
-      rating: 4.7,
-      reviewCount: 1944,
-      priceLabel: '120.000d/lan',
-      bookingToday: 33,
-      yearsExperience: 9,
-      patientsLabel: '69 nguoi da dat hom nay',
-      nextAvailable: '10:00 AM ngay mai',
-      gender: 'Female',
-      email: 'grab.dental@clinic.vn',
-      phone: '0901.111.222',
-      about: 'Bac si chuyen chinh nha tham my va dieu tri khop can. Phu hop benh nhan tre, nguoi can lich kham nhanh va linh hoat giua nhieu co so.',
-      certifications: [
-        'Bac si Rang Ham Mat - Dai hoc Y Duoc TP.HCM',
-        'Chung chi phuc hinh rang su tham my',
-        'Dao tao chinh nha trong suot Invisalign',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Nha khoa Blue Pearl',
-          type: 'Phong kham',
-          address: '25 Tran Quoc Thao, Quan 3, TP.HCM',
-        ),
-        FacilityInfo(
-          name: 'Trung tam Rang Ham Mat Sai Gon',
-          type: 'Trung tam',
-          address: '138 Cach Mang Thang 8, Quan 10, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFF28C76F),
-    ),
-    DoctorProfile(
-      id: 'dr-balestra',
-      name: 'Dr. Balestra',
-      specialty: 'Nha si',
-      focus: 'Nho rang khon & implant',
-      imageUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=900&q=80',
-      rating: 4.6,
-      reviewCount: 1680,
-      priceLabel: '150.000d/lan',
-      bookingToday: 29,
-      yearsExperience: 8,
-      patientsLabel: '56 lich dat trong ngay',
-      nextAvailable: '10:00 AM ngay mai',
-      gender: 'Female',
-      email: 'balestra.implant@hospital.vn',
-      phone: '0908.111.868',
-      about: 'Bac si co the manh ve tieu phau rang khon va implant phuc hinh toan ham. Lich kham da co mat tai ca phong kham va benh vien.',
-      certifications: [
-        'Chung chi Implant Nha khoa ITI',
-        'Dao tao tieu phau rang ham mat',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Benh vien Rang Ham Mat Trung Uong',
-          type: 'Benh vien',
-          address: '201A Nguyen Chi Thanh, Quan 5, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFF4F8DFD),
-    ),
-    DoctorProfile(
-      id: 'dr-mistry-brick',
-      name: 'Dr. Mistry Brick',
-      specialty: 'Nha si',
-      focus: 'Dieu tri tuy & nha khoa tong quat',
-      imageUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=900&q=80',
-      rating: 4.3,
-      reviewCount: 1208,
-      priceLabel: '90.000d/lan',
-      bookingToday: 20,
-      yearsExperience: 11,
-      patientsLabel: '1208 quan tam',
-      nextAvailable: '09:30 AM hom nay',
-      gender: 'Male',
-      email: 'brick.general@clinic.vn',
-      phone: '0912.332.663',
-      about: 'Bac si tong quat phu hop kham dinh ky va dieu tri tuy rang. Co lich lam viec xen ke giua phong kham va benh vien de benh nhan chu dong hon.',
-      certifications: [
-        'Dao tao dieu tri noi nha khoa',
-        'Chung chi nha khoa ky thuat so',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Phong kham Nha khoa Binh An',
-          type: 'Phong kham',
-          address: '44 Nguyen Dinh Chieu, Quan 1, TP.HCM',
-        ),
-        FacilityInfo(
-          name: 'Benh vien Quoc te Nam Sai Gon',
-          type: 'Benh vien',
-          address: '88 Nguyen Huu Tho, Quan 7, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFFFFB648),
-    ),
-    DoctorProfile(
-      id: 'dr-ether-wall',
-      name: 'Dr. Ether Wall',
-      specialty: 'Than kinh',
-      focus: 'Than kinh co xuong khop',
-      imageUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&w=900&q=80',
-      rating: 4.4,
-      reviewCount: 1462,
-      priceLabel: '130.000d/15p',
-      bookingToday: 18,
-      yearsExperience: 13,
-      patientsLabel: '1462 quan tam',
-      nextAvailable: '02:00 PM hom nay',
-      gender: 'Female',
-      email: 'ether.wall@neurology.vn',
-      phone: '0938.007.229',
-      about: 'Bac si co kinh nghiem voi dau nua dau, roi loan giac ngu va benh ly than kinh ngoai bien. Benh nhan co the chon kham tai benh vien hoac co so ve tinh.',
-      certifications: [
-        'Bac si chuyen khoa II Than kinh',
-        'Dao tao dien co va dien nao do',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Benh vien Dai hoc Y Duoc',
-          type: 'Benh vien',
-          address: '215 Hong Bang, Quan 5, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFF8E7AF9),
-    ),
-    DoctorProfile(
-      id: 'dr-johan-smith',
-      name: 'Dr. Johan Smith',
-      specialty: 'Tim mach',
-      focus: 'Noi tim mach tong quat',
-      imageUrl: 'https://images.unsplash.com/photo-1612531386530-97286d97c2d2?auto=format&fit=crop&w=900&q=80',
-      rating: 4.2,
-      reviewCount: 1020,
-      priceLabel: '95.000d/10p',
-      bookingToday: 17,
-      yearsExperience: 10,
-      patientsLabel: '1020 quan tam',
-      nextAvailable: '08:30 AM ngay mai',
-      gender: 'Male',
-      email: 'johan.smith@heartcare.vn',
-      phone: '0907.777.224',
-      about: 'Theo doi huyet ap, roi loan mo mau va tu van phong ngua benh tim mach. Lich kham tap trung vao ca sang tai cac co so gan trung tam.',
-      certifications: [
-        'Dao tao sieu am tim',
-        'Cap cuu noi khoa tim mach',
-      ],
-      facilities: [
-        FacilityInfo(
-          name: 'Phong kham HeartCare Central',
-          type: 'Phong kham',
-          address: '65 Pasteur, Quan 1, TP.HCM',
-        ),
-      ],
-      highlight: Color(0xFF2DC7C4),
-    ),
-  ];
+  static const String _favoriteStorageKey = 'favorite_doctor_profiles';
 
-  final Set<String> _favoriteIds = <String>{
-    'dr-pediatrician',
-    'dr-fillerup-grab',
-    'dr-mistry-brick',
-    'dr-ether-wall',
-    'dr-johan-smith',
-  };
+  final DioClient _dioClient = DioClient();
+  final Set<String> _favoriteIds = <String>{};
+  final Map<String, DoctorProfile> _favoriteProfiles = <String, DoctorProfile>{};
+  List<DoctorProfile> _doctors = <DoctorProfile>[];
+  bool _loading = false;
+  String? _featuredError;
+
+  bool get isLoading => _loading;
+  String? get featuredError => _featuredError;
+
+  Future<void> loadRemote({bool force = false}) async {
+    if (_loading) return;
+    if (!force && _doctors.isNotEmpty) return;
+
+    _loading = true;
+    _featuredError = null;
+    notifyListeners();
+
+    await _loadFavoriteProfilesFromStorage();
+
+    try {
+      final featured = await _fetchDoctors('/doctors/mobile/featured?limit=50');
+      _doctors = featured;
+      await _reconcileFavoriteProfiles(featured);
+    } on DioException catch (e) {
+      _featuredError = 'Không tải được “Bác sĩ nổi bật”${e.response?.statusCode == null ? '' : ' (' + e.response!.statusCode.toString() + ')'}';
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<List<DoctorProfile>> _fetchDoctors(String path) async {
+    final response = await _dioClient.get(path);
+    final items = _unwrapItems(response.data);
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(DoctorProfile.fromApi)
+        .where((doctor) => doctor.id.isNotEmpty && doctor.name.isNotEmpty)
+        .toList();
+  }
+
+  List<dynamic> _unwrapItems(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final wrapped = data['data'];
+      if (wrapped is List) return wrapped;
+      if (wrapped is Map<String, dynamic>) {
+        final items = wrapped['items'];
+        if (items is List) return items;
+      }
+      final items = data['items'];
+      if (items is List) return items;
+    }
+    if (data is List) return data;
+    return <dynamic>[];
+  }
 
   List<DoctorProfile> get featuredDoctors {
     final result = [..._doctors];
@@ -276,8 +248,11 @@ class DoctorCatalog extends ChangeNotifier {
     return result;
   }
 
-  List<DoctorProfile> get myDoctors =>
-      _doctors.where((doctor) => _favoriteIds.contains(doctor.id)).toList();
+  List<DoctorProfile> get myDoctors {
+    final result = _favoriteProfiles.values.toList();
+    result.sort((a, b) => b.rating.compareTo(a.rating));
+    return result;
+  }
 
   DoctorProfile? findById(String id) {
     for (final doctor in _doctors) {
@@ -285,17 +260,126 @@ class DoctorCatalog extends ChangeNotifier {
         return doctor;
       }
     }
+    final favorite = _favoriteProfiles[id];
+    if (favorite != null) {
+      return favorite;
+    }
     return null;
   }
 
   bool isFavorite(String id) => _favoriteIds.contains(id);
 
-  void toggleFavorite(String id) {
-    if (_favoriteIds.contains(id)) {
-      _favoriteIds.remove(id);
+  Future<void> toggleFavorite(DoctorProfile doctor) async {
+    if (_favoriteIds.contains(doctor.id)) {
+      _favoriteIds.remove(doctor.id);
+      _favoriteProfiles.remove(doctor.id);
     } else {
-      _favoriteIds.add(id);
+      _favoriteIds.add(doctor.id);
+      _favoriteProfiles[doctor.id] = doctor;
     }
+    await _saveFavoriteProfilesToStorage();
     notifyListeners();
   }
+
+  Future<void> _loadFavoriteProfilesFromStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final stored = prefs.getStringList(_favoriteStorageKey) ?? <String>[];
+    _favoriteIds.clear();
+    _favoriteProfiles.clear();
+
+    for (final encoded in stored) {
+      try {
+        final decoded = jsonDecode(encoded);
+        if (decoded is Map<String, dynamic>) {
+          final doctor = DoctorProfile.fromApi(decoded);
+          if (doctor.id.isNotEmpty) {
+            _favoriteIds.add(doctor.id);
+            _favoriteProfiles[doctor.id] = doctor;
+          }
+        }
+      } catch (_) {
+        // Ignore malformed favorites.
+      }
+    }
+  }
+
+  Future<void> _saveFavoriteProfilesToStorage() async {
+    final prefs = await SharedPreferences.getInstance();
+    final encoded = _favoriteProfiles.values.map((doctor) => jsonEncode(doctor.toJson())).toList();
+    await prefs.setStringList(_favoriteStorageKey, encoded);
+  }
+
+  Future<void> _reconcileFavoriteProfiles(List<DoctorProfile> latestDoctors) async {
+    final latestById = <String, DoctorProfile>{
+      for (final doctor in latestDoctors) doctor.id: doctor,
+    };
+    var updated = false;
+    for (final id in _favoriteIds) {
+      final latest = latestById[id];
+      if (latest != null) {
+        _favoriteProfiles[id] = latest;
+        updated = true;
+      }
+    }
+    if (updated) {
+      await _saveFavoriteProfilesToStorage();
+    }
+  }
 }
+
+class SpecialtyCatalog extends ChangeNotifier {
+  SpecialtyCatalog._();
+
+  static final SpecialtyCatalog instance = SpecialtyCatalog._();
+
+  final DioClient _dioClient = DioClient();
+  List<SpecialtyChoice> _specialties = <SpecialtyChoice>[];
+  bool _loading = false;
+  String? _error;
+
+  bool get isLoading => _loading;
+  String? get error => _error;
+  List<SpecialtyChoice> get specialties => _specialties;
+
+  Future<void> loadRemote({bool force = false}) async {
+    if (_loading) return;
+    if (!force && _specialties.isNotEmpty) return;
+
+    _loading = true;
+    _error = null;
+    notifyListeners();
+
+    try {
+      final response = await _dioClient.get('/specialties');
+      final items = _unwrapItems(response.data)
+          .whereType<Map<String, dynamic>>()
+          .map(SpecialtyChoice.fromApi)
+          .where((specialty) => specialty.id.isNotEmpty && specialty.name.isNotEmpty)
+          .toList();
+      _specialties = items;
+    } catch (e) {
+      _error = e.toString();
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  List<dynamic> _unwrapItems(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final wrapped = data['data'];
+      if (wrapped is List) return wrapped;
+      if (wrapped is Map<String, dynamic>) {
+        final items = wrapped['items'];
+        if (items is List) return items;
+      }
+      final items = data['items'];
+      if (items is List) return items;
+    }
+    if (data is List) return data;
+    return <dynamic>[];
+  }
+}
+
+
+

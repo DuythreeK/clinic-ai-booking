@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/services/auth_service.dart';
@@ -24,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final DoctorCatalog _catalog = DoctorCatalog.instance;
+  final SpecialtyCatalog _specialtyCatalog = SpecialtyCatalog.instance;
   late int _currentIndex;
 
   int get _navIndex => _currentIndex == 2 ? 3 : _currentIndex;
@@ -32,6 +33,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentIndex = 0;
+    _catalog.loadRemote();
+    _specialtyCatalog.loadRemote();
   }
 
   @override
@@ -50,15 +53,20 @@ class _HomeScreenState extends State<HomeScreen> {
     final pages = [
       _HomeFeedPage(
         catalog: _catalog,
+        specialtyCatalog: _specialtyCatalog,
         onOpenDoctor: _openDoctor,
         authService: widget.authService,
       ),
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
       const _ComingSoonPage(
+        icon: Icons.calendar_month_rounded,
+        title: 'Lá»‹ch háº¹n',
+        subtitle: 'Khu vá»±c nÃ y sáº½ hiá»ƒn thá»‹ lá»‹ch háº¹n vÃ  lá»‹ch tÃ¡i khÃ¡m cá»§a báº¡n.',
+      ),
+      const _ComingSoonPage(
         icon: Icons.chat_bubble_rounded,
-        title: 'Tin nhan',
-        subtitle:
-            'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
+        title: 'Tin nháº¯n',
+        subtitle: 'ThÃ´ng bÃ¡o tÆ° váº¥n vÃ  trao Ä‘á»•i vá»›i phÃ²ng khÃ¡m sáº½ hiá»ƒn thá»‹ á»Ÿ Ä‘Ã¢y.',
       ),
     ];
 
@@ -68,18 +76,18 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _MainBottomNav(
         currentIndex: _navIndex,
         onTap: (index) {
-          if (index == 2) {
-            context.push('/booking');
+          if (index == 3) {
+            context.push('/vaccination-booking');
             return;
           }
 
-          if (index == 4) {
+          if (index == 5) {
             context.push('/ai-triage');
             return;
           }
 
           setState(() {
-            _currentIndex = index == 3 ? 2 : index;
+            _currentIndex = index > 3 ? index - 1 : index;
           });
         },
       ),
@@ -108,6 +116,7 @@ class _MainBottomNav extends StatelessWidget {
       Icons.home_rounded,
       Icons.favorite_rounded,
       Icons.calendar_month_rounded,
+      Icons.vaccines_outlined,
       Icons.chat_bubble_rounded,
       Icons.auto_awesome_rounded,
     ];
@@ -129,7 +138,9 @@ class _MainBottomNav extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: List.generate(items.length, (index) {
-          final isSelected = index == currentIndex && index != 4;
+          final pageIndex = index > 3 ? index - 1 : index;
+          final isSelected =
+              index != 3 && index != 5 && pageIndex == currentIndex;
           return InkWell(
             borderRadius: BorderRadius.circular(20),
             onTap: () => onTap(index),
@@ -143,10 +154,15 @@ class _MainBottomNav extends StatelessWidget {
                     isSelected ? const Color(0x162DC7C4) : Colors.transparent,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(
-                items[index],
-                color: isSelected ? selected : unselected,
-                size: 24,
+              child: Center(
+                child: Transform.rotate(
+                  angle: index == 3 ? -0.75 : 0,
+                  child: Icon(
+                    items[index],
+                    color: isSelected ? selected : unselected,
+                    size: index == 3 ? 23 : 24,
+                  ),
+                ),
               ),
             ),
           );
@@ -159,11 +175,13 @@ class _MainBottomNav extends StatelessWidget {
 class _HomeFeedPage extends StatefulWidget {
   const _HomeFeedPage({
     required this.catalog,
+    required this.specialtyCatalog,
     required this.onOpenDoctor,
     required this.authService,
   });
 
   final DoctorCatalog catalog;
+  final SpecialtyCatalog specialtyCatalog;
   final ValueChanged<DoctorProfile> onOpenDoctor;
   final AuthService authService;
 
@@ -172,23 +190,17 @@ class _HomeFeedPage extends StatefulWidget {
 }
 
 class _HomeFeedPageState extends State<_HomeFeedPage> {
-  static const _specialties = [
-    _SpecialtyItem('Than', Icons.air, [Color(0xFF5661F6), Color(0xFF3F50E6)]),
-    _SpecialtyItem(
-        'Tim', Icons.favorite_border, [Color(0xFF25D0C8), Color(0xFF1FB8AF)]),
-    _SpecialtyItem('Rang', Icons.emoji_emotions_outlined,
-        [Color(0xFFFFB357), Color(0xFFFF9A3B)]),
-    _SpecialtyItem('Co xuong', Icons.accessibility_new,
-        [Color(0xFFFF6A6D), Color(0xFFFF5A60)]),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.catalog,
+      animation: Listenable.merge([widget.catalog, widget.specialtyCatalog]),
       builder: (context, _) {
         final featured = widget.catalog.featuredDoctors.take(6).toList();
         final mine = widget.catalog.myDoctors;
+        final specialties = widget.specialtyCatalog.specialties.take(4).toList();
+        final loading = widget.catalog.isLoading && featured.isEmpty && mine.isEmpty;
+        final specialtyLoading =
+            widget.specialtyCatalog.isLoading && specialties.isEmpty;
 
         return Container(
           color: const Color(0xFFF4F9FF),
@@ -203,62 +215,121 @@ class _HomeFeedPageState extends State<_HomeFeedPage> {
                       const SizedBox(height: 12),
                       _SearchCard(),
                       const SizedBox(height: 14),
-                      _SectionTitle(title: 'Cac chuyen khoa hien co'),
+                      _SectionTitle(
+                        title: 'Các chuyên khoa hiện có',
+                        actionLabel: 'Xem thêm',
+                        onActionTap: () => context.push('/doctors/explore'),
+                      ),
                       const SizedBox(height: 10),
-                      Row(
-                        children: _specialties
-                            .map(
-                              (item) => Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.only(right: 8),
-                                  child: _SpecialtyCard(item: item),
+                      SizedBox(
+                        height: 96,
+                        child: specialtyLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: specialties
+                                      .map(
+                                        (item) => Padding(
+                                          padding: const EdgeInsets.only(right: 10),
+                                          child: _SpecialtyCard(
+                                            item: item,
+                                            onTap: () {
+                                              context.push(
+                                                '/doctors/explore?specialty=${Uri.encodeComponent(item.name)}',
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                      )
+                                      .toList(),
                                 ),
                               ),
-                            )
-                            .toList()
-                          ..removeLast(),
                       ),
                       const SizedBox(height: 16),
                       _SectionTitle(
-                          title: 'Bac si noi bat', actionLabel: 'Xem >'),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        height: 252,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: featured.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(width: 10),
-                          itemBuilder: (context, index) {
-                            final doctor = featured[index];
-                            return _FeaturedDoctorCard(
-                              doctor: doctor,
-                              isFavorite: widget.catalog.isFavorite(doctor.id),
-                              onFavorite: () =>
-                                  widget.catalog.toggleFavorite(doctor.id),
-                              onTap: () => widget.onOpenDoctor(doctor),
-                            );
-                          },
-                        ),
+                        title: 'Bác sĩ nổi bật',
+                        actionLabel: 'Xem thêm',
+                        onActionTap: () => context.push('/featured-doctors'),
                       ),
+                      const SizedBox(height: 10),
+                      if (loading)
+                        const SizedBox(
+                          height: 252,
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else
+                        SizedBox(
+                          height: 252,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: featured.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(width: 10),
+                            itemBuilder: (context, index) {
+                              final doctor = featured[index];
+                              return _FeaturedDoctorCard(
+                                doctor: doctor,
+                                isFavorite: widget.catalog.isFavorite(doctor.id),
+                                onFavorite: () =>
+                                    widget.catalog.toggleFavorite(doctor),
+                                onTap: () => widget.onOpenDoctor(doctor),
+                              );
+                            },
+                          ),
+                        ),
                       const SizedBox(height: 18),
                       _SectionTitle(
-                          title: 'Bac si cua toi', actionLabel: 'Xem >'),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        height: 64,
-                        child: ListView.separated(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: mine.length,
-                          separatorBuilder: (_, __) => const SizedBox(width: 8),
-                          itemBuilder: (context, index) {
-                            final doctor = mine[index];
-                            return _MiniDoctorChip(
-                                doctor: doctor,
-                                onTap: () => widget.onOpenDoctor(doctor));
-                          },
-                        ),
+                        title: 'Bác sĩ của tôi',
+                        actionLabel: 'Xem thêm',
+                        onActionTap: () => context.push('/my-doctors'),
                       ),
+                      const SizedBox(height: 8),
+                      if (loading)
+                        const SizedBox(
+                          height: 64,
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (mine.isEmpty)
+                        Container(
+                          height: 64,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFFD9EAF6)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.favorite_border_rounded, color: Color(0xFF94A3B8)),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Chưa có bác sĩ đã tim',
+                                  style: TextStyle(
+                                    color: Color(0xFF334155),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        SizedBox(
+                          height: 64,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: mine.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final doctor = mine[index];
+                              return _MiniDoctorChip(
+                                  doctor: doctor,
+                                  onTap: () => widget.onOpenDoctor(doctor));
+                            },
+                          ),
+                        ),
                     ],
                   ),
                 ),
@@ -389,10 +460,11 @@ class _SearchCard extends StatelessWidget {
 }
 
 class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({required this.title, this.actionLabel});
+  const _SectionTitle({required this.title, this.actionLabel, this.onActionTap});
 
   final String title;
   final String? actionLabel;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -407,53 +479,98 @@ class _SectionTitle extends StatelessWidget {
               color: Color(0xFF27364D)),
         ),
         if (actionLabel != null)
-          Text(actionLabel!,
+          GestureDetector(
+            onTap: onActionTap,
+            child: Text(
+              actionLabel!,
               style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF93A0B2),
-                  fontWeight: FontWeight.w600)),
+                  fontWeight: FontWeight.w600),
+            ),
+          ),
       ],
     );
   }
 }
 
-class _SpecialtyItem {
-  const _SpecialtyItem(this.label, this.icon, this.colors);
-
-  final String label;
-  final IconData icon;
-  final List<Color> colors;
-}
-
 class _SpecialtyCard extends StatelessWidget {
-  const _SpecialtyCard({required this.item});
+  const _SpecialtyCard({required this.item, required this.onTap});
 
-  final _SpecialtyItem item;
+  final SpecialtyChoice item;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 82,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-            colors: item.colors,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(item.icon, color: Colors.white, size: 24),
-          const SizedBox(height: 6),
-          Text(item.label,
-              style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 12)),
-        ],
+    final colors = _colorsForSpecialty(item.name);
+    final icon = _iconForSpecialty(item.name);
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 92,
+        height: 92,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+              colors: colors, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 24),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                item.name,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12),
+              ),
+            ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+IconData _iconForSpecialty(String specialty) {
+  switch (specialty.toLowerCase()) {
+    case 'tim mạch':
+      return Icons.favorite_rounded;
+    case 'nha sĩ':
+      return Icons.medical_services_rounded;
+    case 'nhi khoa':
+      return Icons.child_care_rounded;
+    case 'da liễu':
+      return Icons.spa_rounded;
+    case 'tiêm chủng':
+      return Icons.vaccines_rounded;
+    default:
+      return Icons.local_hospital_rounded;
+  }
+}
+
+List<Color> _colorsForSpecialty(String specialty) {
+  switch (specialty.toLowerCase()) {
+    case 'tim mạch':
+      return const [Color(0xFF25D0C8), Color(0xFF1FB8AF)];
+    case 'nha sĩ':
+      return const [Color(0xFFFFB357), Color(0xFFFF9A3B)];
+    case 'nhi khoa':
+      return const [Color(0xFF5661F6), Color(0xFF3F50E6)];
+    case 'da liễu':
+      return const [Color(0xFFFF6A6D), Color(0xFFFF5A60)];
+    case 'tiêm chủng':
+      return const [Color(0xFF20C8C2), Color(0xFF2A8BFF)];
+    default:
+      return const [Color(0xFF6B7CFF), Color(0xFF4F8DFD)];
   }
 }
 
@@ -672,3 +789,13 @@ class _ComingSoonPage extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
+
+

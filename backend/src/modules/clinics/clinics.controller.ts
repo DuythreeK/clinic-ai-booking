@@ -20,6 +20,14 @@ export class ClinicsController {
     );
   }
 
+  @Get('mobile')
+  async getMobileFacilities(
+    @Query('search') search?: string,
+    @Query('facilityType') facilityType?: string,
+  ) {
+    return this.clinicsService.getMobileFacilities(search, facilityType);
+  }
+
   @Get(':id')
   async getClinicById(@Param('id') id: string) {
     return this.clinicsService.getClinicById(id);

@@ -7,51 +7,59 @@ class DoctorScaffold extends StatelessWidget {
     super.key,
     required this.title,
     required this.child,
+    this.onBack,
   });
 
   final String title;
   final Widget child;
+  final VoidCallback? onBack;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [Color(0xFFDDF6FF), Color(0xFFF7FDFF)],
+    return Material(
+      color: Colors.transparent,
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Color(0xFFDDF6FF), Color(0xFFF7FDFF)],
+          ),
         ),
-      ),
-      child: SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    radius: 16,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Color(0xFF5B6B84)),
-                  ),
-                  Expanded(
-                    child: Text(
-                      title,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF26364E),
+        child: SafeArea(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                child: Row(
+                  children: [
+                    GestureDetector(
+                      onTap: onBack ?? () => Navigator.of(context).maybePop(),
+                      child: const CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.white,
+                        child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: Color(0xFF5B6B84)),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 32),
-                ],
+                    Expanded(
+                      child: Text(
+                        title,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF26364E),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 32),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 10),
-            Expanded(child: child),
-          ],
+              const SizedBox(height: 10),
+              Expanded(child: child),
+            ],
+          ),
         ),
       ),
     );
@@ -87,7 +95,7 @@ class DoctorSearchBar extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Tim kiem.....',
+          hintText: 'Tìm kiếm.....',
           prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8FA1B8)),
           suffixIcon: controller.text.isEmpty
               ? const Icon(Icons.close_rounded, color: Color(0xFF8FA1B8))
@@ -174,11 +182,11 @@ class DoctorSortOptions extends StatelessWidget {
   final ValueChanged<String> onSelect;
 
   static const options = <String>[
-    'Tat ca BS',
-    'Danh gia cao nhat',
-    'Kham nhanh nhat',
-    'Gia kham tang dan',
-    'Gia kham giam dan',
+    'Tất cả BS',
+    'Đánh giá cao nhất',
+    'Khám nhanh nhất',
+    'Giá khám tăng dần',
+    'Giá khám giảm dần',
   ];
 
   @override
@@ -303,6 +311,22 @@ class DoctorCard extends StatelessWidget {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE9FBF4),
+                                borderRadius: BorderRadius.circular(999),
+                              ),
+                              child: Text(
+                                doctor.priceLabel,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF18B76A),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -318,7 +342,7 @@ class DoctorCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Row(
                     children: [
                       ...List.generate(
@@ -354,7 +378,7 @@ class DoctorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${doctor.yearsExperience} kinh nghiem trong nganh',
+                    '${doctor.yearsExperience} kinh nghiệm trong ngành',
                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7D97)),
                   ),
                   const SizedBox(height: 6),
@@ -364,7 +388,7 @@ class DoctorCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          showBookingHint ? '${doctor.bookingToday} nguoi da dat hom nay' : doctor.focus,
+                          showBookingHint ? '${doctor.bookingToday} người đã đặt hôm nay' : doctor.focus,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12, color: Color(0xFF6F849F)),
@@ -380,7 +404,7 @@ class DoctorCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Lich kha dung',
+                              'Lịch khả dụng',
                               style: TextStyle(
                                 color: doctor.highlight,
                                 fontSize: 12,
@@ -407,7 +431,7 @@ class DoctorCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
-                          'Dat ngay',
+                          'Đặt ngay',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -421,6 +445,76 @@ class DoctorCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class StatusCard extends StatelessWidget {
+  const StatusCard({
+    required this.title,
+    required this.subtitle,
+    this.onRetry,
+  });
+
+  final String title;
+  final String subtitle;
+  final VoidCallback? onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.95),
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x120C4663),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF26364E),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            style: const TextStyle(
+              fontSize: 13,
+              height: 1.5,
+              color: Color(0xFF6E829C),
+            ),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton(
+                onPressed: onRetry,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF20C6C1),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                child: const Text('Thử lại'),
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }

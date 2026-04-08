@@ -148,7 +148,7 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => DoctorDetailScreen(doctor: doctor),
+              builder: (context) => DoctorSearchDetailScreen(doctor: doctor),
             ),
           );
         },
@@ -269,19 +269,19 @@ class _DoctorSearchScreenState extends State<DoctorSearchScreen> {
 }
 
 // Doctor Detail Screen
-class DoctorDetailScreen extends StatefulWidget {
+class DoctorSearchDetailScreen extends StatefulWidget {
   final Map<String, dynamic> doctor;
 
-  const DoctorDetailScreen({
+  const DoctorSearchDetailScreen({
     Key? key,
     required this.doctor,
   }) : super(key: key);
 
   @override
-  State<DoctorDetailScreen> createState() => _DoctorDetailScreenState();
+  State<DoctorSearchDetailScreen> createState() => _DoctorSearchDetailScreenState();
 }
 
-class _DoctorDetailScreenState extends State<DoctorDetailScreen> {
+class _DoctorSearchDetailScreenState extends State<DoctorSearchDetailScreen> {
   DateTime? _selectedDate;
   String? _selectedTime;
 

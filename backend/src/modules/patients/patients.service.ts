@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+﻿import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreatePatientProfileDto } from './dto/patient.dto';
 import { okResponse } from '@/common/utils/api-response';
+import { formatDateOnly } from '@/common/utils/formatters';
 
 @Injectable()
 export class PatientsService {
@@ -17,6 +18,9 @@ export class PatientsService {
       userId: profile.user_id.toString(),
       fullName: profile.full_name,
       phoneNumber: profile.phone_number,
+      citizenId: profile.citizen_id,
+      insuranceNumber: profile.insurance_number,
+      email: profile.email,
       gender: profile.gender,
       dateOfBirth: profile.date_of_birth,
       addressDetail: profile.address_detail,
@@ -39,6 +43,9 @@ export class PatientsService {
         user_id: this.toBigIntId(userId),
         full_name: dto.fullName,
         phone_number: dto.phoneNumber,
+        citizen_id: dto.citizenId,
+        insurance_number: dto.insuranceNumber,
+        email: dto.email,
         occupation: dto.occupation,
         ethnicity: dto.ethnicity,
         nationality: dto.nationality,
@@ -56,25 +63,25 @@ export class PatientsService {
       },
     });
 
-    return okResponse(
-      'Create patient profile successfully',
-      {
-        id: Number(profile.patient_id),
-        fullName: profile.full_name,
-        phoneNumber: profile.phone_number,
-        gender: profile.gender,
-        dateOfBirth: profile.date_of_birth,
-        occupation: profile.occupation,
-        ethnicity: profile.ethnicity,
-        nationality: profile.nationality,
-        province: profile.province,
-        district: profile.district,
-        ward: profile.ward,
-        addressDetail: profile.address_detail,
-        relationshipToUser: profile.relationship_to_user,
-        isPrimary: profile.is_primary === 1,
-      },
-    );
+    return okResponse('Create patient profile successfully', {
+      id: Number(profile.patient_id),
+      fullName: profile.full_name,
+      phoneNumber: profile.phone_number,
+      citizenId: profile.citizen_id,
+      insuranceNumber: profile.insurance_number,
+      email: profile.email,
+      gender: profile.gender,
+      dateOfBirth: profile.date_of_birth,
+      occupation: profile.occupation,
+      ethnicity: profile.ethnicity,
+      nationality: profile.nationality,
+      province: profile.province,
+      district: profile.district,
+      ward: profile.ward,
+      addressDetail: profile.address_detail,
+      relationshipToUser: profile.relationship_to_user,
+      isPrimary: profile.is_primary === 1,
+    });
   }
 
   async getPatientProfiles(userId: string) {
@@ -89,8 +96,60 @@ export class PatientsService {
         id: Number(profile.patient_id),
         fullName: profile.full_name,
         phoneNumber: profile.phone_number,
+        citizenId: profile.citizen_id,
+        insuranceNumber: profile.insurance_number,
+        email: profile.email,
         gender: profile.gender,
         dateOfBirth: profile.date_of_birth,
+        occupation: profile.occupation,
+        ethnicity: profile.ethnicity,
+        nationality: profile.nationality,
+        addressDetail: profile.address_detail,
+        province: profile.province,
+        district: profile.district,
+        ward: profile.ward,
+        medicalConditions: profile.medical_conditions,
+        allergies: profile.allergies,
+        emergencyContact: profile.emergency_contact,
+        relationshipToUser: profile.relationship_to_user,
+        isPrimary: profile.is_primary === 1,
+      })),
+    );
+  }
+
+  async getMobilePatientProfiles(userId: string) {
+    const profiles = await this.prisma.patientProfile.findMany({
+      where: { user_id: this.toBigIntId(userId) },
+      orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
+    });
+
+    return okResponse(
+      'Get mobile patient profiles successfully',
+      profiles.map((profile) => ({
+        id: Number(profile.patient_id),
+        fullName: profile.full_name,
+        phoneNumber: profile.phone_number,
+        citizenId: profile.citizen_id,
+        insuranceNumber: profile.insurance_number,
+        email: profile.email,
+        gender:
+          profile.gender === 'male'
+            ? 'Nam'
+            : profile.gender === 'female'
+              ? 'Nữ'
+              : profile.gender === 'other'
+                ? 'Khác'
+                : null,
+        birthDate: formatDateOnly(profile.date_of_birth),
+        occupation: profile.occupation,
+        ethnicity: profile.ethnicity,
+        nationality: profile.nationality,
+        province: profile.province,
+        district: profile.district,
+        ward: profile.ward,
+        addressDetail: profile.address_detail,
+        emergencyContact: profile.emergency_contact,
+        relationshipToUser: profile.relationship_to_user,
         isPrimary: profile.is_primary === 1,
       })),
     );

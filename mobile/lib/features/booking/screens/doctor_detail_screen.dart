@@ -1,6 +1,7 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/api/dio_client.dart';
 import 'doctor_hub_models.dart';
 import '../../auth/services/auth_service.dart';
 
@@ -17,7 +18,6 @@ class DoctorDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final catalog = DoctorCatalog.instance;
-    final reviews = _buildReviews();
 
     return AnimatedBuilder(
       animation: catalog,
@@ -46,7 +46,7 @@ class DoctorDetailScreen extends StatelessWidget {
                         ),
                         const Expanded(
                           child: Text(
-                            'Chi tiet bac si',
+                            'Chi tiết bác sĩ',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
@@ -108,7 +108,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                                 ),
                                               ),
                                               GestureDetector(
-                                                onTap: () => catalog.toggleFavorite(doctor.id),
+                                                onTap: () => catalog.toggleFavorite(doctor),
                                                 child: Icon(
                                                   isFavorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                                                   color: Colors.red,
@@ -134,7 +134,9 @@ class DoctorDetailScreen extends StatelessWidget {
                                                 (index) => Icon(
                                                   Icons.star_rounded,
                                                   size: 17,
-                                                  color: index < doctor.rating.round() ? const Color(0xFFFFC531) : const Color(0xFFDDE6F0),
+                                                  color: index < doctor.rating.round()
+                                                      ? const Color(0xFFFFC531)
+                                                      : const Color(0xFFDDE6F0),
                                                 ),
                                               ),
                                               const SizedBox(width: 8),
@@ -181,13 +183,16 @@ class DoctorDetailScreen extends StatelessWidget {
                                                 context.push('/booking?doctorId=${doctor.id}');
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 18,
+                                                  vertical: 10,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: const Color(0xFF26C495),
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: const Text(
-                                                  'Dat kham',
+                                                  'Đặt khám',
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.w800,
@@ -202,15 +207,15 @@ class DoctorDetailScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 18),
-                                _InfoStripe(label: 'Gender', value: doctor.gender, color: const Color(0xFF35A7FF)),
-                                _InfoStripe(label: 'Chuyen mon', value: doctor.focus, color: const Color(0xFF35A7FF)),
-                                _InfoStripe(label: 'Email', value: doctor.email, color: const Color(0xFF35A7FF)),
-                                _InfoStripe(label: 'Phone', value: doctor.phone, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Giới tính', value: doctor.gender, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Chuyên môn', value: doctor.focus, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Email', value: doctor.email ?? 'Chưa cập nhật', color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Số điện thoại', value: doctor.phone ?? 'Chưa cập nhật', color: const Color(0xFF35A7FF)),
                                 const SizedBox(height: 10),
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    '${doctor.yearsExperience}+ years of experience',
+                                    '${doctor.yearsExperience}+ năm kinh nghiệm',
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w900,
@@ -232,7 +237,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 _SectionCard(
-                                  title: 'Co so kham / benh vien',
+                                  title: 'Cơ sở khám / bệnh viện',
                                   borderColor: const Color(0xFF2DC7C4),
                                   child: Column(
                                     children: doctor.facilities.map((facility) {
@@ -292,7 +297,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 14),
                                 _SectionCard(
-                                  title: 'Chung chi & dao tao',
+                                  title: 'Chứng chỉ & đào tạo',
                                   borderColor: const Color(0xFF2BDC74),
                                   child: Column(
                                     children: doctor.certifications.map((item) {
@@ -333,7 +338,7 @@ class DoctorDetailScreen extends StatelessWidget {
                           const SizedBox(height: 18),
                           GestureDetector(
                             behavior: HitTestBehavior.opaque,
-                            onTap: () => _openReviewsSheet(context, reviews),
+                            onTap: () => _openReviewsSheet(context),
                             child: Container(
                               width: double.infinity,
                               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
@@ -351,7 +356,7 @@ class DoctorDetailScreen extends StatelessWidget {
                               child: Column(
                                 children: [
                                   const Text(
-                                    'Xem danh gia',
+                                    'Xem đánh giá',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
@@ -366,9 +371,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                       (index) => Icon(
                                         Icons.star_rounded,
                                         size: 34,
-                                        color: index < 4
-                                            ? const Color(0xFFFFB800)
-                                            : const Color(0xFFD9E3EF),
+                                        color: index < 4 ? const Color(0xFFFFB800) : const Color(0xFFD9E3EF),
                                       ),
                                     ),
                                   ),
@@ -389,40 +392,31 @@ class DoctorDetailScreen extends StatelessWidget {
     );
   }
 
-  List<_DoctorReview> _buildReviews() {
-    return const [
-      _DoctorReview(
-        name: 'Quang Huy',
-        avatar: 'QH',
-        rating: 4,
-        comment:
-            'Minh kham voi bac si thay kha on, tu van ro rang va de hieu. Bac si tham kham ky, huong dan cham soc va dung thuoc chi tiet.',
-      ),
-      _DoctorReview(
-        name: 'Minh Anh',
-        avatar: 'MA',
-        rating: 5,
-        comment:
-            'Rat hai long! Bac si nhiet tinh, nhe nhang va lang nghe ky. Chan doan ro rang, giai thich nguyen nhan va huong dieu tri, de hieu. Minh cam thay yen tam va se gioi thieu cho nguoi than.',
-      ),
-      _DoctorReview(
-        name: 'Duc Minh',
-        avatar: 'DM',
-        rating: 4,
-        comment:
-            'Bac si chuyen mon tot, kham can than va theo doi ky tinh trang. Dan do day du sau khi kham. Neu co the cai thien them phan dat lich nhanh hon thi se tot hon nua.',
-      ),
-      _DoctorReview(
-        name: 'Lan Huong',
-        avatar: 'LH',
-        rating: 5,
-        comment:
-            'Khong gian kham sach se, lich kham dung gio. Bac si nhin tong quat rat ky va dua ra huong xu ly hop ly.',
-      ),
-    ];
+  Future<List<_DoctorReview>> _loadReviews() async {
+    final response = await DioClient().get('/doctors/${doctor.id}/reviews');
+    final items = _unwrapList(response.data);
+    return items
+        .whereType<Map<String, dynamic>>()
+        .map(_DoctorReview.fromApi)
+        .toList();
   }
 
-  void _openReviewsSheet(BuildContext context, List<_DoctorReview> reviews) {
+  List<dynamic> _unwrapList(dynamic raw) {
+    if (raw is Map<String, dynamic>) {
+      final data = raw['data'];
+      if (data is List) return data;
+      if (data is Map<String, dynamic>) {
+        final items = data['items'];
+        if (items is List) return items;
+      }
+    }
+    if (raw is List) return raw;
+    return const <dynamic>[];
+  }
+
+  void _openReviewsSheet(BuildContext context) {
+    final reviewsFuture = _loadReviews();
+
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -454,7 +448,7 @@ class DoctorDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Danh gia cua moi nguoi',
+                      'Đánh giá của mọi người',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -463,14 +457,46 @@ class DoctorDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 14),
                     Expanded(
-                      child: ListView.separated(
-                        controller: scrollController,
-                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                        itemCount: reviews.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 24),
-                        itemBuilder: (context, index) {
-                          final review = reviews[index];
-                          return _ReviewTile(review: review);
+                      child: FutureBuilder<List<_DoctorReview>>(
+                        future: reviewsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+
+                          if (snapshot.hasError) {
+                            return const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(24),
+                                child: Text(
+                                  'Không tải được đánh giá.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    color: Color(0xFF34455E),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }
+
+                          final reviews = snapshot.data ?? const <_DoctorReview>[];
+                          if (reviews.isEmpty) {
+                            return const Center(
+                              child: Text('Chưa có đánh giá nào.'),
+                            );
+                          }
+
+                          return ListView.separated(
+                            controller: scrollController,
+                            padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                            itemCount: reviews.length,
+                            separatorBuilder: (_, __) => const SizedBox(height: 24),
+                            itemBuilder: (context, index) {
+                              final review = reviews[index];
+                              return _ReviewTile(review: review);
+                            },
+                          );
                         },
                       ),
                     ),
@@ -481,6 +507,29 @@ class DoctorDetailScreen extends StatelessWidget {
           },
         );
       },
+    );
+  }
+}
+
+class _DoctorReview {
+  const _DoctorReview({
+    required this.name,
+    required this.avatar,
+    required this.rating,
+    required this.comment,
+  });
+
+  final String name;
+  final String avatar;
+  final int rating;
+  final String comment;
+
+  factory _DoctorReview.fromApi(Map<String, dynamic> json) {
+    return _DoctorReview(
+      name: json['reviewerName']?.toString() ?? 'Khách hàng',
+      avatar: json['reviewerAvatar']?.toString() ?? 'KH',
+      rating: (json['rating'] as num?)?.toInt() ?? 0,
+      comment: json['comment']?.toString() ?? '',
     );
   }
 }
@@ -630,20 +679,6 @@ class _DoctorHeroImage extends StatelessWidget {
   }
 }
 
-class _DoctorReview {
-  const _DoctorReview({
-    required this.name,
-    required this.avatar,
-    required this.rating,
-    required this.comment,
-  });
-
-  final String name;
-  final String avatar;
-  final int rating;
-  final String comment;
-}
-
 class _ReviewTile extends StatelessWidget {
   const _ReviewTile({required this.review});
 
@@ -707,3 +742,4 @@ class _ReviewTile extends StatelessWidget {
     );
   }
 }
+

@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../auth/services/auth_service.dart';
@@ -135,7 +135,11 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
                     Navigator.of(context).pop();
                     context.push('/profile');
                   }),
-                  _buildMenuItem(Icons.assignment_outlined, 'Lịch sử khám', onTap: () {
+                  _buildMenuItem(Icons.calendar_month_outlined, 'Lịch hẹn', onTap: () {
+                    Navigator.of(context).pop();
+                    context.push('/appointments');
+                  }),
+                  _buildMenuItem(Icons.assignment_outlined, 'Lịch sử phiếu khám', onTap: () {
                     Navigator.of(context).pop();
                     context.push('/history');
                   }),
