@@ -59,18 +59,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (mounted) {
         // Show success message and navigate to login
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đăng kí thành công! Vui lòng đăng nhập')),
+          const SnackBar(
+              content: Text('Đăng kí thành công! Vui lòng đăng nhập')),
         );
         context.go('/login');
       }
+    } on AuthException catch (e) {
+      setState(() => errorMessage = e.message);
+      logger.e('❌ Register error: ${e.message}');
     } catch (e) {
-      setState(() {
-        if (e.toString().contains('already exists')) {
-          errorMessage = 'Email hoặc số điện thoại đã tồn tại';
-        } else {
-          errorMessage = 'Đăng kí thất bại. Vui lòng thử lại';
-        }
-      });
+      setState(() => errorMessage = 'Đăng kí thất bại. Vui lòng thử lại');
       logger.e('❌ Register error: $e');
     } finally {
       if (mounted) {
@@ -97,7 +95,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
                     child: Form(
                       key: formKey,
                       child: Column(
@@ -157,7 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: const InputDecoration(
-                                hintText: 'giabao@gmail.com',
+                                hintText: 'Nhập email của bạn',
                                 border: InputBorder.none,
                                 isDense: true,
                                 suffixIcon: Icon(
@@ -185,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: phoneController,
                               keyboardType: TextInputType.phone,
                               decoration: const InputDecoration(
-                                hintText: '0901234567',
+                                hintText: 'Nhập số điện thoại',
                                 border: InputBorder.none,
                                 isDense: true,
                                 suffixIcon: Icon(
@@ -213,7 +212,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: Colors.white.withOpacity(0.82),
-                              border: Border.all(color: const Color(0xFFDCE4EE)),
+                              border:
+                                  Border.all(color: const Color(0xFFDCE4EE)),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: DropdownButton<String>(
@@ -248,12 +248,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: passwordController,
                               obscureText: obscurePassword,
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                hintText: 'Tạo mật khẩu',
                                 border: InputBorder.none,
                                 isDense: true,
                                 suffixIcon: IconButton(
                                   onPressed: () {
-                                    setState(() => obscurePassword = !obscurePassword);
+                                    setState(() =>
+                                        obscurePassword = !obscurePassword);
                                   },
                                   icon: Icon(
                                     obscurePassword
@@ -282,13 +283,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               controller: passwordConfirmController,
                               obscureText: obscurePasswordConfirm,
                               decoration: InputDecoration(
-                                hintText: '••••••••',
+                                hintText: 'Nhập lại mật khẩu',
                                 border: InputBorder.none,
                                 isDense: true,
                                 suffixIcon: IconButton(
                                   onPressed: () {
                                     setState(
-                                      () => obscurePasswordConfirm = !obscurePasswordConfirm,
+                                      () => obscurePasswordConfirm =
+                                          !obscurePasswordConfirm,
                                     );
                                   },
                                   icon: Icon(
@@ -318,7 +320,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               ),
                               child: Text(
                                 errorMessage!,
-                                style: const TextStyle(color: Color(0xFFB71C1C)),
+                                style:
+                                    const TextStyle(color: Color(0xFFB71C1C)),
                               ),
                             ),
                           const SizedBox(height: 14),
@@ -342,7 +345,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 backgroundColor: Colors.transparent,
                                 foregroundColor: Colors.white,
                                 shadowColor: Colors.transparent,
-                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -381,7 +385,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 style: TextButton.styleFrom(
                                   minimumSize: Size.zero,
                                   padding: EdgeInsets.zero,
-                                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  tapTargetSize:
+                                      MaterialTapTargetSize.shrinkWrap,
                                 ),
                                 child: const Text(
                                   'Đăng nhập',

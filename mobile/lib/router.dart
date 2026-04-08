@@ -5,6 +5,8 @@ import 'features/ai/screens/ai_triage_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/auth/services/auth_service.dart';
+import 'features/booking/screens/appointment_history_screen.dart';
+import 'features/booking/screens/booking_flow_screen.dart';
 import 'features/booking/screens/doctor_detail_screen.dart';
 import 'features/booking/screens/doctor_hub_models.dart';
 import 'features/booking/screens/home_screen.dart';
@@ -17,10 +19,9 @@ import 'features/vaccination_booking/screens/vaccination_booking_screen.dart';
 
 GoRouter createAppRouter({
   required AuthService authService,
-  required bool isAuthenticated,
 }) {
   return GoRouter(
-    initialLocation: isAuthenticated ? '/' : '/login',
+    initialLocation: '/login',
     routes: [
       GoRoute(
         path: '/',
@@ -42,6 +43,14 @@ GoRouter createAppRouter({
         path: '/login',
         name: 'login',
         builder: (context, state) => LoginScreen(authService: authService),
+      ),
+      GoRoute(
+        path: '/home',
+        name: 'home-root',
+        builder: (context, state) => HomeScreen(
+          authService: authService,
+          initialTab: 0,
+        ),
       ),
       GoRoute(
         path: '/register',
@@ -66,7 +75,22 @@ GoRouter createAppRouter({
             );
           }
 
-          return DoctorDetailScreen(doctor: doctor);
+          return DoctorDetailScreen(
+            doctor: doctor,
+            authService: authService,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/booking',
+        name: 'booking',
+        builder: (context, state) {
+          final doctorId =
+              int.tryParse(state.uri.queryParameters['doctorId'] ?? '');
+          return BookingFlowScreen(
+            authService: authService,
+            initialDoctorId: doctorId,
+          );
         },
       ),
       GoRoute(
@@ -163,6 +187,13 @@ GoRouter createAppRouter({
         name: 'profile-edit',
         builder: (context, state) => const EditPersonalInfoScreen(),
       ),
+      GoRoute(
+        path: '/history',
+        name: 'history',
+        builder: (context, state) => AppointmentHistoryScreen(
+          dioClient: authService.dioClient,
+        ),
+      ),
     ],
     errorBuilder: (context, state) => Scaffold(
       appBar: AppBar(title: const Text('Not Found')),
@@ -172,4 +203,3 @@ GoRouter createAppRouter({
     ),
   );
 }
-
