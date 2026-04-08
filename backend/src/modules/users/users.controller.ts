@@ -17,28 +17,28 @@ export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get('me')
-  async getMyProfile(@CurrentUser('sub') userId: string) {
-    return this.usersService.getUserById(userId);
+  async getMyProfile(@CurrentUser('sub') user_id: string) {
+    return this.usersService.getUserById(user_id);
   }
 
   @Get('me/profile')
-  async getMyMobileProfile(@CurrentUser('sub') userId: string) {
-    return this.usersService.getMobileProfile(userId);
+  async getMyMobileProfile(@CurrentUser('sub') user_id: string) {
+    return this.usersService.getMobileProfile(user_id);
   }
 
   @Patch('me')
   async updateMyProfile(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: UpdateUserDto,
   ) {
-    return this.usersService.updateUser(userId, dto);
+    return this.usersService.updateUser(user_id, dto);
   }
 
   @Patch('me/profile')
   async updateMyMobileProfile(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: UpdateMobileProfileDto,
   ) {
-    return this.usersService.updateMobileProfile(userId, dto);
+    return this.usersService.updateMobileProfile(user_id, dto);
   }
 }

@@ -33,18 +33,18 @@ export class DoctorsService {
     return date;
   }
 
-  private formatAvailability(slotDate?: Date | null, startTime?: Date | null) {
-    if (!slotDate || !startTime) {
+  private formatAvailability(slot_date?: Date | null, start_time?: Date | null) {
+    if (!slot_date || !start_time) {
       return null;
     }
 
-    const time = formatTimeOnly(startTime);
+    const time = formatTimeOnly(start_time);
     const today = this.getTodayRange().start;
     const tomorrow = this.getTomorrowDate();
-    const slotDay = new Date(slotDate);
+    const slotDay = new Date(slot_date);
     slotDay.setHours(0, 0, 0, 0);
 
-    let suffix = formatDateOnly(slotDate);
+    let suffix = formatDateOnly(slot_date);
     if (slotDay.getTime() === today.getTime()) {
       suffix = 'hôm nay';
     } else if (slotDay.getTime() === tomorrow.getTime()) {
@@ -54,8 +54,8 @@ export class DoctorsService {
     return `${time} ${suffix}`;
   }
 
-  private initials(fullName: string) {
-    return fullName
+  private initials(full_name: string) {
+    return full_name
       .trim()
       .split(/\s+/)
       .slice(0, 2)
@@ -63,8 +63,8 @@ export class DoctorsService {
       .join('');
   }
 
-  private async buildDoctorStats(doctorIds: bigint[]) {
-    if (!doctorIds.length) {
+  private async buildDoctorStats(doctor_ids: bigint[]) {
+    if (!doctor_ids.length) {
       return {
         bookingMap: new Map<string, number>(),
         reviewMap: new Map<string, { count: number; rating: number }>(),
@@ -78,7 +78,7 @@ export class DoctorsService {
       this.prisma.appointment.groupBy({
         by: ['doctor_id'],
         where: {
-          doctor_id: { in: doctorIds },
+          doctor_id: { in: doctor_ids },
           appointment_date: {
             gte: start,
             lte: end,
@@ -92,7 +92,7 @@ export class DoctorsService {
       this.prisma.doctorReview.groupBy({
         by: ['doctor_id'],
         where: {
-          doctor_id: { in: doctorIds },
+          doctor_id: { in: doctor_ids },
           is_visible: 1,
         },
         _count: { doctor_id: true },
@@ -100,7 +100,7 @@ export class DoctorsService {
       }),
       this.prisma.slot.findMany({
         where: {
-          doctor_id: { in: doctorIds },
+          doctor_id: { in: doctor_ids },
           is_active: 1,
           status: 'AVAILABLE',
           slot_date: {
@@ -148,10 +148,10 @@ export class DoctorsService {
       slotMap: Map<string, { slot_date: Date; start_time: Date }>;
     },
   ): MobileDoctorCardDto {
-    const doctorId = doctor.doctor_id.toString();
-    const bookingToday = stats.bookingMap.get(doctorId) ?? 0;
-    const reviewStats = stats.reviewMap.get(doctorId) ?? { count: 0, rating: 0 };
-    const nextSlot = stats.slotMap.get(doctorId);
+    const doctor_id = doctor.doctor_id.toString();
+    const bookingToday = stats.bookingMap.get(doctor_id) ?? 0;
+    const reviewStats = stats.reviewMap.get(doctor_id) ?? { count: 0, rating: 0 };
+    const nextSlot = stats.slotMap.get(doctor_id);
 
     return {
       id: toNumberId(doctor.doctor_id)!,
@@ -198,12 +198,12 @@ export class DoctorsService {
     limit = 10,
     search?: string,
     specialtyId?: string,
-    facilityId?: string,
+    facility_id?: string,
   ) {
     const where = {
       is_active: 1,
       specialty_id: specialtyId ? this.toBigIntId(specialtyId) : undefined,
-      facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
+      facility_id: facility_id ? this.toBigIntId(facility_id) : undefined,
       full_name: search ? { contains: search } : undefined,
     };
 
@@ -251,24 +251,24 @@ export class DoctorsService {
     return okResponse('Get featured doctors successfully', items);
   }
 
-  async getMyDoctors(userId: string, search?: string) {
-    const parsedUserId = this.toBigIntId(userId);
+  async getMyDoctors(user_id: string, search?: string) {
+    const parseduser_id = this.toBigIntId(user_id);
 
     const [appointments, reviews] = await Promise.all([
       this.prisma.appointment.findMany({
         where: {
-          user_id: parsedUserId,
+          user_id: parseduser_id,
           doctor_id: { not: null },
         },
         select: { doctor_id: true },
       }),
       this.prisma.doctorReview.findMany({
-        where: { user_id: parsedUserId },
+        where: { user_id: parseduser_id },
         select: { doctor_id: true },
       }),
     ]);
 
-    const doctorIds = [
+    const doctor_ids = [
       ...new Set(
         [...appointments, ...reviews]
           .map((item) => item.doctor_id?.toString())
@@ -276,13 +276,13 @@ export class DoctorsService {
       ),
     ].map((value) => BigInt(value));
 
-    if (!doctorIds.length) {
+    if (!doctor_ids.length) {
       return okResponse('Get my doctors successfully', [] as MobileDoctorCardDto[]);
     }
 
     const doctors = await this.prisma.doctor.findMany({
       where: {
-        doctor_id: { in: doctorIds },
+        doctor_id: { in: doctor_ids },
         is_active: 1,
         full_name: search ? { contains: search } : undefined,
       },
@@ -319,9 +319,9 @@ export class DoctorsService {
     return okResponse('Get doctor detail successfully', this.mapDoctorToMobile(doctor, stats));
   }
 
-  async getDoctorByUserId(userId: string) {
+  async getDoctorByuser_id(user_id: string) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { user_id: this.toBigIntId(userId) },
+      where: { user_id: this.toBigIntId(user_id) },
       include: {
         specialty: true,
         facility: true,
@@ -360,19 +360,19 @@ export class DoctorsService {
       reviewerAvatar: this.initials(review.user.full_name),
       rating: review.rating,
       comment: review.comment,
-      createdAt: review.created_at,
+      created_at: review.created_at,
     }));
 
     return paginatedResponse('Get doctor reviews successfully', items, 1, 10, items.length);
   }
 
-  async createDoctor(userId: string, dto: CreateDoctorDto) {
+  async createDoctor(user_id: string, dto: CreateDoctorDto) {
     const doctor = await this.prisma.doctor.create({
       data: {
-        user_id: this.toBigIntId(userId),
-        full_name: dto.fullName,
+        user_id: this.toBigIntId(user_id),
+        full_name: dto.full_name,
         specialty_id: this.toBigIntId(dto.specialtyId),
-        facility_id: this.toBigIntId(dto.facilityId),
+        facility_id: this.toBigIntId(dto.facility_id),
         title: dto.title,
         bio: dto.bio,
         experience_years: dto.yearsExperience,
@@ -394,9 +394,9 @@ export class DoctorsService {
     const doctor = await this.prisma.doctor.update({
       where: { doctor_id: this.toBigIntId(id) },
       data: {
-        full_name: dto.fullName,
+        full_name: dto.full_name,
         specialty_id: dto.specialtyId ? this.toBigIntId(dto.specialtyId) : undefined,
-        facility_id: dto.facilityId ? this.toBigIntId(dto.facilityId) : undefined,
+        facility_id: dto.facility_id ? this.toBigIntId(dto.facility_id) : undefined,
         title: dto.title,
         bio: dto.bio,
         experience_years: dto.yearsExperience,

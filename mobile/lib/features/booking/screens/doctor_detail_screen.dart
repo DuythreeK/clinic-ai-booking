@@ -180,7 +180,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                             alignment: Alignment.centerLeft,
                                             child: GestureDetector(
                                               onTap: () {
-                                                context.push('/booking?doctorId=${doctor.id}');
+                                                context.push('/booking?doctor_id=${doctor.id}');
                                               },
                                               child: Container(
                                                 padding: const EdgeInsets.symmetric(

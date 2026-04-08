@@ -26,7 +26,7 @@ class AuthService {
   Future<Map<String, dynamic>> register({
     required String email,
     required String password,
-    required String fullName,
+    required String full_name,
     required String phone,
     String role = 'patient',
   }) async {
@@ -37,7 +37,7 @@ class AuthService {
           'email': email,
           'phone': phone,
           'password': password,
-          'fullName': fullName,
+          'full_name': full_name,
           'role': role.toLowerCase(),
         },
       );
@@ -82,7 +82,7 @@ class AuthService {
           refreshToken: responseData['refresh_token'] as String,
         );
         await authStorage.saveUser({
-          'userId': responseData['userId'],
+          'user_id': responseData['user_id'],
           'email': email,
         });
 

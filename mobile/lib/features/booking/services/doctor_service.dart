@@ -29,8 +29,8 @@ class DoctorService {
   }
 
   /// Lấy chi tiết bác sĩ
-  Future<Doctor> getDoctorById(String doctorId) async {
-    final response = await dioClient.get('/doctors/$doctorId');
+  Future<Doctor> getDoctorById(String doctor_id) async {
+    final response = await dioClient.get('/doctors/$doctor_id');
     return Doctor.fromJson(response.data);
   }
 
@@ -55,7 +55,7 @@ class DoctorService {
 
   /// Lấy tính khả dụng của bác sĩ
   Future<List<Slot>> getDoctorAvailability(
-    String doctorId, {
+    String doctor_id, {
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
@@ -68,7 +68,7 @@ class DoctorService {
       '/slots/available',
       queryParameters: {
         ...queryParams,
-        'doctorId': doctorId,
+        'doctor_id': doctor_id,
       },
     );
 

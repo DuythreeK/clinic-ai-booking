@@ -212,8 +212,8 @@ model Doctor {
 // Người C thêm Slot model:
 model Slot {
   id        Int     @id @default(autoincrement())
-  doctorId  Int
-  doctor    Doctor  @relation(fields: [doctorId], references: [id])
+  doctor_id  Int
+  doctor    Doctor  @relation(fields: [doctor_id], references: [id])
   // ...
 }
 

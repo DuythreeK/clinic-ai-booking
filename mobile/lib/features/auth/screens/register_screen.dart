@@ -22,7 +22,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final emailController = TextEditingController();
   final phoneController = TextEditingController();
-  final fullNameController = TextEditingController();
+  final full_nameController = TextEditingController();
   final passwordController = TextEditingController();
   final passwordConfirmController = TextEditingController();
 
@@ -52,7 +52,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         email: emailController.text.trim(),
         phone: phoneController.text.trim(),
         password: passwordController.text,
-        fullName: fullNameController.text.trim(),
+        full_name: full_nameController.text.trim(),
         role: selectedRole,
       );
 
@@ -125,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           // Full Name Field
                           _InputCard(
                             child: TextFormField(
-                              controller: fullNameController,
+                              controller: full_nameController,
                               keyboardType: TextInputType.name,
                               decoration: const InputDecoration(
                                 hintText: 'Họ và tên',
@@ -417,7 +417,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void dispose() {
     emailController.dispose();
     phoneController.dispose();
-    fullNameController.dispose();
+    full_nameController.dispose();
     passwordController.dispose();
     passwordConfirmController.dispose();
     super.dispose();

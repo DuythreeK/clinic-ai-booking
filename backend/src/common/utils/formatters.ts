@@ -40,8 +40,8 @@ export function formatCurrencyVnd(
   return `${amount.toLocaleString('vi-VN')}${suffix}`;
 }
 
-export function splitFullName(fullName: string | null | undefined) {
-  const normalized = (fullName ?? '').trim();
+export function splitfull_name(full_name: string | null | undefined) {
+  const normalized = (full_name ?? '').trim();
   if (!normalized) {
     return { firstName: '', lastName: '' };
   }

@@ -2,35 +2,35 @@ import 'package:clinic_ai_booking/core/api/dio_client.dart';
 
 class BookingAppointment {
   BookingAppointment({
-    required this.appointmentId,
-    required this.slotId,
-    required this.facilityId,
+    required this.appointment_id,
+    required this.slot_id,
+    required this.facility_id,
     required this.appointmentType,
     required this.status,
-    required this.totalAmount,
-    this.appointmentCode,
-    this.doctorId,
+    required this.total_amount,
+    this.appointment_code,
+    this.doctor_id,
   });
 
-  final int appointmentId;
-  final int slotId;
-  final int facilityId;
+  final int appointment_id;
+  final int slot_id;
+  final int facility_id;
   final String appointmentType;
   final String status;
-  final double totalAmount;
-  final String? appointmentCode;
-  final int? doctorId;
+  final double total_amount;
+  final String? appointment_code;
+  final int? doctor_id;
 
   factory BookingAppointment.fromJson(Map<String, dynamic> json) {
     return BookingAppointment(
-      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
-      slotId: (json['slotId'] as num?)?.toInt() ?? 0,
-      facilityId: (json['facilityId'] as num?)?.toInt() ?? 0,
+      appointment_id: (json['appointment_id'] as num?)?.toInt() ?? 0,
+      slot_id: (json['slot_id'] as num?)?.toInt() ?? 0,
+      facility_id: (json['facility_id'] as num?)?.toInt() ?? 0,
       appointmentType: (json['appointment_type'] ?? '').toString(),
       status: (json['status'] ?? '').toString(),
-      totalAmount: (json['totalAmount'] as num?)?.toDouble() ?? 0,
-      appointmentCode: json['appointmentCode']?.toString(),
-      doctorId: (json['doctorId'] as num?)?.toInt(),
+      total_amount: (json['total_amount'] as num?)?.toDouble() ?? 0,
+      appointment_code: json['appointment_code']?.toString(),
+      doctor_id: (json['doctor_id'] as num?)?.toInt(),
     );
   }
 }
@@ -38,7 +38,7 @@ class BookingAppointment {
 class BookingPayment {
   BookingPayment({
     required this.paymentId,
-    required this.appointmentId,
+    required this.appointment_id,
     required this.paymentMethod,
     required this.amount,
     required this.status,
@@ -47,7 +47,7 @@ class BookingPayment {
   });
 
   final int paymentId;
-  final int appointmentId;
+  final int appointment_id;
   final String paymentMethod;
   final double amount;
   final String status;
@@ -57,7 +57,7 @@ class BookingPayment {
   factory BookingPayment.fromJson(Map<String, dynamic> json) {
     return BookingPayment(
       paymentId: (json['payment_id'] as num?)?.toInt() ?? 0,
-      appointmentId: (json['appointmentId'] as num?)?.toInt() ?? 0,
+      appointment_id: (json['appointment_id'] as num?)?.toInt() ?? 0,
       paymentMethod: (json['payment_method'] ?? '').toString(),
       amount: (json['amount'] as num?)?.toDouble() ?? 0,
       status: (json['status'] ?? '').toString(),
@@ -73,29 +73,29 @@ class AppointmentService {
   final DioClient dioClient;
 
   Future<BookingAppointment> createAppointment({
-    required int patientId,
-    required int facilityId,
-    int? doctorId,
-    required int slotId,
+    required int patient_id,
+    required int facility_id,
+    int? doctor_id,
+    required int slot_id,
     required String appointmentType,
-    int? serviceId,
+    int? service_id,
     int? triageSessionId,
     String? symptomsNote,
-    required double totalAmount,
+    required double total_amount,
   }) async {
     final response = await dioClient.post(
       '/appointments',
       data: {
-        'patientId': patientId,
-        'facilityId': facilityId,
-        if (doctorId != null) 'doctorId': doctorId,
-        'slotId': slotId,
+        'patient_id': patient_id,
+        'facility_id': facility_id,
+        if (doctor_id != null) 'doctor_id': doctor_id,
+        'slot_id': slot_id,
         'appointment_type': appointmentType,
-        if (serviceId != null) 'serviceId': serviceId,
+        if (service_id != null) 'service_id': service_id,
         if (triageSessionId != null) 'triage_session_id': triageSessionId,
         if (symptomsNote != null && symptomsNote.isNotEmpty)
           'symptoms_note': symptomsNote,
-        'totalAmount': totalAmount,
+        'total_amount': total_amount,
       },
     );
 
@@ -131,20 +131,20 @@ class AppointmentService {
     return <BookingAppointment>[];
   }
 
-  Future<BookingPayment> getPaymentByAppointment(int appointmentId) async {
+  Future<BookingPayment> getPaymentByAppointment(int appointment_id) async {
     final response =
-        await dioClient.get('/appointments/$appointmentId/payment');
+        await dioClient.get('/appointments/$appointment_id/payment');
     final data = _unwrapData(response.data);
     return BookingPayment.fromJson(data);
   }
 
   Future<BookingPayment> createPayment({
-    required int appointmentId,
+    required int appointment_id,
     required String paymentMethod,
     required double amount,
   }) async {
     final response = await dioClient.post(
-      '/appointments/$appointmentId/payment',
+      '/appointments/$appointment_id/payment',
       data: {
         'payment_method': paymentMethod,
         'amount': amount,

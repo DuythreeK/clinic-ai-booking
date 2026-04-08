@@ -19,8 +19,8 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
     _catalog.loadRemote();
   }
 
-  (String, String) _splitFullName(String? fullName) {
-    final normalized = fullName?.trim() ?? '';
+  (String, String) _splitfull_name(String? full_name) {
+    final normalized = full_name?.trim() ?? '';
     if (normalized.isEmpty) {
       return ('Chưa cập nhật', 'Chưa cập nhật');
     }
@@ -123,14 +123,14 @@ class _PersonalInfoScreenState extends State<PersonalInfoScreen> {
                                               Expanded(
                                                 child: _InfoCell(
                                                   label: 'Họ',
-                                                  value: _splitFullName(profile?.fullName).$1,
+                                                  value: _splitfull_name(profile?.full_name).$1,
                                                 ),
                                               ),
                                               const SizedBox(width: 18),
                                               Expanded(
                                                 child: _InfoCell(
                                                   label: 'Tên',
-                                                  value: _splitFullName(profile?.fullName).$2,
+                                                  value: _splitfull_name(profile?.full_name).$2,
                                                 ),
                                               ),
                                             ],
@@ -300,7 +300,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
   final ProfileCatalog _catalog = ProfileCatalog.instance;
   final _formKey = GlobalKey<FormState>();
 
-  final _fullNameController = TextEditingController();
+  final _full_nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dateController = TextEditingController();
   final _occupationController = TextEditingController();
@@ -328,7 +328,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _full_nameController.dispose();
     _phoneController.dispose();
     _dateController.dispose();
     _occupationController.dispose();
@@ -349,7 +349,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
       return;
     }
 
-    _fullNameController.text = profile.fullName;
+    _full_nameController.text = profile.full_name;
     _phoneController.text = profile.phone;
     _dateController.text = profile.dateOfBirth ?? '';
     _occupationController.text = profile.occupation ?? '';
@@ -434,7 +434,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                                   ),
                                   _RequiredField(
                                     label: 'Họ và tên',
-                                    controller: _fullNameController,
+                                    controller: _full_nameController,
                                     validator: _requiredValidator,
                                   ),
                                   _RequiredField(
@@ -601,7 +601,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
     }
 
     final payload = <String, dynamic>{
-      'fullName': _fullNameController.text.trim(),
+      'full_name': _full_nameController.text.trim(),
       'phone': _phoneController.text.trim(),
       'dateOfBirth': _dateController.text.trim(),
       'gender': _gender,

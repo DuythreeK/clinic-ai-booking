@@ -26,14 +26,14 @@ export class DoctorsController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('specialtyId') specialtyId?: string,
-    @Query('facilityId') facilityId?: string,
+    @Query('facility_id') facility_id?: string,
   ) {
     return this.doctorsService.getDoctors(
       Number(page || 1),
       Number(limit || 10),
       search,
       specialtyId,
-      facilityId,
+      facility_id,
     );
   }
 
@@ -53,17 +53,17 @@ export class DoctorsController {
   @Get('mobile/my')
   @UseGuards(JwtGuard)
   async getMyDoctors(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Query('search') search?: string,
   ) {
-    return this.doctorsService.getMyDoctors(userId, search);
+    return this.doctorsService.getMyDoctors(user_id, search);
   }
 
   @Get('profile/current')
   @UseGuards(JwtGuard)
   @Roles(UserRole.doctor)
-  async getCurrentDoctorProfile(@CurrentUser('sub') userId: string) {
-    return this.doctorsService.getDoctorByUserId(userId);
+  async getCurrentDoctorProfile(@CurrentUser('sub') user_id: string) {
+    return this.doctorsService.getDoctorByuser_id(user_id);
   }
 
   @Get(':id')
@@ -80,10 +80,10 @@ export class DoctorsController {
   @UseGuards(JwtGuard)
   @Roles(UserRole.doctor)
   async createDoctor(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: CreateDoctorDto,
   ) {
-    return this.doctorsService.createDoctor(userId, dto);
+    return this.doctorsService.createDoctor(user_id, dto);
   }
 
   @Patch(':id')

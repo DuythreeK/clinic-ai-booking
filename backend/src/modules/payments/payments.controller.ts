@@ -11,10 +11,10 @@ export class PaymentsController {
   @Post()
   @UseGuards(JwtGuard)
   async createPayment(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: CreatePaymentDto,
   ) {
-    return this.paymentsService.createPayment(userId, dto);
+    return this.paymentsService.createPayment(user_id, dto);
   }
 
   @Post('callback')

@@ -46,11 +46,11 @@
       "value": ""
     },
     {
-      "key": "facilityId",
+      "key": "facility_id",
       "value": "1"
     },
     {
-      "key": "doctorId",
+      "key": "doctor_id",
       "value": "12"
     },
     {
@@ -58,19 +58,19 @@
       "value": "1"
     },
     {
-      "key": "serviceId",
+      "key": "service_id",
       "value": "1"
     },
     {
-      "key": "slotId",
+      "key": "slot_id",
       "value": "101"
     },
     {
-      "key": "patientId",
+      "key": "patient_id",
       "value": "1"
     },
     {
-      "key": "appointmentId",
+      "key": "appointment_id",
       "value": "1"
     },
     {
@@ -130,14 +130,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/facilities/{{facilityId}}",
+              "raw": "{{baseUrl}}/api/facilities/{{facility_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "facilities",
-                "{{facilityId}}"
+                "{{facility_id}}"
               ]
             }
           }
@@ -156,7 +156,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/doctors?page=1&limit=10&search=phuc&specialtyId={{specialtyId}}&facilityId={{facilityId}}",
+              "raw": "{{baseUrl}}/api/doctors?page=1&limit=10&search=phuc&specialtyId={{specialtyId}}&facility_id={{facility_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -182,8 +182,8 @@
                   "value": "{{specialtyId}}"
                 },
                 {
-                  "key": "facilityId",
-                  "value": "{{facilityId}}"
+                  "key": "facility_id",
+                  "value": "{{facility_id}}"
                 }
               ]
             }
@@ -198,14 +198,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}",
+              "raw": "{{baseUrl}}/api/doctors/{{doctor_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "doctors",
-                "{{doctorId}}"
+                "{{doctor_id}}"
               ]
             }
           }
@@ -219,14 +219,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/doctors/{{doctorId}}/reviews",
+              "raw": "{{baseUrl}}/api/doctors/{{doctor_id}}/reviews",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "doctors",
-                "{{doctorId}}",
+                "{{doctor_id}}",
                 "reviews"
               ]
             }
@@ -244,7 +244,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"doctorId\": 12,\n  \"appointmentId\": 5,\n  \"rating\": 5,\n  \"comment\": \"Bác sĩ tư vấn rất kỹ\"\n}"
+              "raw": "{\n  \"doctor_id\": 12,\n  \"appointment_id\": 5,\n  \"rating\": 5,\n  \"comment\": \"Bác sĩ tư vấn rất kỹ\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/doctor-reviews",
@@ -293,7 +293,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Nguyen Nhu Duy\",\n  \"phone\": \"0909999999\",\n  \"avatarUrl\": \"https://cdn.example.com/avatar.png\"\n}"
+              "raw": "{\n  \"full_name\": \"Nguyen Nhu Duy\",\n  \"phone\": \"0909999999\",\n  \"avatarUrl\": \"https://cdn.example.com/avatar.png\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/me",
@@ -362,7 +362,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/services?page=1&limit=10&facilityId={{facilityId}}&search=hpv",
+              "raw": "{{baseUrl}}/api/services?page=1&limit=10&facility_id={{facility_id}}&search=hpv",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -380,8 +380,8 @@
                   "value": "10"
                 },
                 {
-                  "key": "facilityId",
-                  "value": "{{facilityId}}"
+                  "key": "facility_id",
+                  "value": "{{facility_id}}"
                 },
                 {
                   "key": "search",
@@ -400,14 +400,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/services/{{serviceId}}",
+              "raw": "{{baseUrl}}/api/services/{{service_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "services",
-                "{{serviceId}}"
+                "{{service_id}}"
               ]
             }
           }
@@ -421,14 +421,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/services/{{serviceId}}/available-slots?date=2026-03-05",
+              "raw": "{{baseUrl}}/api/services/{{service_id}}/available-slots?date=2026-03-05",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "services",
-                "{{serviceId}}",
+                "{{service_id}}",
                 "available-slots"
               ],
               "query": [
@@ -457,7 +457,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"gender\": \"male\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"occupation\": \"Sinh viên\",\n  \"ethnicity\": \"Kinh\",\n  \"nationality\": \"Việt Nam\",\n  \"province\": \"Cần Thơ\",\n  \"district\": \"Ninh Kiều\",\n  \"ward\": \"An Hòa\",\n  \"addressDetail\": \"123 đường ABC\",\n  \"relationshipToUser\": \"self\",\n  \"isPrimary\": true\n}"
+              "raw": "{\n  \"full_name\": \"Nguyen Van A\",\n  \"phoneNumber\": \"0901234567\",\n  \"gender\": \"male\",\n  \"dateOfBirth\": \"2000-01-01\",\n  \"occupation\": \"Sinh viên\",\n  \"ethnicity\": \"Kinh\",\n  \"nationality\": \"Việt Nam\",\n  \"province\": \"Cần Thơ\",\n  \"district\": \"Ninh Kiều\",\n  \"ward\": \"An Hòa\",\n  \"addressDetail\": \"123 đường ABC\",\n  \"relationshipToUser\": \"self\",\n  \"isPrimary\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/patient-profiles",
@@ -505,7 +505,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"patientId\": 1,\n  \"facilityId\": 1,\n  \"serviceId\": 1,\n  \"slotId\": 101,\n  \"appointmentType\": \"vaccination\",\n  \"appointmentDate\": \"2026-03-05\",\n  \"appointmentTime\": \"07:00\",\n  \"note\": \"Đặt lịch tiêm HPV mũi đầu\"\n}"
+              "raw": "{\n  \"patient_id\": 1,\n  \"facility_id\": 1,\n  \"service_id\": 1,\n  \"slot_id\": 101,\n  \"appointmentType\": \"vaccination\",\n  \"appointment_date\": \"2026-03-05\",\n  \"appointment_time\": \"07:00\",\n  \"note\": \"Đặt lịch tiêm HPV mũi đầu\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/appointments",
@@ -525,14 +525,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/appointments/{{appointmentId}}",
+              "raw": "{{baseUrl}}/api/appointments/{{appointment_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "appointments",
-                "{{appointmentId}}"
+                "{{appointment_id}}"
               ]
             }
           }
@@ -554,7 +554,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"appointmentId\": 1,\n  \"paymentMethod\": \"vnpay\"\n}"
+              "raw": "{\n  \"appointment_id\": 1,\n  \"paymentMethod\": \"vnpay\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/payments",

@@ -173,7 +173,7 @@ final result = await authService.login(
 ```dart
 // Service
 final appointment = await appointmentService.create(
-  slotId: 'slot-123',
+  slot_id: 'slot-123',
   reason: 'Check up',
 );
 

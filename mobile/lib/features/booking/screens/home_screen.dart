@@ -26,15 +26,12 @@ class _HomeScreenState extends State<HomeScreen> {
   final DoctorCatalog _catalog = DoctorCatalog.instance;
   final SpecialtyCatalog _specialtyCatalog = SpecialtyCatalog.instance;
   late int _currentIndex;
-
-  int get _navIndex => _currentIndex == 2 ? 3 : _currentIndex;
+  int get _navIndex => _currentIndex;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = 0;
-    _catalog.loadRemote();
-    _specialtyCatalog.loadRemote();
+    _currentIndex = 0; // Mặc định vào Tab Trang chủ
   }
 
   @override
@@ -60,13 +57,13 @@ class _HomeScreenState extends State<HomeScreen> {
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
       const _ComingSoonPage(
         icon: Icons.calendar_month_rounded,
-        title: 'Lá»‹ch háº¹n',
-        subtitle: 'Khu vá»±c nÃ y sáº½ hiá»ƒn thá»‹ lá»‹ch háº¹n vÃ  lá»‹ch tÃ¡i khÃ¡m cá»§a báº¡n.',
+        title: 'Lịch hẹn',
+        subtitle: 'Khu vực này sẽ hiển thị lịch hẹn và lịch tái khám của bạn.',
       ),
       const _ComingSoonPage(
         icon: Icons.chat_bubble_rounded,
-        title: 'Tin nháº¯n',
-        subtitle: 'ThÃ´ng bÃ¡o tÆ° váº¥n vÃ  trao Ä‘á»•i vá»›i phÃ²ng khÃ¡m sáº½ hiá»ƒn thá»‹ á»Ÿ Ä‘Ã¢y.',
+        title: 'Tin nhan',
+        subtitle: 'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
       ),
     ];
 
@@ -76,6 +73,11 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: _MainBottomNav(
         currentIndex: _navIndex,
         onTap: (index) {
+          if (index == 2) {
+            context.push('/booking'); // Gọi sang luồng đặt lịch
+            return; // Dừng lại, không chạy setState bên dưới
+          }
+
           if (index == 3) {
             context.push('/vaccination-booking');
             return;

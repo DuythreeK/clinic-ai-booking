@@ -5,13 +5,13 @@ import 'dart:async';
 class SlotSelectionScreen extends StatefulWidget {
   const SlotSelectionScreen({
     super.key,
-    required this.doctorId,
-    required this.facilityId,
+    required this.doctor_id,
+    required this.facility_id,
     required this.dioClient,
   });
 
-  final int doctorId;
-  final int facilityId;
+  final int doctor_id;
+  final int facility_id;
   final DioClient dioClient;
 
   @override
@@ -27,7 +27,7 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   bool _loadingSlots = false;
   String? _slotError;
   Map<String, List<_SlotItem>> _slotsByDate = <String, List<_SlotItem>>{};
-  Map<int, int> _tempLockedSlots = {}; // slotId -> giây còn lại
+  Map<int, int> _tempLockedSlots = {}; // slot_id -> giây còn lại
   Timer? _lockTimer;
   Timer? _refreshTimer;
 
@@ -46,11 +46,13 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     super.initState();
     _selectedDate = DateTime.now();
     _loadSlotsForCurrentMonth();
+    /*
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted && !_loadingSlots) {
         _loadSlotsForCurrentMonth();
       }
     });
+     */
   }
 
   @override
@@ -61,9 +63,9 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
   }
 
   // --- DÁN HÀM NÀY VÀO SAU INITSTATE HOẶC TRƯỚC BUILD ---
-  void _startTempLock(int slotId) {
+  void _startTempLock(int slot_id) {
     setState(() {
-      _tempLockedSlots[slotId] = 300; // 5 phút = 300 giây
+      _tempLockedSlots[slot_id] = 300; // 5 phút = 300 giây
     });
 
     _lockTimer?.cancel();
@@ -104,8 +106,8 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
       final response = await widget.dioClient.get(
         '/slots/available',
         queryParameters: {
-          'doctorId': widget.doctorId,
-          'clinicId': widget.facilityId,
+          'doctor_id': widget.doctor_id,
+          'clinicId': widget.facility_id,
           'fromDate': _dateOnly(fromDate),
           'toDate': _dateOnly(toDate),
         },
@@ -119,10 +121,10 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
 
       for (final item in items) {
         if (item is! Map<String, dynamic>) continue;
-        debugPrint('Slot ID: ${item['slotId']} - isActive: ${item['isActive']}');
-        final slotIdRaw = item['slotId'];
-        final slotDateRaw = item['slotDate'];
-        final startTimeRaw = item['startTime'];
+        debugPrint('Slot ID: ${item['slot_id']} - is_active: ${item['is_active']}');
+        final slot_idRaw = item['slot_id'];
+        final slot_dateRaw = item['slot_date'];
+        final start_timeRaw = item['start_time'];
         final statusRaw = item['status'] ?? 'available';
 
         final appointmentData = item['appointment'];
@@ -135,16 +137,16 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             hasBooking = true;
           }
         }
-        if (slotIdRaw == null || slotDateRaw == null || startTimeRaw == null) continue;
+        if (slot_idRaw == null || slot_dateRaw == null || start_timeRaw == null) continue;
 
-        final key = _extractDateKey(slotDateRaw.toString());
-        final value = _extractTimeHHmm(startTimeRaw.toString());
-        final id = int.tryParse(slotIdRaw.toString()) ?? 0;
+        final key = _extractDateKey(slot_dateRaw.toString());
+        final value = _extractTimeHHmm(start_timeRaw.toString());
+        final id = int.tryParse(slot_idRaw.toString()) ?? 0;
         if (key == null || value == null || id == 0) continue;
-        final dynamic activeValue = item['isActive'];
-        final bool isActiveRaw = (activeValue == 1 || activeValue == true);
+        final dynamic activeValue = item['is_active'];
+        final bool is_activeRaw = (activeValue == 1 || activeValue == true);
         byDate.putIfAbsent(key, () => <_SlotItem>[]).add(
-          _SlotItem(id, value, statusRaw.toString(), hasBooking, isActiveRaw),
+          _SlotItem(id, value, statusRaw.toString(), hasBooking, is_activeRaw),
         );
       }
 
@@ -205,22 +207,22 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
     }
 
     // 3. Nếu đã chọn slot hợp lệ, tiến hành khóa vàng và chuyển màn hình
-    final slotId = _selectedSlot!.id;
+    final slot_id = _selectedSlot!.id;
 
     // Kích hoạt bộ đếm ngược 5 phút ngay trên UI máy này
-    _startTempLock(slotId);
+    _startTempLock(slot_id);
 
     setState(() {
       _selectingSlot = true;
     });
 
     // 4. Trả dữ liệu về màn hình Flow (Xác nhận đặt lịch)
-    // Các key: 'date', 'time', 'slotId' phải khớp 100% với bên BookingFlowScreen nhận
+    // Các key: 'date', 'time', 'slot_id' phải khớp 100% với bên BookingFlowScreen nhận
     Navigator.of(context).pop(
       {
         'date': _selectedDate,
         'time': _selectedSlot!.time,
-        'slotId': slotId,
+        'slot_id': slot_id,
         'reminder': _selectedReminder,
       },
     );
@@ -509,11 +511,11 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             final time = slot.time;
             final isSelected = _selectedSlot?.id == slot.id;
             final int? remainingSec = _tempLockedSlots[slot.id];
-            final bool isDatabaseInactive = slot.isActive == false;
+            final bool isDatabaseInactive = slot.is_active == false;
             Color bgColor;
             bool isClickable = true;
             String statusLabel = '';
-            final bool isVang = !slot.isActive;
+            final bool isVang = !slot.is_active;
             // LOGIC MỚI: Cứ có appointment hoặc status FULL là ĐỎ
             if (slot.hasAppointment || slot.status.toUpperCase() == 'FULL' || slot.status.toUpperCase() == 'BUSY') {
               bgColor = Colors.red.shade400;
@@ -735,8 +737,8 @@ class _SlotItem {
   final String time;
   final String status;
   final bool hasAppointment;
-  final bool isActive;
-  _SlotItem(this.id, this.time, this.status, this.hasAppointment, this.isActive);
+  final bool is_active;
+  _SlotItem(this.id, this.time, this.status, this.hasAppointment, this.is_active);
 
   @override
   bool operator ==(Object other) =>

@@ -189,7 +189,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
     final statusStr = apt['status']?.toString() ?? 'pending';
     final isUpcoming = statusStr == 'pending' || statusStr == 'confirmed';
     
-    final dateStr = apt['appointmentDate']?.toString() ?? '';
+    final dateStr = apt['appointment_date']?.toString() ?? '';
     
     // Title is symptoms note, fallback to service name
     String title = 'Khám bệnh';
@@ -199,7 +199,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
       title = apt['service']['name'].toString();
     }
 
-    final amount = double.tryParse(apt['totalAmount']?.toString() ?? '0') ?? 0;
+    final amount = double.tryParse(apt['total_amount']?.toString() ?? '0') ?? 0;
 
     String doctorName = 'Chưa phân bổ';
     String specialtyName = '';

@@ -2,26 +2,26 @@ import { IsArray, IsOptional, IsString } from 'class-validator';
 
 export class CreateAppointmentDto {
   @IsString()
-  patientId!: string;
+  patient_id!: string;
 
   @IsString()
-  facilityId!: string;
+  facility_id!: string;
 
   @IsString()
-  serviceId!: string;
+  service_id!: string;
 
   @IsString()
-  slotId!: string;
+  slot_id!: string;
 
   @IsOptional()
   @IsString()
   appointmentType?: string;
 
   @IsString()
-  appointmentDate!: string;
+  appointment_date!: string;
 
   @IsString()
-  appointmentTime!: string;
+  appointment_time!: string;
 
   @IsString()
   @IsOptional()
@@ -47,12 +47,12 @@ export class UpdateAppointmentDto {
 }
 
 export class AppointmentResponseDto {
-  appointmentId!: string;
-  patientId!: string;
-  doctorId!: string;
-  slotId!: string;
+  appointment_id!: string;
+  patient_id!: string;
+  doctor_id!: string;
+  slot_id!: string;
   status!: string;
   note?: string;
-  createdAt!: Date;
+  created_at!: Date;
   updatedAt!: Date;
 }

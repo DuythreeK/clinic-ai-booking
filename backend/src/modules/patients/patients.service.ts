@@ -14,9 +14,9 @@ export class PatientsService {
 
   private toResponse(profile: any) {
     return {
-      patientId: profile.patient_id.toString(),
-      userId: profile.user_id.toString(),
-      fullName: profile.full_name,
+      patient_id: profile.patient_id.toString(),
+      user_id: profile.user_id.toString(),
+      full_name: profile.full_name,
       phoneNumber: profile.phone_number,
       citizenId: profile.citizen_id,
       insuranceNumber: profile.insurance_number,
@@ -32,16 +32,16 @@ export class PatientsService {
       emergencyContact: profile.emergency_contact,
       relationshipToUser: profile.relationship_to_user,
       isPrimary: profile.is_primary === 1,
-      createdAt: profile.created_at,
+      created_at: profile.created_at,
       updatedAt: profile.updated_at,
     };
   }
 
-  async createPatientProfile(userId: string, dto: CreatePatientProfileDto) {
+  async createPatientProfile(user_id: string, dto: CreatePatientProfileDto) {
     const profile = await this.prisma.patientProfile.create({
       data: {
-        user_id: this.toBigIntId(userId),
-        full_name: dto.fullName,
+        user_id: this.toBigIntId(user_id),
+        full_name: dto.full_name,
         phone_number: dto.phoneNumber,
         citizen_id: dto.citizenId,
         insurance_number: dto.insuranceNumber,
@@ -65,7 +65,7 @@ export class PatientsService {
 
     return okResponse('Create patient profile successfully', {
       id: Number(profile.patient_id),
-      fullName: profile.full_name,
+      full_name: profile.full_name,
       phoneNumber: profile.phone_number,
       citizenId: profile.citizen_id,
       insuranceNumber: profile.insurance_number,
@@ -84,9 +84,9 @@ export class PatientsService {
     });
   }
 
-  async getPatientProfiles(userId: string) {
+  async getPatientProfiles(user_id: string) {
     const profiles = await this.prisma.patientProfile.findMany({
-      where: { user_id: this.toBigIntId(userId) },
+      where: { user_id: this.toBigIntId(user_id) },
       orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
     });
 
@@ -94,7 +94,7 @@ export class PatientsService {
       'Get patient profiles successfully',
       profiles.map((profile) => ({
         id: Number(profile.patient_id),
-        fullName: profile.full_name,
+        full_name: profile.full_name,
         phoneNumber: profile.phone_number,
         citizenId: profile.citizen_id,
         insuranceNumber: profile.insurance_number,
@@ -117,9 +117,9 @@ export class PatientsService {
     );
   }
 
-  async getMobilePatientProfiles(userId: string) {
+  async getMobilePatientProfiles(user_id: string) {
     const profiles = await this.prisma.patientProfile.findMany({
-      where: { user_id: this.toBigIntId(userId) },
+      where: { user_id: this.toBigIntId(user_id) },
       orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
     });
 
@@ -127,7 +127,7 @@ export class PatientsService {
       'Get mobile patient profiles successfully',
       profiles.map((profile) => ({
         id: Number(profile.patient_id),
-        fullName: profile.full_name,
+        full_name: profile.full_name,
         phoneNumber: profile.phone_number,
         citizenId: profile.citizen_id,
         insuranceNumber: profile.insurance_number,

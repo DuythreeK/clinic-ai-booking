@@ -13,18 +13,18 @@ export class AiController {
 
   @Post('triage')
   async triage(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: TriageRequestDto,
   ) {
     this.logger.log(
-      `POST /ai/triage userId=${userId}, symptomsLength=${dto.symptoms?.length ?? 0}`,
+      `POST /ai/triage user_id=${user_id}, symptomsLength=${dto.symptoms?.length ?? 0}`,
     );
 
     try {
-      return await this.aiService.triageSymptoms(userId, dto.symptoms);
+      return await this.aiService.triageSymptoms(user_id, dto.symptoms);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      this.logger.error(`POST /ai/triage failed userId=${userId}, error=${message}`);
+      this.logger.error(`POST /ai/triage failed user_id=${user_id}, error=${message}`);
       throw error;
     }
   }

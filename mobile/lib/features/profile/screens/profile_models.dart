@@ -8,7 +8,7 @@ class MobileProfile {
     required this.profileId,
     required this.ecoreId,
     required this.username,
-    required this.fullName,
+    required this.full_name,
     required this.firstName,
     required this.lastName,
     required this.email,
@@ -32,7 +32,7 @@ class MobileProfile {
   final int? profileId;
   final String ecoreId;
   final String username;
-  final String fullName;
+  final String full_name;
   final String firstName;
   final String lastName;
   final String email;
@@ -52,14 +52,14 @@ class MobileProfile {
   final String? avatarUrl;
 
   factory MobileProfile.fromApi(Map<String, dynamic> json) {
-    final fullName = json['fullName']?.toString() ?? '';
-    final split = _splitName(fullName);
+    final full_name = json['full_name']?.toString() ?? '';
+    final split = _splitName(full_name);
     return MobileProfile(
       userId: (json['userId'] as num?)?.toInt() ?? 0,
       profileId: (json['profileId'] as num?)?.toInt(),
       ecoreId: json['ecoreId']?.toString() ?? '',
       username: json['username']?.toString() ?? '',
-      fullName: fullName,
+      full_name: full_name,
       firstName: json['firstName']?.toString() ?? split.first,
       lastName: json['lastName']?.toString() ?? split.last,
       email: json['email']?.toString() ?? '',
@@ -81,7 +81,7 @@ class MobileProfile {
   }
 
   MobileProfile copyWith({
-    String? fullName,
+    String? full_name,
     String? phone,
     String? dateOfBirth,
     String? gender,
@@ -96,14 +96,14 @@ class MobileProfile {
     String? relationshipToUser,
     String? avatarUrl,
   }) {
-    final updatedName = fullName ?? this.fullName;
+    final updatedName = full_name ?? this.full_name;
     final split = _splitName(updatedName);
     return MobileProfile(
       userId: userId,
       profileId: profileId,
       ecoreId: ecoreId,
       username: username,
-      fullName: updatedName,
+      full_name: updatedName,
       firstName: split.first,
       lastName: split.last,
       email: email,
@@ -199,8 +199,8 @@ class _NameParts {
   final String last;
 }
 
-_NameParts _splitName(String fullName) {
-  final parts = fullName.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
+_NameParts _splitName(String full_name) {
+  final parts = full_name.trim().split(RegExp(r'\s+')).where((part) => part.isNotEmpty).toList();
   if (parts.isEmpty) {
     return const _NameParts(first: '', last: '');
   }

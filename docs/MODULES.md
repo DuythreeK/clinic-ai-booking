@@ -104,7 +104,7 @@
 ```json
 {
   "patientData": {"firstName": "Nguyễn", "age": 30},
-  "appointmentId": "appt-123"
+  "appointment_id": "appt-123"
 }
 ```
 
@@ -231,7 +231,7 @@ async sendAppointmentReminders() {
 - Create bulk slots
 
 **Planned Endpoints**:
-- `GET /slots` - Query with filters (doctorId, clinicId, date)
+- `GET /slots` - Query with filters (doctor_id, clinicId, date)
 - `POST /slots` - Create (admin)
 - `PATCH /slots/:id/block` - Block slot (admin)
 
@@ -313,7 +313,7 @@ async sendAppointmentReminders() {
 ### Decorators
 ```typescript
 @CurrentUser()  // Get entire user payload
-@CurrentUser('sub')  // Get specific property (userId)
+@CurrentUser('sub')  // Get specific property (user_id)
 @CurrentUser('role')  // Get role
 ```
 
@@ -324,18 +324,18 @@ async sendAppointmentReminders() {
 | Model | Purpose | Key Fields |
 |-------|---------|-----------|
 | User | Core user account | id, email, password, role |
-| RefreshToken | Token management | tokenHash, expiresAt, revokedAt |
-| FcmToken | Push notifications | token, userId |
-| PatientProfile | Patient specific | userId, dateOfBirth, allergies, medicalHistory |
-| Doctor | Doctor info | userId, licenseNumber, specialtyId, isApproved |
+| RefreshToken | Token management | tokenHash, expires_at, revokedAt |
+| FcmToken | Push notifications | token, user_id |
+| PatientProfile | Patient specific | user_id, dateOfBirth, allergies, medicalHistory |
+| Doctor | Doctor info | user_id, licenseNumber, specialtyId, isApproved |
 | Specialty | Medical field | name, description |
 | Clinic | Healthcare facility | name, address, city, phone |
-| DoctorClinic | Doctor works at clinic | doctorId, clinicId (M:M junction) |
-| Slot | Doctor time slot | doctorId, clinicId, startAt, endAt, isBlocked |
-| Appointment | Booking | patientId, doctorId, slotId (UNIQUE), status, triageJson |
-| TriageResult | AI cache | appointmentId, symptoms, recommendedSpecialties, urgencyLevel |
-| AdminProfile | Admin user | userId |
-| AuditLog | Audit trail | userId, action, entity, entityId |
+| DoctorClinic | Doctor works at clinic | doctor_id, clinicId (M:M junction) |
+| Slot | Doctor time slot | doctor_id, clinicId, startAt, endAt, isBlocked |
+| Appointment | Booking | patient_id, doctor_id, slot_id (UNIQUE), status, triageJson |
+| TriageResult | AI cache | appointment_id, symptoms, recommendedSpecialties, urgencyLevel |
+| AdminProfile | Admin user | user_id |
+| AuditLog | Audit trail | user_id, action, entity, entityId |
 
 ---
 

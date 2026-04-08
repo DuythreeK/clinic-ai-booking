@@ -28,16 +28,16 @@ export class ServicesService {
 
   private toResponse(service: any) {
     return {
-      serviceId: service.serviceId.toString(),
-      facilityId: service.facilityId.toString(),
+      service_id: service.service_id.toString(),
+      facility_id: service.facility_id.toString(),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.isActive === 1,
+      is_active: service.is_active === 1,
       facility: service.facility
         ? {
-            facilityId: service.facility.facilityId.toString(),
+            facility_id: service.facility.facility_id.toString(),
             name: service.facility.name,
           }
         : null,
@@ -52,10 +52,10 @@ export class ServicesService {
     };
   }
 
-  async getServices(page = 1, limit = 10, facilityId?: string, search?: string) {
+  async getServices(page = 1, limit = 10, facility_id?: string, search?: string) {
     const where = {
-      isActive: 1,
-      facilityId: facilityId ? this.toBigIntId(facilityId) : undefined,
+      is_active: 1,
+      facility_id: facility_id ? this.toBigIntId(facility_id) : undefined,
       name: search
         ? {
             contains: search,
@@ -82,13 +82,13 @@ export class ServicesService {
     ]);
 
     const items = services.map((service) => ({
-      id: Number(service.serviceId),
-      facilityId: Number(service.facilityId),
+      id: Number(service.service_id),
+      facility_id: Number(service.facility_id),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.isActive === 1,
+      is_active: service.is_active === 1,
     }));
 
     return paginatedResponse('Get services successfully', items, page, limit, totalItems);
@@ -96,7 +96,7 @@ export class ServicesService {
 
   async getServiceById(id: string) {
     const service = await this.prisma.service.findUnique({
-      where: { serviceId: this.toBigIntId(id) },
+      where: { service_id: this.toBigIntId(id) },
       include: {
         facility: true,
         vaccines: {
@@ -107,21 +107,21 @@ export class ServicesService {
       },
     });
 
-    if (!service || service.isActive !== 1) {
+    if (!service || service.is_active !== 1) {
       throw new NotFoundException('Service not found');
     }
 
     return okResponse('Get service detail successfully', {
-      id: Number(service.serviceId),
-      facilityId: Number(service.facilityId),
+      id: Number(service.service_id),
+      facility_id: Number(service.facility_id),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.isActive === 1,
+      is_active: service.is_active === 1,
       facility: service.facility
         ? {
-            id: Number(service.facility.facilityId),
+            id: Number(service.facility.facility_id),
             name: service.facility.name,
           }
         : null,
@@ -137,10 +137,10 @@ export class ServicesService {
 
   async getAvailableSlots(id: string, date?: string, fromDate?: string, toDate?: string) {
     const service = await this.prisma.service.findUnique({
-      where: { serviceId: this.toBigIntId(id) },
+      where: { service_id: this.toBigIntId(id) },
     });
 
-    if (!service || service.isActive !== 1) {
+    if (!service || service.is_active !== 1) {
       throw new NotFoundException('Service not found');
     }
 
@@ -154,10 +154,10 @@ export class ServicesService {
 
     const slots = await this.prisma.slot.findMany({
       where: {
-        facilityId: service.facilityId,
-        isActive: 1,
+        facility_id: service.facility_id,
+        is_active: 1,
         status: 'AVAILABLE',
-        slotDate: rangeFrom || rangeTo
+        slot_date: rangeFrom || rangeTo
           ? {
               gte: rangeFrom,
               lte: rangeTo,
@@ -168,27 +168,27 @@ export class ServicesService {
         doctor: true,
         facility: true,
       },
-      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
     });
 
     return okResponse('Get available slots successfully', {
-      serviceId: toNumberId(service.serviceId),
-      date: date ?? formatDateOnly(slots[0]?.slotDate),
+      service_id: toNumberId(service.service_id),
+      date: date ?? formatDateOnly(slots[0]?.slot_date),
       slots: slots.map((slot) => ({
-        slotId: toNumberId(slot.slotId),
-        startTime: formatTimeOnly(slot.startTime),
-        endTime: formatTimeOnly(slot.endTime),
+        slot_id: toNumberId(slot.slot_id),
+        start_time: formatTimeOnly(slot.start_time),
+        end_time: formatTimeOnly(slot.end_time),
         availableCount: slot.available_count,
         status: slot.status === 'AVAILABLE' ? 'available' : slot.status.toLowerCase(),
       })),
     });
   }
 
-  async getVaccinationPackages(search?: string, facilityId?: string) {
+  async getVaccinationPackages(search?: string, facility_id?: string) {
     const services = await this.prisma.service.findMany({
       where: {
         is_active: 1,
-        facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
+        facility_id: facility_id ? this.toBigIntId(facility_id) : undefined,
         name: search ? { contains: search } : undefined,
         vaccines: {
           some: {},
@@ -208,7 +208,7 @@ export class ServicesService {
     const items: VaccinationPackageDto[] = services.map((service) => ({
       id: toNumberId(service.service_id)!,
       title: service.name,
-      facilityId: toNumberId(service.facility_id)!,
+      facility_id: toNumberId(service.facility_id)!,
       facilityName: service.facility.name,
       facilityAddress: [
         service.facility.address_detail,
@@ -285,9 +285,9 @@ export class ServicesService {
 
       const group = slotGroupMap.get(key)!;
       const item = {
-        slotId: toNumberId(slot.slot_id)!,
-        startTime: formatTimeOnly(slot.start_time),
-        endTime: formatTimeOnly(slot.end_time),
+        slot_id: toNumberId(slot.slot_id)!,
+        start_time: formatTimeOnly(slot.start_time),
+        end_time: formatTimeOnly(slot.end_time),
         availableCount: slot.available_count,
       };
 
@@ -300,7 +300,7 @@ export class ServicesService {
     }
 
     const detail: VaccinationBookingDetailDto = {
-      serviceId: toNumberId(service.service_id)!,
+      service_id: toNumberId(service.service_id)!,
       serviceName: service.name,
       specialty: 'TIÊM NGỪA',
       servicePriceValue: Number(service.price),

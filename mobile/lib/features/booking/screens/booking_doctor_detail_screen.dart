@@ -131,7 +131,7 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    doctor.fullName,
+                                    doctor.full_name,
                                     style: const TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,

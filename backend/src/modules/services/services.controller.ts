@@ -9,13 +9,13 @@ export class ServicesController {
   async getServices(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('facilityId') facilityId?: string,
+    @Query('facility_id') facility_id?: string,
     @Query('search') search?: string,
   ) {
     return this.servicesService.getServices(
       Number(page || 1),
       Number(limit || 10),
-      facilityId,
+      facility_id,
       search,
     );
   }
@@ -23,9 +23,9 @@ export class ServicesController {
   @Get('mobile/vaccination-packages')
   async getVaccinationPackages(
     @Query('search') search?: string,
-    @Query('facilityId') facilityId?: string,
+    @Query('facility_id') facility_id?: string,
   ) {
-    return this.servicesService.getVaccinationPackages(search, facilityId);
+    return this.servicesService.getVaccinationPackages(search, facility_id);
   }
 
   @Get(':id')

@@ -139,7 +139,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                                     ),
                                   ),
                                   Text(
-                                    item.totalAmountLabel,
+                                    item.total_amountLabel,
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w900,

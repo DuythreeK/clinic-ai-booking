@@ -38,7 +38,7 @@ class VaccinationPackage {
   const VaccinationPackage({
     required this.id,
     required this.title,
-    required this.facilityId,
+    required this.facility_id,
     required this.facilityName,
     required this.facilityAddress,
     required this.priceLabel,
@@ -49,7 +49,7 @@ class VaccinationPackage {
 
   final String id;
   final String title;
-  final String facilityId;
+  final String facility_id;
   final String facilityName;
   final String facilityAddress;
   final String priceLabel;
@@ -62,7 +62,7 @@ class VaccinationPackage {
     return VaccinationPackage(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      facilityId: json['facilityId']?.toString() ?? '',
+      facility_id: json['facility_id']?.toString() ?? '',
       facilityName: json['facilityName']?.toString() ?? '',
       facilityAddress: json['facilityAddress']?.toString() ?? '',
       priceLabel: json['priceLabel']?.toString() ?? '${priceValue.toString()} VND',
@@ -75,22 +75,22 @@ class VaccinationPackage {
 
 class VaccinationSlotItem {
   const VaccinationSlotItem({
-    required this.slotId,
-    required this.startTime,
-    required this.endTime,
+    required this.slot_id,
+    required this.start_time,
+    required this.end_time,
     required this.availableCount,
   });
 
-  final int slotId;
-  final String? startTime;
-  final String? endTime;
+  final int slot_id;
+  final String? start_time;
+  final String? end_time;
   final int availableCount;
 
   factory VaccinationSlotItem.fromApi(Map<String, dynamic> json) {
     return VaccinationSlotItem(
-      slotId: (json['slotId'] as num?)?.toInt() ?? 0,
-      startTime: json['startTime']?.toString(),
-      endTime: json['endTime']?.toString(),
+      slot_id: (json['slot_id'] as num?)?.toInt() ?? 0,
+      start_time: json['start_time']?.toString(),
+      end_time: json['end_time']?.toString(),
       availableCount: (json['availableCount'] as num?)?.toInt() ?? 0,
     );
   }
@@ -129,7 +129,7 @@ class VaccinationSlotGroup {
 
 class VaccinationBookingDetail {
   const VaccinationBookingDetail({
-    required this.serviceId,
+    required this.service_id,
     required this.serviceName,
     required this.specialty,
     required this.servicePriceValue,
@@ -139,7 +139,7 @@ class VaccinationBookingDetail {
     required this.slots,
   });
 
-  final int serviceId;
+  final int service_id;
   final String serviceName;
   final String specialty;
   final int servicePriceValue;
@@ -151,7 +151,7 @@ class VaccinationBookingDetail {
   factory VaccinationBookingDetail.fromApi(Map<String, dynamic> json) {
     final facilityJson = json['facility'] as Map<String, dynamic>?;
     return VaccinationBookingDetail(
-      serviceId: (json['serviceId'] as num?)?.toInt() ?? 0,
+      service_id: (json['service_id'] as num?)?.toInt() ?? 0,
       serviceName: json['serviceName']?.toString() ?? '',
       specialty: json['specialty']?.toString() ?? 'TIÊM NGỪA',
       servicePriceValue: (json['servicePriceValue'] as num?)?.toInt() ?? 0,
@@ -170,7 +170,7 @@ class VaccinationBookingDetail {
 class VaccinationPatientProfile {
   const VaccinationPatientProfile({
     required this.id,
-    required this.fullName,
+    required this.full_name,
     required this.phoneNumber,
     required this.citizenId,
     required this.insuranceNumber,
@@ -190,7 +190,7 @@ class VaccinationPatientProfile {
   });
 
   final int id;
-  final String fullName;
+  final String full_name;
   final String? phoneNumber;
   final String? citizenId;
   final String? insuranceNumber;
@@ -212,7 +212,7 @@ class VaccinationPatientProfile {
     final rawGender = json['gender']?.toString();
     return VaccinationPatientProfile(
       id: (json['id'] as num?)?.toInt() ?? 0,
-      fullName: json['fullName']?.toString() ?? '',
+      full_name: json['full_name']?.toString() ?? '',
       phoneNumber: json['phoneNumber']?.toString(),
       citizenId: json['citizenId']?.toString(),
       insuranceNumber: json['insuranceNumber']?.toString(),
@@ -257,24 +257,24 @@ class PaymentMethodOption {
 
 class VaccinationBookingDraft {
   const VaccinationBookingDraft({
-    this.facilityId,
+    this.facility_id,
     this.facilityName,
     this.facilityAddress,
-    this.serviceId,
+    this.service_id,
     this.specialty = 'TIÊM NGỪA',
     this.serviceName = 'Tiêm ngừa',
     this.servicePriceLabel = '160.000 VND (Thanh toán tại BV)',
     this.servicePriceValue = 160000,
     this.dateLabel = '05/03/2026',
     this.slotLabel = '07:00 - 08:00',
-    this.slotId,
-    this.appointmentDate,
-    this.appointmentTime,
+    this.slot_id,
+    this.appointment_date,
+    this.appointment_time,
     this.patientProfileId,
     this.profileLabel = 'CHƯA TỪNG KHÁM ĐĂNG KÝ MỚI',
     this.patientName = 'Nguyễn Văn A',
     this.phone = '',
-    this.fullName = '',
+    this.full_name = '',
     this.birthDate = '',
     this.gender = 'Nam',
     this.identityNumber = '',
@@ -289,24 +289,24 @@ class VaccinationBookingDraft {
     this.paymentMethodId = 'vietqr',
   });
 
-  final String? facilityId;
+  final String? facility_id;
   final String? facilityName;
   final String? facilityAddress;
-  final int? serviceId;
+  final int? service_id;
   final String specialty;
   final String serviceName;
   final String servicePriceLabel;
   final int servicePriceValue;
   final String dateLabel;
   final String slotLabel;
-  final int? slotId;
-  final String? appointmentDate;
-  final String? appointmentTime;
+  final int? slot_id;
+  final String? appointment_date;
+  final String? appointment_time;
   final int? patientProfileId;
   final String profileLabel;
   final String patientName;
   final String phone;
-  final String fullName;
+  final String full_name;
   final String birthDate;
   final String gender;
   final String identityNumber;
@@ -321,24 +321,24 @@ class VaccinationBookingDraft {
   final String paymentMethodId;
 
   VaccinationBookingDraft copyWith({
-    String? facilityId,
+    String? facility_id,
     String? facilityName,
     String? facilityAddress,
-    int? serviceId,
+    int? service_id,
     String? specialty,
     String? serviceName,
     String? servicePriceLabel,
     int? servicePriceValue,
     String? dateLabel,
     String? slotLabel,
-    int? slotId,
-    String? appointmentDate,
-    String? appointmentTime,
+    int? slot_id,
+    String? appointment_date,
+    String? appointment_time,
     int? patientProfileId,
     String? profileLabel,
     String? patientName,
     String? phone,
-    String? fullName,
+    String? full_name,
     String? birthDate,
     String? gender,
     String? identityNumber,
@@ -353,24 +353,24 @@ class VaccinationBookingDraft {
     String? paymentMethodId,
   }) {
     return VaccinationBookingDraft(
-      facilityId: facilityId ?? this.facilityId,
+      facility_id: facility_id ?? this.facility_id,
       facilityName: facilityName ?? this.facilityName,
       facilityAddress: facilityAddress ?? this.facilityAddress,
-      serviceId: serviceId ?? this.serviceId,
+      service_id: service_id ?? this.service_id,
       specialty: specialty ?? this.specialty,
       serviceName: serviceName ?? this.serviceName,
       servicePriceLabel: servicePriceLabel ?? this.servicePriceLabel,
       servicePriceValue: servicePriceValue ?? this.servicePriceValue,
       dateLabel: dateLabel ?? this.dateLabel,
       slotLabel: slotLabel ?? this.slotLabel,
-      slotId: slotId ?? this.slotId,
-      appointmentDate: appointmentDate ?? this.appointmentDate,
-      appointmentTime: appointmentTime ?? this.appointmentTime,
+      slot_id: slot_id ?? this.slot_id,
+      appointment_date: appointment_date ?? this.appointment_date,
+      appointment_time: appointment_time ?? this.appointment_time,
       patientProfileId: patientProfileId ?? this.patientProfileId,
       profileLabel: profileLabel ?? this.profileLabel,
       patientName: patientName ?? this.patientName,
       phone: phone ?? this.phone,
-      fullName: fullName ?? this.fullName,
+      full_name: full_name ?? this.full_name,
       birthDate: birthDate ?? this.birthDate,
       gender: gender ?? this.gender,
       identityNumber: identityNumber ?? this.identityNumber,
@@ -434,7 +434,7 @@ class VaccinationBookingCatalog {
     const VaccinationPackage(
       id: 'vac-viem-gan-b',
       title: 'Tiêm chủng Viêm gan siêu vi B người lớn',
-      facilityId: 'ha-noi-general',
+      facility_id: 'ha-noi-general',
       facilityName: 'Bệnh viện đa khoa Hà Nội',
       facilityAddress: 'Số 29 Hàn Thuyên, Hai Bà Trưng, Hà Nội',
       priceLabel: 'Giá 0đ',
@@ -445,7 +445,7 @@ class VaccinationBookingCatalog {
     const VaccinationPackage(
       id: 'vac-tiem-ngua',
       title: 'Tiêm ngừa',
-      facilityId: 'phu-san-can-tho',
+      facility_id: 'phu-san-can-tho',
       facilityName: 'Bệnh viện Phụ sản Thành Phố Cần Thơ',
       facilityAddress: '106 Cách Mạng Tháng Tám, Phường Cái Khế, TP. Cần Thơ',
       priceLabel: 'Giá 160.000 VND',
@@ -456,7 +456,7 @@ class VaccinationBookingCatalog {
     const VaccinationPackage(
       id: 'vac-hpv',
       title: 'Gói Vaccine HPV (Gói 1)',
-      facilityId: 'phu-san-sai-gon',
+      facility_id: 'phu-san-sai-gon',
       facilityName: 'Bệnh viện Phụ sản Quốc tế Sài Gòn',
       facilityAddress: '63 Bùi Viện, Quận 1, TP.HCM',
       priceLabel: 'Giá 7.300.000 VND',
@@ -542,12 +542,12 @@ class VaccinationBookingCatalog {
   }
 
   static Future<VaccinationBookingDetail?> loadDetail({
-    required String serviceId,
+    required String service_id,
     String? date,
   }) async {
     try {
       final response = await _dioClient.get(
-        '/services/$serviceId/mobile-vaccination-detail',
+        '/services/$service_id/mobile-vaccination-detail',
         queryParameters: date == null ? null : {'date': date},
       );
       final data = _unwrapData(response.data);
@@ -561,7 +561,7 @@ class VaccinationBookingCatalog {
   }
 
   static Future<VaccinationPatientProfile?> createPatientProfile({
-    required String fullName,
+    required String full_name,
     required String phoneNumber,
     required String citizenId,
     required String insuranceNumber,
@@ -582,7 +582,7 @@ class VaccinationBookingCatalog {
     final response = await _dioClient.post(
       '/patient-profiles',
       data: {
-        'fullName': fullName,
+        'full_name': full_name,
         'phoneNumber': phoneNumber,
         'citizenId': citizenId,
         'insuranceNumber': insuranceNumber,
@@ -616,25 +616,25 @@ class VaccinationBookingCatalog {
   }
 
   static Future<Map<String, dynamic>?> createAppointment({
-    required String patientId,
-    required String facilityId,
-    required String serviceId,
-    required String slotId,
-    required String appointmentDate,
-    required String appointmentTime,
+    required String patient_id,
+    required String facility_id,
+    required String service_id,
+    required String slot_id,
+    required String appointment_date,
+    required String appointment_time,
     required String note,
     required String symptomsNote,
   }) async {
     final response = await _dioClient.post(
       '/appointments',
       data: {
-        'patientId': patientId,
-        'facilityId': facilityId,
-        'serviceId': serviceId,
-        'slotId': slotId,
+        'patient_id': patient_id,
+        'facility_id': facility_id,
+        'service_id': service_id,
+        'slot_id': slot_id,
         'appointmentType': 'vaccination',
-        'appointmentDate': appointmentDate,
-        'appointmentTime': appointmentTime,
+        'appointment_date': appointment_date,
+        'appointment_time': appointment_time,
         'note': note,
         'symptomsNote': symptomsNote,
       },
@@ -648,13 +648,13 @@ class VaccinationBookingCatalog {
   }
 
   static Future<Map<String, dynamic>?> createPayment({
-    required String appointmentId,
+    required String appointment_id,
     required String paymentMethod,
   }) async {
     final response = await _dioClient.post(
       '/payments',
       data: {
-        'appointmentId': appointmentId,
+        'appointment_id': appointment_id,
         'paymentMethod': paymentMethod,
       },
     );
@@ -700,10 +700,10 @@ class VaccinationBookingCatalog {
 
   static VaccinationBookingDraft draftFromPackage(VaccinationPackage package) {
     return VaccinationBookingDraft(
-      facilityId: package.facilityId,
+      facility_id: package.facility_id,
       facilityName: package.facilityName,
       facilityAddress: package.facilityAddress,
-      serviceId: int.tryParse(package.id),
+      service_id: int.tryParse(package.id),
       serviceName: package.title,
       servicePriceLabel: '${package.priceLabel} (${package.note})',
       servicePriceValue: package.priceValue,
@@ -712,7 +712,7 @@ class VaccinationBookingCatalog {
 
   static VaccinationBookingDraft draftFromFacility(VaccinationFacility facility) {
     return VaccinationBookingDraft(
-      facilityId: facility.id,
+      facility_id: facility.id,
       facilityName: facility.name,
       facilityAddress: facility.address,
     );

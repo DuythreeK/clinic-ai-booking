@@ -33,5 +33,5 @@ export class MobileDoctorReviewDto {
   reviewerAvatar!: string;
   rating!: number;
   comment!: string | null;
-  createdAt!: Date;
+  created_at!: Date;
 }

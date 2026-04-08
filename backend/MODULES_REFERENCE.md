@@ -40,7 +40,7 @@
 - `GET /doctors/:id` - Get specific doctor details
 - `PATCH /doctors/:id` - Update own doctor profile
 - `PATCH /doctors/:id/approve` - Approve doctor (admin)
-- `GET /doctors/:doctorId/availability` - Get availability
+- `GET /doctors/:doctor_id/availability` - Get availability
 
 **Features**:
 - Doctor profile management
@@ -176,18 +176,18 @@ PENDING/CONFIRMED/COMPLETED → CANCELLED (from any)
 - `CreateSlotDto`, `CreateBulkSlotsDto`: Input validation
 
 **Database Models**:
-- Slot (with unique constraint on doctorId, clinicId, startAt, endAt)
+- Slot (with unique constraint on doctor_id, clinicId, startAt, endAt)
 
 **Advanced Features**:
 ```typescript
 // Bulk creation
 {
-  doctorId: string;
+  doctor_id: string;
   clinicId: string;
   startDate: "2024-01-15";  // YYYY-MM-DD
   endDate: "2024-01-31";
-  startTime: "09:00";       // HH:mm
-  endTime: "17:00";
+  start_time: "09:00";       // HH:mm
+  end_time: "17:00";
   slotDuration: 30;         // minutes
   daysOfWeek: [1, 2, 3, 4, 5];  // Mon-Fri (0=Sunday)
 }
@@ -394,7 +394,7 @@ async method() { }
 Extract current user from token
 
 ```typescript
-@CurrentUser('sub') userId: string
+@CurrentUser('sub') user_id: string
 @CurrentUser() user: JwtPayload
 ```
 
@@ -414,9 +414,9 @@ Extract current user from token
 ```typescript
 where: {
   status: AppointmentStatus.pending,
-  doctorId: string,
-  patientId: string,
-  createdAt: { gte: Date, lte: Date }
+  doctor_id: string,
+  patient_id: string,
+  created_at: { gte: Date, lte: Date }
 }
 ```
 

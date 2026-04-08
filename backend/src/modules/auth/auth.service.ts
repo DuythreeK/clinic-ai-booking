@@ -30,54 +30,71 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterRequest) {
-    const existingUser = await this.prisma.user.findFirst({
-      where: {
-        OR: [{ email: dto.email }, { phone: dto.phone }],
-      },
-    });
+      const existingUser = await this.prisma.user.findFirst({
+        where: {
+          OR: [{ email: dto.email }, { phone: dto.phone }],
+        },
+      });
 
-    if (existingUser) {
-      const duplicateField =
-        existingUser.email === dto.email ? 'email' : 'phone';
-      throw new ConflictException(
-        `User with this ${duplicateField} already exists`,
-      );
+      if (existingUser) {
+        const duplicateField =
+          existingUser.email === dto.email ? 'email' : 'phone';
+        throw new ConflictException(
+          `User with this ${duplicateField} already exists`,
+        );
+      }
+
+      const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+      // Sử dụng $transaction để đảm bảo tạo User và Profile đồng thời
+      const result = await this.prisma.$transaction(async (tx) => {
+        // 1. Tạo User
+        const user = await tx.user.create({
+          data: {
+            role: dto.role,
+            full_name: dto.full_name,
+            email: dto.email,
+            phone: dto.phone,
+            password_hash: hashedPassword,
+            status: UserStatus.active,
+          },
+        });
+
+        // 2. Nếu role là patient, tạo ngay PatientProfile mặc định
+        if (user.role === UserRole.patient) {
+          await tx.patientProfile.create({
+            data: {
+              user_id: user.user_id,
+              full_name: user.full_name,
+              phone_number: user.phone,
+              email: user.email,
+              relationship_to_user: 'Bản thân',
+              is_primary: 1, // Đánh dấu là hồ sơ chính
+            },
+          });
+        }
+
+        return user;
+      });
+
+      return {
+        success: true,
+        data: {
+          user_id: result.user_id.toString(),
+          email: result.email,
+          full_name: result.full_name,
+          role: result.role,
+          status: result.status,
+        },
+      };
     }
-
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    const user = await this.prisma.user.create({
-      data: {
-        role: dto.role,
-        fullName: dto.fullName,
-        email: dto.email,
-        phone: dto.phone,
-        password_hash: hashedPassword,
-        status: UserStatus.active,
-      },
-      select: {
-        userId: true,
-        email: true,
-        phone: true,
-        fullName: true,
-        role: true,
-        status: true,
-        createdAt: true,
-      },
-    });
-
-    return {
-      success: true,
-      data: user,
-    };
-  }
 
   async login(dto: LoginRequest) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
 
       /* select: {
-              userId: true,
+              user_id: true,
               email: true,
               password_hash: true,
               role: true,
@@ -98,12 +115,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const tokens = await this.generateTokens(user.userId, user.email, user.role);
+    const tokens = await this.generateTokens(user.user_id, user.email, user.role);
 
     return {
       success: true,
       data: {
-        userId: user.userId.toString(),
+        user_id: user.user_id.toString(),
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_type: 'Bearer',
@@ -123,12 +140,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid refresh token');
     }
 
-    const userId = this.toBigIntId(payload.sub);
+    const user_id = this.toBigIntId(payload.sub);
 
     const tokenRecord = await this.prisma.refreshToken.findFirst({
       where: {
         token: refreshToken,
-        userId: userId,
+        user_id: user_id,
         is_revoked: 0,
       },
     });
@@ -137,7 +154,7 @@ export class AuthService {
       throw new UnauthorizedException('Token revoked or invalid');
     }
 
-    if (tokenRecord.expiresAt <= new Date()) {
+    if (tokenRecord.expires_at <= new Date()) {
       await this.prisma.refreshToken.update({
         where: { id: tokenRecord.id },
         data: { is_revoked: 1 },
@@ -146,9 +163,9 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { userId: userId },
+      where: { user_id: user_id },
       select: {
-        userId: true,
+        user_id: true,
         email: true,
         role: true,
         status: true,
@@ -164,7 +181,7 @@ export class AuthService {
       data: { is_revoked: 1 },
     });
 
-    const newTokens = await this.generateTokens(user.userId, user.email, user.role);
+    const newTokens = await this.generateTokens(user.user_id, user.email, user.role);
 
     return {
       success: true,
@@ -180,7 +197,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: {
-        userId: true,
+        user_id: true,
         email: true,
       },
     });
@@ -190,14 +207,14 @@ export class AuthService {
     }
 
     const resetToken = this.createPasswordResetToken();
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+    const expires_at = new Date(Date.now() + 15 * 60 * 1000);
 
     await this.prisma.passwordResetToken.create({
       data: {
-        userId: user.userId,
+        user_id: user.user_id,
         token: resetToken,
         status: PasswordResetStatus.PENDING,
-        expiresAt: expiresAt,
+        expires_at: expires_at,
       },
     });
 
@@ -217,7 +234,7 @@ export class AuthService {
       include: {
         user: {
           select: {
-            userId: true,
+            user_id: true,
           },
         },
       },
@@ -231,7 +248,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    if (tokenRecord.expiresAt <= new Date()) {
+    if (tokenRecord.expires_at <= new Date()) {
       await this.prisma.passwordResetToken.update({
         where: { id: tokenRecord.id },
         data: { status: PasswordResetStatus.EXPIRED },
@@ -243,7 +260,7 @@ export class AuthService {
 
     await this.prisma.$transaction([
       this.prisma.user.update({
-        where: { userId: tokenRecord.user.userId },
+        where: { user_id: tokenRecord.user.user_id },
         data: { password_hash: passwordHash },
       }),
       this.prisma.passwordResetToken.update({
@@ -261,12 +278,12 @@ export class AuthService {
     };
   }
 
-  async logout(userId: string) {
-    const parsedUserId = this.toBigIntId(userId);
+  async logout(user_id: string) {
+    const parseduser_id = this.toBigIntId(user_id);
 
     await this.prisma.refreshToken.updateMany({
       where: {
-        userId: parsedUserId,
+        user_id: parseduser_id,
         is_revoked: 0,
       },
       data: {
@@ -278,12 +295,12 @@ export class AuthService {
   }
 
   private async generateTokens(
-    userId: bigint,
+    user_id: bigint,
     email: string,
     role: UserRole,
   ) {
     const payload: JwtPayload = {
-      sub: userId.toString(),
+      sub: user_id.toString(),
       email,
       role,
     };
@@ -298,13 +315,13 @@ export class AuthService {
       expiresIn: this.durationToSeconds(process.env.JWT_REFRESH_EXPIRES_IN || '7d'),
     });
 
-    const expiresAt = new Date(Date.now() + this.getRefreshTokenTtlMs());
+    const expires_at = new Date(Date.now() + this.getRefreshTokenTtlMs());
 
     await this.prisma.refreshToken.create({
       data: {
-        userId: userId,
+        user_id: user_id,
         token: refresh_token,
-        expiresAt,
+        expires_at,
         is_revoked: 0,
       },
     });
@@ -331,9 +348,9 @@ export class AuthService {
     return `${name.slice(0, 2)}***@${domain}`;
   }
 
-  private toBigIntId(userId: string): bigint {
+  private toBigIntId(user_id: string): bigint {
     try {
-      return BigInt(userId);
+      return BigInt(user_id);
     } catch {
       throw new BadRequestException('Invalid user id format');
     }

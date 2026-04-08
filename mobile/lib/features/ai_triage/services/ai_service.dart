@@ -29,14 +29,14 @@ class AiService {
   /// Tạo tóm tắt trước khám
   Future<Map<String, dynamic>> generatePrevisitSummary({
     required Map<String, dynamic> patientData,
-    String? appointmentId,
+    String? appointment_id,
     List<Map<String, dynamic>>? previousAppointments,
   }) async {
     final response = await dioClient.post(
       '/ai/previsit-summary',
       data: {
         'patientData': patientData,
-        if (appointmentId != null) 'appointmentId': appointmentId,
+        if (appointment_id != null) 'appointment_id': appointment_id,
         if (previousAppointments != null) 'previousAppointments': previousAppointments,
       },
     );

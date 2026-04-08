@@ -98,24 +98,24 @@ class DoctorProfile {
     final specialtyName = specialtyRaw is Map<String, dynamic>
         ? specialtyRaw['name']?.toString()
         : specialtyRaw?.toString();
-    final priceValue = (json['priceValue'] as num?)?.toInt() ?? 0;
-    final bookingToday = (json['bookingToday'] as num?)?.toInt() ?? 0;
-    final reviewCount = (json['reviewCount'] as num?)?.toInt() ?? 0;
-    final rating = (json['rating'] as num?)?.toDouble() ?? 0;
-    final yearsExperience = (json['yearsExperience'] as num?)?.toInt() ?? 0;
+    final priceValue = (json['consulation_fee'] as num?)?.toInt() ?? 0;
+    final bookingToday = (json['booking_count'] as num?)?.toInt() ?? 0;
+    final reviewCount = (json['review_count'] as num?)?.toInt() ?? 0;
+    final rating = (json['rating_avg'] as num?)?.toDouble() ?? 0;
+    final yearsExperience = (json['experience_years'] as num?)?.toInt() ?? 0;
 
     return DoctorProfile(
-      id: json['id']?.toString() ?? '',
-      name: json['name']?.toString() ?? '',
-      specialty: specialtyName ?? 'Chưa cập nhật',
-      focus: json['focus']?.toString() ?? json['title']?.toString() ?? 'Khám tổng quát',
-      imageUrl: json['imageUrl']?.toString() ?? '',
-      rating: rating,
-      reviewCount: reviewCount,
-      priceValue: priceValue,
-      priceLabel: json['priceLabel']?.toString() ?? '${priceValue.toString()}đ/lần',
-      bookingToday: bookingToday,
-      yearsExperience: yearsExperience,
+      id: (json['id'] ?? json['doctor_id'])?.toString() ?? '',
+      name: (json['name'] ?? json['full_name'])?.toString() ?? '',
+      specialty: json['specialty']?.toString() ?? 'Tổng quát',
+      focus: (json['focus'] ?? json['title'])?.toString() ?? '',
+      imageUrl: (json['imageUrl'] ?? json['avatar_url'])?.toString() ?? '', // Chú ý chỗ này
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['reviewCount'] ?? json['review_count'] as num?)?.toInt() ?? 0,
+      priceValue: (json['priceValue'] ?? json['consultation_fee'] as num?)?.toInt() ?? 0,
+      priceLabel: json['priceLabel']?.toString() ?? '',
+      bookingToday: (json['bookingToday'] ?? json['booking_count'] as num?)?.toInt() ?? 0,
+      yearsExperience: (json['yearsExperience'] ?? json['experience_years'] as num?)?.toInt() ?? 0,
       patientsLabel: json['patientsLabel']?.toString() ?? '$bookingToday người đã đặt hôm nay',
       nextAvailable: json['nextAvailable']?.toString() ?? 'Chưa có lịch',
       gender: json['gender']?.toString() ?? 'Không rõ',
@@ -228,17 +228,34 @@ class DoctorCatalog extends ChangeNotifier {
   }
 
   List<dynamic> _unwrapItems(dynamic data) {
+    if (data == null) return <dynamic>[];
+
     if (data is Map<String, dynamic>) {
+      // 1. Check trong trường 'data' trước
       final wrapped = data['data'];
-      if (wrapped is List) return wrapped;
+
+      if (wrapped is List) {
+        return wrapped; // Trường hợp okResponse (List trực tiếp)
+      }
+
       if (wrapped is Map<String, dynamic>) {
+        // Trường hợp paginatedResponse (data: { items: [...] })
         final items = wrapped['items'];
         if (items is List) return items;
+
+        // Dự phòng nếu NestJS trả về data: { data: [...] }
+        final nestedData = wrapped['data'];
+        if (nestedData is List) return nestedData;
       }
-      final items = data['items'];
-      if (items is List) return items;
+
+      // 2. Check trực tiếp trường 'items' ở ngoài cùng (nếu có)
+      final directItems = data['items'];
+      if (directItems is List) return directItems;
     }
+
+    // 3. Nếu bản thân data đã là một List
     if (data is List) return data;
+
     return <dynamic>[];
   }
 

@@ -9,7 +9,7 @@ import {
 export class AiService {
   private readonly logger = new Logger(AiService.name);
 
-  async triageSymptoms(userId: string, symptoms: string): Promise<TriageResultDto> {
+  async triageSymptoms(user_id: string, symptoms: string): Promise<TriageResultDto> {
     const normalized = symptoms.trim();
 
     if (!normalized) {
@@ -41,7 +41,7 @@ export class AiService {
       reasoning = 'Trieu chung can duoc bac si tham kham som trong 24-48 gio.';
     }
 
-    this.logger.log(`Mock triage generated for userId=${userId}`);
+    this.logger.log(`Mock triage generated for user_id=${user_id}`);
 
     return {
       urgency,
@@ -54,14 +54,14 @@ export class AiService {
     dto: PrevisitSummaryRequestDto,
   ): Promise<PrevisitSummaryResultDto> {
     const patientData = dto.patientData ?? {};
-    const fullName =
-      patientData.fullName ||
+    const full_name =
+      patientData.full_name ||
       [patientData.firstName, patientData.lastName].filter(Boolean).join(' ') ||
       'Benh nhan';
 
     return {
       summary: [
-        `${fullName} can duoc xac nhan lai thong tin truoc buoi kham.`,
+        `${full_name} can duoc xac nhan lai thong tin truoc buoi kham.`,
         `So lan kham truoc do: ${dto.previousAppointments?.length ?? 0}.`,
       ],
       keyPoints: [

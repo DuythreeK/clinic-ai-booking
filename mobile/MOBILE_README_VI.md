@@ -194,12 +194,12 @@ class AppointmentService {
   AppointmentService({required this.dioClient});
   
   Future<Appointment> createAppointment(
-    String doctorId,
-    String slotId,
+    String doctor_id,
+    String slot_id,
   ) async {
     final response = await dioClient.post(
       '/appointments',
-      data: {'doctorId': doctorId, 'slotId': slotId},
+      data: {'doctor_id': doctor_id, 'slot_id': slot_id},
     );
     return Appointment.fromJson(response.data);
   }

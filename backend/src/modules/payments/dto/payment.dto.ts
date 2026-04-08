@@ -2,7 +2,7 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsString()
-  appointmentId!: string;
+  appointment_id!: string;
 
   @IsString()
   paymentMethod!: string;

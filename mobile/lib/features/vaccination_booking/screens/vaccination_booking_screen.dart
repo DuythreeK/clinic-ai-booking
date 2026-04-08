@@ -75,7 +75,7 @@ class _VaccinationBookingScreenState extends State<VaccinationBookingScreen> {
           ),
           const SizedBox(height: 16),
           ...packages.map((item) {
-            final facility = VaccinationBookingCatalog.facilityById(item.facilityId);
+            final facility = VaccinationBookingCatalog.facilityById(item.facility_id);
             return _VaccinationPackageCard(
               item: item,
               facility: facility,
@@ -178,7 +178,7 @@ class VaccinationVisitInfoScreen extends StatefulWidget {
 class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen> {
   VaccinationBookingDetail? _detail;
   String? _selectedDate;
-  int? _selectedSlotId;
+  int? _selectedslot_id;
   String? _selectedSlotLabel;
   bool _loading = true;
   String? _error;
@@ -190,10 +190,10 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
     _loadDetail();
   }
 
-  int? _resolveServiceId() {
-    if (widget.draft.serviceId != null) return widget.draft.serviceId;
+  int? _resolveservice_id() {
+    if (widget.draft.service_id != null) return widget.draft.service_id;
     final candidates = VaccinationBookingCatalog.packages
-        .where((item) => item.facilityId == widget.draft.facilityId)
+        .where((item) => item.facility_id == widget.draft.facility_id)
         .toList();
     if (candidates.isEmpty) {
       return VaccinationBookingCatalog.packages.isEmpty ? null : int.tryParse(VaccinationBookingCatalog.packages.first.id);
@@ -205,8 +205,8 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
   }
 
   Future<void> _loadDetail() async {
-    final serviceId = _resolveServiceId();
-    if (serviceId == null) {
+    final service_id = _resolveservice_id();
+    if (service_id == null) {
       setState(() {
         _loading = false;
         _error = 'Không xác định được gói tiêm chủng.';
@@ -219,7 +219,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
       _error = null;
     });
 
-    final detail = await VaccinationBookingCatalog.loadDetail(serviceId: serviceId.toString());
+    final detail = await VaccinationBookingCatalog.loadDetail(service_id: service_id.toString());
     if (!mounted) return;
 
     if (detail == null || detail.slots.isEmpty) {
@@ -240,8 +240,8 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
     setState(() {
       _detail = detail;
       _selectedDate = firstGroup.date;
-      _selectedSlotId = firstSlot?.slotId;
-      _selectedSlotLabel = firstSlot == null ? null : '${firstSlot.startTime ?? ''} - ${firstSlot.endTime ?? ''}'.trim();
+      _selectedslot_id = firstSlot?.slot_id;
+      _selectedSlotLabel = firstSlot == null ? null : '${firstSlot.start_time ?? ''} - ${firstSlot.end_time ?? ''}'.trim();
       _loading = false;
     });
   }
@@ -264,15 +264,15 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
             : null;
     setState(() {
       _selectedDate = group.date;
-      _selectedSlotId = slot?.slotId;
-      _selectedSlotLabel = slot == null ? null : '${slot.startTime ?? ''} - ${slot.endTime ?? ''}'.trim();
+      _selectedslot_id = slot?.slot_id;
+      _selectedSlotLabel = slot == null ? null : '${slot.start_time ?? ''} - ${slot.end_time ?? ''}'.trim();
     });
   }
 
   void _selectSlot(VaccinationSlotItem item) {
     setState(() {
-      _selectedSlotId = item.slotId;
-      _selectedSlotLabel = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+      _selectedslot_id = item.slot_id;
+      _selectedSlotLabel = '${item.start_time ?? ''} - ${item.end_time ?? ''}'.trim();
     });
   }
 
@@ -288,7 +288,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
   @override
   Widget build(BuildContext context) {
     final detail = _detail;
-    final facility = detail?.facility ?? VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final facility = detail?.facility ?? VaccinationBookingCatalog.facilityById(widget.draft.facility_id);
     final selectedGroup = _selectedGroup();
     final safeDetail = detail;
 
@@ -300,7 +300,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
           : PrimaryActionBar(
               label: 'TIẾP TỤC',
               onTap: () {
-                if (_selectedSlotId == null || selectedGroup == null) {
+                if (_selectedslot_id == null || selectedGroup == null) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Vui lòng chọn ngày và giờ khám.')),
                   );
@@ -310,18 +310,18 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
                 context.push(
                   '/vaccination-booking/profile',
                   extra: widget.draft.copyWith(
-                    facilityId: facility.id,
+                    facility_id: facility.id,
                     facilityName: facility.name,
                     facilityAddress: facility.address,
-                    serviceId: detail.serviceId,
+                    service_id: detail.service_id,
                     serviceName: detail.serviceName,
                     servicePriceLabel: detail.servicePriceLabel,
                     servicePriceValue: detail.servicePriceValue,
                     dateLabel: _displayDate(selectedGroup.date).replaceAll('\n', ' '),
                     slotLabel: _selectedSlotLabel ?? '',
-                    slotId: _selectedSlotId,
-                    appointmentDate: selectedGroup.date,
-                    appointmentTime: _selectedSlotLabel,
+                    slot_id: _selectedslot_id,
+                    appointment_date: selectedGroup.date,
+                    appointment_time: _selectedSlotLabel,
                   ),
                 );
               },
@@ -391,10 +391,10 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
                       spacing: 8,
                       runSpacing: 8,
                       children: (selectedGroup?.morningSlots ?? const <VaccinationSlotItem>[]).map((item) {
-                        final label = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+                        final label = '${item.start_time ?? ''} - ${item.end_time ?? ''}'.trim();
                         return ChoiceChipPill(
                           label: label,
-                          selected: _selectedSlotId == item.slotId,
+                          selected: _selectedslot_id == item.slot_id,
                           onTap: () => _selectSlot(item),
                         );
                       }).toList(),
@@ -406,10 +406,10 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
                       spacing: 8,
                       runSpacing: 8,
                       children: (selectedGroup?.afternoonSlots ?? const <VaccinationSlotItem>[]).map((item) {
-                        final label = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+                        final label = '${item.start_time ?? ''} - ${item.end_time ?? ''}'.trim();
                         return ChoiceChipPill(
                           label: label,
-                          selected: _selectedSlotId == item.slotId,
+                          selected: _selectedslot_id == item.slot_id,
                           onTap: () => _selectSlot(item),
                         );
                       }).toList(),
@@ -466,16 +466,16 @@ class _VaccinationProfileScreenState extends State<VaccinationProfileScreen> {
     final parts = <String>[];
     if (profile.gender != null && profile.gender!.isNotEmpty) parts.add(profile.gender!);
     if (profile.birthDate != null && profile.birthDate!.isNotEmpty) parts.add(profile.birthDate!);
-    return parts.isEmpty ? profile.fullName : '${profile.fullName} • ${parts.join(' • ')}';
+    return parts.isEmpty ? profile.full_name : '${profile.full_name} • ${parts.join(' • ')}';
   }
 
   VaccinationBookingDraft _buildDraftFromProfile(VaccinationPatientProfile profile) {
     return widget.draft.copyWith(
       patientProfileId: profile.id,
       profileLabel: _profileLabel(profile),
-      patientName: profile.fullName,
+      patientName: profile.full_name,
       phone: profile.phoneNumber ?? widget.draft.phone,
-      fullName: profile.fullName,
+      full_name: profile.full_name,
       birthDate: profile.birthDate ?? widget.draft.birthDate,
       gender: profile.gender ?? widget.draft.gender,
       identityNumber: profile.citizenId ?? widget.draft.identityNumber,
@@ -570,7 +570,7 @@ class _VaccinationProfileScreenState extends State<VaccinationProfileScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      profile.fullName,
+                                      profile.full_name,
                                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                                     ),
                                     const SizedBox(height: 4),
@@ -622,7 +622,7 @@ class _VaccinationProfileScreenState extends State<VaccinationProfileScreen> {
 class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneController;
-  late final TextEditingController _fullNameController;
+  late final TextEditingController _full_nameController;
   late final TextEditingController _birthController;
   late final TextEditingController _identityController;
   late final TextEditingController _insuranceController;
@@ -701,7 +701,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
       });
     });
     _phoneController = TextEditingController(text: widget.draft.phone);
-    _fullNameController = TextEditingController(text: widget.draft.fullName);
+    _full_nameController = TextEditingController(text: widget.draft.full_name);
     _birthController = TextEditingController(text: widget.draft.birthDate);
     _identityController = TextEditingController(text: widget.draft.identityNumber);
     _insuranceController = TextEditingController(text: widget.draft.insuranceNumber);
@@ -718,7 +718,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
   @override
   void dispose() {
     _phoneController.dispose();
-    _fullNameController.dispose();
+    _full_nameController.dispose();
     _birthController.dispose();
     _identityController.dispose();
     _insuranceController.dispose();
@@ -734,7 +734,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facility_id);
 
     return VaccinationPageScaffold(
       title: 'Xác nhận thông tin',
@@ -749,11 +749,11 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
           context.push(
             '/vaccination-booking/payment',
             extra: widget.draft.copyWith(
-              facilityId: facility.id,
+              facility_id: facility.id,
               facilityName: facility.name,
               facilityAddress: facility.address,
               phone: _phoneController.text.trim(),
-              fullName: _fullNameController.text.trim(),
+              full_name: _full_nameController.text.trim(),
               birthDate: _birthController.text.trim(),
               gender: _gender,
               identityNumber: _identityController.text.trim(),
@@ -766,9 +766,9 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
               district: _districtController.text.trim(),
               ward: _wardController.text.trim(),
               patientProfileId: widget.draft.patientProfileId,
-              patientName: _fullNameController.text.trim().isEmpty
+              patientName: _full_nameController.text.trim().isEmpty
                   ? widget.draft.patientName
-                  : _fullNameController.text.trim(),
+                  : _full_nameController.text.trim(),
             ),
           );
         },
@@ -813,7 +813,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
             ),
             _FormField(
               label: 'Họ và tên',
-              controller: _fullNameController,
+              controller: _full_nameController,
               requiredField: true,
             ),
             Row(
@@ -948,7 +948,7 @@ class _VaccinationPaymentScreenState extends State<VaccinationPaymentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facility_id);
     final paymentMethod = VaccinationBookingCatalog.paymentMethodById(_paymentMethodId);
     const extraFee = 11000;
     final total = widget.draft.servicePriceValue + extraFee;
@@ -1066,10 +1066,10 @@ class _VaccinationPaymentScreenState extends State<VaccinationPaymentScreen> {
   Future<void> _submitBooking() async {
     if (_isSubmitting) return;
 
-    final serviceId = widget.draft.serviceId;
-    final slotId = widget.draft.slotId;
-    final facilityId = widget.draft.facilityId;
-    if (serviceId == null || slotId == null || facilityId == null) {
+    final service_id = widget.draft.service_id;
+    final slot_id = widget.draft.slot_id;
+    final facility_id = widget.draft.facility_id;
+    if (service_id == null || slot_id == null || facility_id == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Thiếu thông tin lịch tiêm.')),
       );
@@ -1081,10 +1081,10 @@ class _VaccinationPaymentScreenState extends State<VaccinationPaymentScreen> {
     });
 
     try {
-      var patientId = widget.draft.patientProfileId;
-      if (patientId == null) {
+      var patient_id = widget.draft.patientProfileId;
+      if (patient_id == null) {
         final createdProfile = await VaccinationBookingCatalog.createPatientProfile(
-          fullName: widget.draft.fullName.isNotEmpty ? widget.draft.fullName : widget.draft.patientName,
+          full_name: widget.draft.full_name.isNotEmpty ? widget.draft.full_name : widget.draft.patientName,
           phoneNumber: widget.draft.phone,
           citizenId: widget.draft.identityNumber.trim(),
           insuranceNumber: widget.draft.insuranceNumber.trim(),
@@ -1101,31 +1101,31 @@ class _VaccinationPaymentScreenState extends State<VaccinationPaymentScreen> {
           emergencyContact: widget.draft.phone,
           relationshipToUser: 'Bản thân',
         );
-        patientId = createdProfile?.id;
+        patient_id = createdProfile?.id;
       }
 
-      if (patientId == null) {
+      if (patient_id == null) {
         throw Exception('Không tạo được hồ sơ bệnh nhân.');
       }
 
       final appointment = await VaccinationBookingCatalog.createAppointment(
-        patientId: patientId.toString(),
-        facilityId: facilityId.toString(),
-        serviceId: serviceId.toString(),
-        slotId: slotId.toString(),
-        appointmentDate: widget.draft.appointmentDate ?? widget.draft.dateLabel,
-        appointmentTime: widget.draft.appointmentTime ?? widget.draft.slotLabel,
+        patient_id: patient_id.toString(),
+        facility_id: facility_id.toString(),
+        service_id: service_id.toString(),
+        slot_id: slot_id.toString(),
+        appointment_date: widget.draft.appointment_date ?? widget.draft.dateLabel,
+        appointment_time: widget.draft.appointment_time ?? widget.draft.slotLabel,
         note: 'Đặt lịch tiêm chủng',
         symptomsNote: 'Đăng ký tiêm chủng',
       );
 
-      final appointmentId = appointment?['id']?.toString();
-      if (appointmentId == null || appointmentId.isEmpty) {
+      final appointment_id = appointment?['id']?.toString();
+      if (appointment_id == null || appointment_id.isEmpty) {
         throw Exception('Không tạo được lịch hẹn.');
       }
 
       await VaccinationBookingCatalog.createPayment(
-        appointmentId: appointmentId,
+        appointment_id: appointment_id,
         paymentMethod: _paymentMethodId,
       );
 

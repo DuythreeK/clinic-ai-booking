@@ -121,11 +121,11 @@ GoRouter createAppRouter({
         path: '/booking',
         name: 'booking',
         builder: (context, state) {
-          final doctorId =
-              int.tryParse(state.uri.queryParameters['doctorId'] ?? '');
+          final doctor_id =
+              int.tryParse(state.uri.queryParameters['doctor_id'] ?? '');
           return BookingFlowScreen(
             authService: authService,
-            initialDoctorId: doctorId,
+            initialdoctor_id: doctor_id,
           );
         },
       ),
@@ -147,7 +147,7 @@ GoRouter createAppRouter({
             );
           }
 
-          final doctor = MedicalHistoryCatalog.doctorOf(item.doctorId) ?? MedicalHistoryCatalog.fallbackDoctorForItem(item);
+          final doctor = MedicalHistoryCatalog.doctorOf(item.doctor_id) ?? MedicalHistoryCatalog.fallbackDoctorForItem(item);
 
           if (doctor == null) {
             return const Scaffold(

@@ -36,7 +36,7 @@ export class PrevisitSummaryRequestDto {
 
   @IsString()
   @IsOptional()
-  appointmentId?: string;
+  appointment_id?: string;
 
   @IsOptional()
   @IsArray()

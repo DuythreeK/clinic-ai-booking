@@ -22,22 +22,22 @@ export class SlotsController {
 
   @Get()
   async getSlots(
-    @Query('doctorId') doctorId?: string,
+    @Query('doctor_id') doctor_id?: string,
     @Query('clinicId') clinicId?: string,
     @Query('fromDate') fromDate?: string,
     @Query('toDate') toDate?: string,
   ) {
-    return this.slotsService.getSlots(doctorId, clinicId, fromDate, toDate);
+    return this.slotsService.getSlots(doctor_id, clinicId, fromDate, toDate);
   }
 
   @Get('available')
   async getAvailableSlots(
-    @Query('doctorId') doctorId: string,
+    @Query('doctor_id') doctor_id: string,
     @Query('clinicId') clinicId: string,
     @Query('fromDate') fromDate: string,
     @Query('toDate') toDate: string,
   ) {
-    return this.slotsService.getAvailableSlots(doctorId, clinicId, fromDate, toDate);
+    return this.slotsService.getAvailableSlots(doctor_id, clinicId, fromDate, toDate);
   }
 
   @Get(':id')

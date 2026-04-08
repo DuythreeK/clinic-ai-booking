@@ -142,7 +142,7 @@ backend/
 
 ### Appointments
 - `id`: UUID
-- `patientId`, `doctorId`, `slotId`: Foreign keys
+- `patient_id`, `doctor_id`, `slot_id`: Foreign keys
 - `status`: PENDING | CONFIRMED | CANCELLED | COMPLETED | NO_SHOW
 - `triageJson`: AI triage output (JSON string)
 - `previsitSummary`: AI generated summary
@@ -151,10 +151,10 @@ backend/
 
 ### Slots
 - `id`: UUID
-- `doctorId`, `clinicId`: Foreign keys
+- `doctor_id`, `clinicId`: Foreign keys
 - `startAt`, `endAt`: DateTime
 - `isBlocked`: Boolean (admin có thể block slot)
-- Unique constraint: `(doctorId, clinicId, startAt, endAt)`
+- Unique constraint: `(doctor_id, clinicId, startAt, endAt)`
 
 ## Authorization
 
@@ -164,7 +164,7 @@ Dùng Role-based Access Control:
 // Protect endpoint với role
 @Roles(UserRole.patient)
 @UseGuards(JwtGuard, RolesGuard)
-async myEndpoint(@CurrentUser('sub') userId: string) {
+async myEndpoint(@CurrentUser('sub') user_id: string) {
   // Only PATIENT can access
 }
 ```

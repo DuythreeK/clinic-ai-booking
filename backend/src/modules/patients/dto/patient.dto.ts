@@ -3,7 +3,7 @@ import { IsDateString, IsEmail, IsOptional, IsString, MaxLength } from 'class-va
 export class CreatePatientProfileDto {
   @IsString()
   @MaxLength(150)
-  fullName!: string;
+  full_name!: string;
 
   @IsOptional()
   @IsString()

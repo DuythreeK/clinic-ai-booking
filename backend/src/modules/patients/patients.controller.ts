@@ -18,19 +18,19 @@ export class PatientsController {
 
   @Post()
   async createPatientProfile(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: CreatePatientProfileDto,
   ) {
-    return this.patientsService.createPatientProfile(userId, dto);
+    return this.patientsService.createPatientProfile(user_id, dto);
   }
 
   @Get()
-  async getMyProfiles(@CurrentUser('sub') userId: string) {
-    return this.patientsService.getPatientProfiles(userId);
+  async getMyProfiles(@CurrentUser('sub') user_id: string) {
+    return this.patientsService.getPatientProfiles(user_id);
   }
 
   @Get('mobile')
-  async getMyMobileProfiles(@CurrentUser('sub') userId: string) {
-    return this.patientsService.getMobilePatientProfiles(userId);
+  async getMyMobileProfiles(@CurrentUser('sub') user_id: string) {
+    return this.patientsService.getMobilePatientProfiles(user_id);
   }
 }

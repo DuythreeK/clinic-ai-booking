@@ -13,8 +13,8 @@ class User {
   final String? phone;
   final String? avatar;
   final String role;
-  final bool isActive;
-  final DateTime createdAt;
+  final bool is_active;
+  final DateTime created_at;
 
   User({
     required this.id,
@@ -24,21 +24,21 @@ class User {
     this.phone,
     this.avatar,
     required this.role,
-    required this.isActive,
-    required this.createdAt,
+    required this.is_active,
+    required this.created_at,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => _$UserFromJson(json);
   Map<String, dynamic> toJson() => _$UserToJson(this);
 
-  String get fullName => '${firstName ?? ''} ${lastName ?? ''}'.trim();
+  String get full_name => '${firstName ?? ''} ${lastName ?? ''}'.trim();
 }
 
 // Doctor Model
 @JsonSerializable()
 class Doctor {
   final String id;
-  final String userId;
+  final String user_id;
   final String licenseNumber;
   final String? specialtyId;
   final bool isApproved;
@@ -46,13 +46,13 @@ class Doctor {
   final int yearsExperience;
   final double rating;
   final int totalReviews;
-  final DateTime createdAt;
+  final DateTime created_at;
   final User? user;
   final Specialty? specialty;
 
   Doctor({
     required this.id,
-    required this.userId,
+    required this.user_id,
     required this.licenseNumber,
     this.specialtyId,
     required this.isApproved,
@@ -60,7 +60,7 @@ class Doctor {
     required this.yearsExperience,
     required this.rating,
     required this.totalReviews,
-    required this.createdAt,
+    required this.created_at,
     this.user,
     this.specialty,
   });
@@ -117,7 +117,7 @@ class Clinic {
 @JsonSerializable()
 class Slot {
   final String id;
-  final String doctorId;
+  final String doctor_id;
   final String clinicId;
   final DateTime startAt;
   final DateTime endAt;
@@ -127,7 +127,7 @@ class Slot {
 
   Slot({
     required this.id,
-    required this.doctorId,
+    required this.doctor_id,
     required this.clinicId,
     required this.startAt,
     required this.endAt,
@@ -144,15 +144,15 @@ class Slot {
 @JsonSerializable()
 class Appointment {
   final String id;
-  final String patientId;
-  final String doctorId;
-  final String slotId;
+  final String patient_id;
+  final String doctor_id;
+  final String slot_id;
   final String status;
   final String reason;
   final List<String>? attachments;
   final String? doctorNotes;
   final String? rescheduledFromId;
-  final DateTime createdAt;
+  final DateTime created_at;
   final DateTime updatedAt;
   final User? patient;
   final Doctor? doctor;
@@ -160,15 +160,15 @@ class Appointment {
 
   Appointment({
     required this.id,
-    required this.patientId,
-    required this.doctorId,
-    required this.slotId,
+    required this.patient_id,
+    required this.doctor_id,
+    required this.slot_id,
     required this.status,
     required this.reason,
     this.attachments,
     this.doctorNotes,
     this.rescheduledFromId,
-    required this.createdAt,
+    required this.created_at,
     required this.updatedAt,
     this.patient,
     this.doctor,
@@ -189,7 +189,7 @@ class Appointment {
 @JsonSerializable()
 class PatientProfile {
   final String id;
-  final String userId;
+  final String user_id;
   final DateTime? dateOfBirth;
   final String? gender;
   final String? address;
@@ -202,7 +202,7 @@ class PatientProfile {
 
   PatientProfile({
     required this.id,
-    required this.userId,
+    required this.user_id,
     this.dateOfBirth,
     this.gender,
     this.address,

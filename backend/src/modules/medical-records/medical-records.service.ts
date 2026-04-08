@@ -73,7 +73,7 @@ export class MedicalRecordsService {
       title: record.diagnosis,
       day: String(new Date(record.appointment.appointment_date).getDate()).padStart(2, '0'),
       monthYear: this.monthYearLabel(record.appointment.appointment_date),
-      doctorId: toNumberId(record.doctor_id)!,
+      doctor_id: toNumberId(record.doctor_id)!,
       doctorName: record.doctor.full_name,
       specialty: record.doctor.specialty?.name ?? 'Chưa cập nhật',
       feeLabel,
@@ -82,7 +82,7 @@ export class MedicalRecordsService {
       orderNumber: record.appointment.appointment_code,
       queueNumber: record.appointment.appointment_code,
       clinicFeeLabel: feeLabel,
-      totalAmountLabel: feeLabel,
+      total_amountLabel: feeLabel,
       symptomNote: record.symptoms,
       caseSummary: record.diagnosis,
       fileName: attachment.fileName,
@@ -90,11 +90,11 @@ export class MedicalRecordsService {
     };
   }
 
-  async getMyMedicalRecords(userId: string) {
+  async getMyMedicalRecords(user_id: string) {
     const records = await this.prisma.medicalRecord.findMany({
       where: {
         patient: {
-          user_id: this.toBigIntId(userId),
+          user_id: this.toBigIntId(user_id),
         },
       },
       include: {
@@ -119,7 +119,7 @@ export class MedicalRecordsService {
     return paginatedResponse('Get medical records successfully', items, 1, 10, items.length);
   }
 
-  async getMedicalRecordById(userId: string, id: string) {
+  async getMedicalRecordById(user_id: string, id: string) {
     const record = await this.prisma.medicalRecord.findUnique({
       where: { record_id: this.toBigIntId(id) },
       include: {
@@ -139,7 +139,7 @@ export class MedicalRecordsService {
       },
     });
 
-    if (!record || record.patient.user_id !== this.toBigIntId(userId)) {
+    if (!record || record.patient.user_id !== this.toBigIntId(user_id)) {
       throw new NotFoundException('Medical record not found');
     }
 
@@ -158,9 +158,9 @@ export class MedicalRecordsService {
     const payment = record.appointment.payments[0];
     const detail: MedicalHistoryDetailDto = {
       ...base,
-      appointmentCode: record.appointment.appointment_code,
-      appointmentDate: formatDateOnly(record.appointment.appointment_date),
-      appointmentTime: formatTimeOnly(record.appointment.appointment_time),
+      appointment_code: record.appointment.appointment_code,
+      appointment_date: formatDateOnly(record.appointment.appointment_date),
+      appointment_time: formatTimeOnly(record.appointment.appointment_time),
       facilityName: record.appointment.facility.name,
       facilityAddress: [
         record.appointment.facility.address_detail,

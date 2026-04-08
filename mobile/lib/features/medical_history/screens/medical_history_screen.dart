@@ -79,7 +79,7 @@ class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
                             itemCount: MedicalHistoryCatalog.items.length,
                             itemBuilder: (context, index) {
                               final item = MedicalHistoryCatalog.items[index];
-                              final doctor = MedicalHistoryCatalog.doctorOf(item.doctorId);
+                              final doctor = MedicalHistoryCatalog.doctorOf(item.doctor_id);
 
                               return GestureDetector(
                                 onTap: () => context.push('/medical-history/${item.id}'),

@@ -3,13 +3,13 @@ import { IsNumber, IsOptional, IsString, MaxLength } from 'class-validator';
 export class CreateDoctorDto {
   @IsString()
   @MaxLength(150)
-  fullName!: string;
+  full_name!: string;
 
   @IsString()
   specialtyId!: string;
 
   @IsString()
-  facilityId!: string;
+  facility_id!: string;
 
   @IsOptional()
   @IsString()
@@ -27,7 +27,7 @@ export class CreateDoctorDto {
 export class UpdateDoctorDto {
   @IsOptional()
   @IsString()
-  fullName?: string;
+  full_name?: string;
 
   @IsOptional()
   @IsString()
@@ -35,7 +35,7 @@ export class UpdateDoctorDto {
 
   @IsOptional()
   @IsString()
-  facilityId?: string;
+  facility_id?: string;
 
   @IsOptional()
   @IsString()

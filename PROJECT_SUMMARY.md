@@ -136,15 +136,15 @@ cd mobile && flutter run
 
 **Core Tables**:
 - `User` (PATIENT/DOCTOR/ADMIN) + password hashing
-- `RefreshToken` (with expiresAt, revokedAt for logout)
+- `RefreshToken` (with expires_at, revokedAt for logout)
 - `PatientProfile` (medical history, allergies)
 - `Doctor` (license, specialty, approval status)
 - `Slot` (doctor availability, unique constraint prevents double-booking)
-- `Appointment` (unique slotId, status workflow, triageJson, doctorNotes)
+- `Appointment` (unique slot_id, status workflow, triageJson, doctorNotes)
 
 **Unique Constraints** (Anti-collision):
-- One appointment per slot: `unique(slotId)`
-- Slot uniqueness: `unique(doctorId, clinicId, startAt, endAt)`
+- One appointment per slot: `unique(slot_id)`
+- Slot uniqueness: `unique(doctor_id, clinicId, startAt, endAt)`
 
 ---
 
@@ -332,7 +332,7 @@ await prisma.$transaction(async (tx) => {
   // 1. Verify slot exists
   const slot = await tx.slot.findUnique(...);
   // 2. Check NO appointment exists for this slot
-  const existing = await tx.appointment.findUnique({ where: { slotId } });
+  const existing = await tx.appointment.findUnique({ where: { slot_id } });
   if (existing) throw error;
   // 3. Create appointment atomically
   return tx.appointment.create(...);

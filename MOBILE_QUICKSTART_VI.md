@@ -111,8 +111,8 @@ flutter run
 2. Nội dung yêu cầu:
 ```json
 {
-  "doctorId": "doctor-uuid",
-  "slotId": "slot-uuid"
+  "doctor_id": "doctor-uuid",
+  "slot_id": "slot-uuid"
 }
 ```
 3. Phản hồi nên là mô hình Appointment

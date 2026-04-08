@@ -8,13 +8,13 @@ class SlotService {
 
   /// Lấy các khe thời gian có sẵn
   Future<List<Slot>> getAvailableSlots({
-    required String doctorId,
+    required String doctor_id,
     required String clinicId,
     DateTime? fromDate,
     DateTime? toDate,
   }) async {
     final queryParams = <String, dynamic>{
-      'doctorId': doctorId,
+      'doctor_id': doctor_id,
       'clinicId': clinicId,
     };
 
@@ -35,14 +35,14 @@ class SlotService {
 
   /// Lấy các khe thời gian theo ngày
   Future<List<Slot>> getSlotsByDate({
-    required String doctorId,
+    required String doctor_id,
     required DateTime date,
     required String clinicId,
   }) async {
     final nextDay = date.add(const Duration(days: 1));
 
     return getAvailableSlots(
-      doctorId: doctorId,
+      doctor_id: doctor_id,
       clinicId: clinicId,
       fromDate: date,
       toDate: nextDay,
@@ -51,14 +51,14 @@ class SlotService {
 
   /// Lấy các khe thời gian theo tuần
   Future<List<Slot>> getSlotsByWeek({
-    required String doctorId,
+    required String doctor_id,
     required String clinicId,
     required DateTime startDate,
   }) async {
     final endDate = startDate.add(const Duration(days: 7));
 
     return getAvailableSlots(
-      doctorId: doctorId,
+      doctor_id: doctor_id,
       clinicId: clinicId,
       fromDate: startDate,
       toDate: endDate,

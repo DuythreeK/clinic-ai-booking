@@ -210,9 +210,9 @@ All API requests/responses use DTOs for validation and documentation:
 ```typescript
 // Example: CreateAppointmentDto
 export class CreateAppointmentDto {
-  patientId: string;
-  doctorId: string;
-  slotId: string;
+  patient_id: string;
+  doctor_id: string;
+  slot_id: string;
   reason: string;
   attachments?: string[];
 }

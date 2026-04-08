@@ -111,8 +111,8 @@ flutter run
 2. Request body:
 ```json
 {
-  "doctorId": "doctor-uuid",
-  "slotId": "slot-uuid"
+  "doctor_id": "doctor-uuid",
+  "slot_id": "slot-uuid"
 }
 ```
 3. Response should be Appointment model

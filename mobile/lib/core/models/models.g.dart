@@ -14,8 +14,8 @@ User _$UserFromJson(Map<String, dynamic> json) => User(
       phone: json['phone'] as String?,
       avatar: json['avatar'] as String?,
       role: json['role'] as String,
-      isActive: json['isActive'] as bool,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      is_active: json['is_active'] as bool,
+      created_at: DateTime.parse(json['created_at'] as String),
     );
 
 Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
@@ -26,13 +26,13 @@ Map<String, dynamic> _$UserToJson(User instance) => <String, dynamic>{
       'phone': instance.phone,
       'avatar': instance.avatar,
       'role': instance.role,
-      'isActive': instance.isActive,
-      'createdAt': instance.createdAt.toIso8601String(),
+      'is_active': instance.is_active,
+      'created_at': instance.created_at.toIso8601String(),
     };
 
 Doctor _$DoctorFromJson(Map<String, dynamic> json) => Doctor(
       id: json['id'] as String,
-      userId: json['userId'] as String,
+      user_id: json['user_id'] as String,
       licenseNumber: json['licenseNumber'] as String,
       specialtyId: json['specialtyId'] as String?,
       isApproved: json['isApproved'] as bool,
@@ -40,7 +40,7 @@ Doctor _$DoctorFromJson(Map<String, dynamic> json) => Doctor(
       yearsExperience: (json['yearsExperience'] as num).toInt(),
       rating: (json['rating'] as num).toDouble(),
       totalReviews: (json['totalReviews'] as num).toInt(),
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      created_at: DateTime.parse(json['created_at'] as String),
       user: json['user'] == null
           ? null
           : User.fromJson(json['user'] as Map<String, dynamic>),
@@ -51,7 +51,7 @@ Doctor _$DoctorFromJson(Map<String, dynamic> json) => Doctor(
 
 Map<String, dynamic> _$DoctorToJson(Doctor instance) => <String, dynamic>{
       'id': instance.id,
-      'userId': instance.userId,
+      'user_id': instance.user_id,
       'licenseNumber': instance.licenseNumber,
       'specialtyId': instance.specialtyId,
       'isApproved': instance.isApproved,
@@ -59,7 +59,7 @@ Map<String, dynamic> _$DoctorToJson(Doctor instance) => <String, dynamic>{
       'yearsExperience': instance.yearsExperience,
       'rating': instance.rating,
       'totalReviews': instance.totalReviews,
-      'createdAt': instance.createdAt.toIso8601String(),
+      'created_at': instance.created_at.toIso8601String(),
       'user': instance.user,
       'specialty': instance.specialty,
     };
@@ -100,7 +100,7 @@ Map<String, dynamic> _$ClinicToJson(Clinic instance) => <String, dynamic>{
 
 Slot _$SlotFromJson(Map<String, dynamic> json) => Slot(
       id: json['id'] as String,
-      doctorId: json['doctorId'] as String,
+      doctor_id: json['doctor_id'] as String,
       clinicId: json['clinicId'] as String,
       startAt: DateTime.parse(json['startAt'] as String),
       endAt: DateTime.parse(json['endAt'] as String),
@@ -115,7 +115,7 @@ Slot _$SlotFromJson(Map<String, dynamic> json) => Slot(
 
 Map<String, dynamic> _$SlotToJson(Slot instance) => <String, dynamic>{
       'id': instance.id,
-      'doctorId': instance.doctorId,
+      'doctor_id': instance.doctor_id,
       'clinicId': instance.clinicId,
       'startAt': instance.startAt.toIso8601String(),
       'endAt': instance.endAt.toIso8601String(),
@@ -126,9 +126,9 @@ Map<String, dynamic> _$SlotToJson(Slot instance) => <String, dynamic>{
 
 Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
       id: json['id'] as String,
-      patientId: json['patientId'] as String,
-      doctorId: json['doctorId'] as String,
-      slotId: json['slotId'] as String,
+      patient_id: json['patient_id'] as String,
+      doctor_id: json['doctor_id'] as String,
+      slot_id: json['slot_id'] as String,
       status: json['status'] as String,
       reason: json['reason'] as String,
       attachments: (json['attachments'] as List<dynamic>?)
@@ -136,7 +136,7 @@ Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
           .toList(),
       doctorNotes: json['doctorNotes'] as String?,
       rescheduledFromId: json['rescheduledFromId'] as String?,
-      createdAt: DateTime.parse(json['createdAt'] as String),
+      created_at: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       patient: json['patient'] == null
           ? null
@@ -152,15 +152,15 @@ Appointment _$AppointmentFromJson(Map<String, dynamic> json) => Appointment(
 Map<String, dynamic> _$AppointmentToJson(Appointment instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'patientId': instance.patientId,
-      'doctorId': instance.doctorId,
-      'slotId': instance.slotId,
+      'patient_id': instance.patient_id,
+      'doctor_id': instance.doctor_id,
+      'slot_id': instance.slot_id,
       'status': instance.status,
       'reason': instance.reason,
       'attachments': instance.attachments,
       'doctorNotes': instance.doctorNotes,
       'rescheduledFromId': instance.rescheduledFromId,
-      'createdAt': instance.createdAt.toIso8601String(),
+      'created_at': instance.created_at.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'patient': instance.patient,
       'doctor': instance.doctor,
@@ -170,7 +170,7 @@ Map<String, dynamic> _$AppointmentToJson(Appointment instance) =>
 PatientProfile _$PatientProfileFromJson(Map<String, dynamic> json) =>
     PatientProfile(
       id: json['id'] as String,
-      userId: json['userId'] as String,
+      user_id: json['user_id'] as String,
       dateOfBirth: json['dateOfBirth'] == null
           ? null
           : DateTime.parse(json['dateOfBirth'] as String),
@@ -187,7 +187,7 @@ PatientProfile _$PatientProfileFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$PatientProfileToJson(PatientProfile instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'userId': instance.userId,
+      'user_id': instance.user_id,
       'dateOfBirth': instance.dateOfBirth?.toIso8601String(),
       'gender': instance.gender,
       'address': instance.address,

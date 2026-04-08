@@ -184,7 +184,7 @@ curl -X POST http://localhost:3000/auth/register \
 # First get your access token from login
 TOKEN="<your_accessToken>"
 
-curl -X GET "http://localhost:3000/slots?doctorId=<id>&clinicId=<id>" \
+curl -X GET "http://localhost:3000/slots?doctor_id=<id>&clinicId=<id>" \
   -H "Authorization: Bearer $TOKEN"
 ```
 
@@ -194,7 +194,7 @@ curl -X POST http://localhost:3000/appointments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "slotId":"<slotId>",
+    "slot_id":"<slot_id>",
     "reason":"Check up symptoms"
   }'
 
@@ -231,7 +231,7 @@ curl -X POST http://localhost:3000/ai/previsit-summary \
   -H "Content-Type: application/json" \
   -d '{
     "patientData":{"firstName":"Nguyễn","age":30},
-    "appointmentId":"<appointmentId>"
+    "appointment_id":"<appointment_id>"
   }'
 
 # Response:

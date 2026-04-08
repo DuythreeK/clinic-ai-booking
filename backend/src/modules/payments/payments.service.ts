@@ -12,27 +12,27 @@ export class PaymentsService {
     return BigInt(id);
   }
 
-  async createPayment(userId: string, dto: CreatePaymentDto) {
+  async createPayment(user_id: string, dto: CreatePaymentDto) {
     const appointment = await this.prisma.appointment.findUnique({
-      where: { appointmentId: this.toBigIntId(dto.appointmentId) },
+      where: { appointment_id: this.toBigIntId(dto.appointment_id) },
     });
 
-    if (!appointment || appointment.userId !== this.toBigIntId(userId)) {
+    if (!appointment || appointment.user_id !== this.toBigIntId(user_id)) {
       throw new NotFoundException('Appointment not found');
     }
 
     const payment = await this.prisma.payment.create({
       data: {
-        appointmentId: appointment.appointmentId,
+        appointment_id: appointment.appointment_id,
         payment_method: dto.paymentMethod as any,
-        amount: appointment.totalAmount,
+        amount: appointment.total_amount,
         transaction_code: `PAY-${Date.now()}`,
       },
     });
 
     return okResponse('Create payment successfully', {
       id: toNumberId(payment.payment_id),
-      appointmentId: toNumberId(payment.appointmentId),
+      appointment_id: toNumberId(payment.appointment_id),
       paymentMethod: payment.payment_method,
       amount: Number(payment.amount),
       status: payment.status,
@@ -64,13 +64,13 @@ export class PaymentsService {
         if (dto.status === 'success') {
           // Đổi trạng thái lịch hẹn sang 'confirmed'
           const appointment = await tx.appointment.update({
-            where: { appointmentId: payment.appointmentId },
+            where: { appointment_id: payment.appointment_id },
             data: { status: 'confirmed' as any }, // 'confirmed' hoặc trạng thái bạn quy định
           });
 
           // Đổi trạng thái Slot sang 'FULL' để hiện MÀU ĐỎ trên Flutter
           await tx.slot.update({
-            where: { slotId: appointment.slotId },
+            where: { slot_id: appointment.slot_id },
             data: { status: 'FULL' },
           });
         }
@@ -80,7 +80,7 @@ export class PaymentsService {
       });
 
     return okResponse('Payment callback processed successfully', {
-      appointmentId: toNumberId(result.appointmentId),
+      appointment_id: toNumberId(result.appointment_id),
       paymentStatus: result.status,
     });
   }

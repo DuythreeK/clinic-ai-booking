@@ -3,7 +3,7 @@ export class MedicalHistoryListItemDto {
   title!: string;
   day!: string;
   monthYear!: string;
-  doctorId!: number;
+  doctor_id!: number;
   doctorName!: string;
   specialty!: string;
   feeLabel!: string;
@@ -12,7 +12,7 @@ export class MedicalHistoryListItemDto {
   orderNumber!: string;
   queueNumber!: string;
   clinicFeeLabel!: string;
-  totalAmountLabel!: string;
+  total_amountLabel!: string;
   symptomNote!: string | null;
   caseSummary!: string;
   fileName!: string | null;
@@ -20,9 +20,9 @@ export class MedicalHistoryListItemDto {
 }
 
 export class MedicalHistoryDetailDto extends MedicalHistoryListItemDto {
-  appointmentCode!: string;
-  appointmentDate!: string | null;
-  appointmentTime!: string | null;
+  appointment_code!: string;
+  appointment_date!: string | null;
+  appointment_time!: string | null;
   facilityName!: string;
   facilityAddress!: string;
   doctorRating!: number;

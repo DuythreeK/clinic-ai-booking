@@ -9,7 +9,7 @@ export class VaccinationFacilityDto {
 export class VaccinationPackageDto {
   id!: number;
   title!: string;
-  facilityId!: number;
+  facility_id!: number;
   facilityName!: string;
   facilityAddress!: string;
   priceValue!: number;
@@ -19,9 +19,9 @@ export class VaccinationPackageDto {
 }
 
 export class VaccinationSlotItemDto {
-  slotId!: number;
-  startTime!: string | null;
-  endTime!: string | null;
+  slot_id!: number;
+  start_time!: string | null;
+  end_time!: string | null;
   availableCount!: number;
 }
 
@@ -33,7 +33,7 @@ export class VaccinationSlotGroupDto {
 }
 
 export class VaccinationBookingDetailDto {
-  serviceId!: number;
+  service_id!: number;
   serviceName!: string;
   specialty!: string;
   servicePriceValue!: number;

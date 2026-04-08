@@ -181,7 +181,7 @@ clinic-ai-booking/
 
 ```
 User (role: PATIENT/DOCTOR/ADMIN)
-├── RefreshToken (tokenHash, expiresAt, revokedAt)
+├── RefreshToken (tokenHash, expires_at, revokedAt)
 ├── FcmToken (token for push notifications)
 ├── PatientProfile (if PATIENT)
 ├── Doctor (if DOCTOR)

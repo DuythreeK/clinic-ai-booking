@@ -3,7 +3,7 @@ import { PrismaService } from '@/prisma/prisma.service';
 import { UpdateUserDto } from './dto/user.dto';
 import { MobileProfileDto, UpdateMobileProfileDto } from './dto/mobile-profile.dto';
 import { okResponse } from '@/common/utils/api-response';
-import { formatDateOnly, splitFullName, toNumberId } from '@/common/utils/formatters';
+import { formatDateOnly, splitfull_name, toNumberId } from '@/common/utils/formatters';
 
 @Injectable()
 export class UsersService {
@@ -15,8 +15,8 @@ export class UsersService {
 
   private toCurrentUserResponse(user: any) {
     return {
-      id: toNumberId(user.userId),
-      fullName: user.fullName,
+      id: toNumberId(user.user_id),
+      full_name: user.full_name,
       email: user.email,
       phone: user.phone,
       avatarUrl: user.avatar_url,
@@ -32,14 +32,14 @@ export class UsersService {
   }
 
   private toMobileProfileResponse(user: any, profile?: any): MobileProfileDto {
-    const name = splitFullName(user.full_name);
+    const name = splitfull_name(user.full_name);
 
     return {
-      userId: toNumberId(user.user_id)!,
+      user_id: toNumberId(user.user_id)!,
       profileId: profile ? toNumberId(profile.patient_id) : null,
       ecoreId: `PF-${toNumberId(profile?.patient_id ?? user.user_id)}`,
       username: user.email.split('@')[0],
-      fullName: user.full_name,
+      full_name: user.full_name,
       firstName: name.firstName,
       lastName: name.lastName,
       email: user.email,
@@ -62,7 +62,7 @@ export class UsersService {
 
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { userId: this.toBigIntId(id) },
+      where: { user_id: this.toBigIntId(id) },
     });
 
     if (!user) {
@@ -95,7 +95,7 @@ export class UsersService {
 
   async updateUser(id: string, dto: UpdateUserDto) {
     const existing = await this.prisma.user.findUnique({
-      where: { userId: this.toBigIntId(id) },
+      where: { user_id: this.toBigIntId(id) },
     });
 
     if (!existing) {
@@ -103,17 +103,17 @@ export class UsersService {
     }
 
     const user = await this.prisma.user.update({
-      where: { userId: this.toBigIntId(id) },
+      where: { user_id: this.toBigIntId(id) },
       data: {
-        fullName: dto.fullName,
+        full_name: dto.full_name,
         phone: dto.phone,
         avatar_url: dto.avatarUrl,
       },
     });
 
     return okResponse('Update profile successfully', {
-      id: toNumberId(user.userId),
-      fullName: user.fullName,
+      id: toNumberId(user.user_id),
+      full_name: user.full_name,
       email: user.email,
       phone: user.phone,
       avatarUrl: user.avatar_url,
@@ -121,9 +121,9 @@ export class UsersService {
   }
 
   async updateMobileProfile(id: string, dto: UpdateMobileProfileDto) {
-    const userId = this.toBigIntId(id);
+    const user_id = this.toBigIntId(id);
     const existing = await this.prisma.user.findUnique({
-      where: { user_id: userId },
+      where: { user_id: user_id },
       include: {
         patient_profiles: {
           where: { is_primary: 1 },
@@ -144,9 +144,9 @@ export class UsersService {
 
     const [user, profile] = await this.prisma.$transaction(async (tx) => {
       const updatedUser = await tx.user.update({
-        where: { user_id: userId },
+        where: { user_id: user_id },
         data: {
-          full_name: dto.fullName ?? existing.full_name,
+          full_name: dto.full_name ?? existing.full_name,
           phone: dto.phone ?? existing.phone,
           avatar_url: dto.avatarUrl ?? existing.avatar_url,
         },
@@ -159,7 +159,7 @@ export class UsersService {
         updatedProfile = await tx.patientProfile.update({
           where: { patient_id: currentProfile.patient_id },
           data: {
-            full_name: dto.fullName ?? currentProfile.full_name,
+            full_name: dto.full_name ?? currentProfile.full_name,
             phone_number: dto.phone ?? currentProfile.phone_number,
             date_of_birth: dto.dateOfBirth ? new Date(dto.dateOfBirth) : undefined,
             gender: dto.gender ? genderMap[dto.gender] ?? undefined : undefined,

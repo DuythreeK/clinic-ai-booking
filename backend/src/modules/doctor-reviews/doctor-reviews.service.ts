@@ -16,31 +16,31 @@ export class DoctorReviewsService {
     return BigInt(id);
   }
 
-  async createReview(userId: string, dto: CreateDoctorReviewDto) {
+  async createReview(user_id: string, dto: CreateDoctorReviewDto) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { doctorId: this.toBigIntId(dto.doctorId) },
+      where: { doctor_id: this.toBigIntId(dto.doctor_id) },
     });
 
-    if (!doctor || doctor.isActive !== 1) {
+    if (!doctor || doctor.is_active !== 1) {
       throw new NotFoundException('Doctor not found');
     }
 
-    if (dto.appointmentId) {
+    if (dto.appointment_id) {
       const appointment = await this.prisma.appointment.findUnique({
-        where: { appointmentId: this.toBigIntId(dto.appointmentId) },
+        where: { appointment_id: this.toBigIntId(dto.appointment_id) },
       });
 
-      if (!appointment || appointment.userId !== this.toBigIntId(userId)) {
+      if (!appointment || appointment.user_id !== this.toBigIntId(user_id)) {
         throw new NotFoundException('Appointment not found');
       }
     }
 
     const review = await this.prisma.doctorReview.create({
       data: {
-        doctorId: this.toBigIntId(dto.doctorId),
-        userId: this.toBigIntId(userId),
-        appointmentId: dto.appointmentId
-          ? this.toBigIntId(dto.appointmentId)
+        doctor_id: this.toBigIntId(dto.doctor_id),
+        user_id: this.toBigIntId(user_id),
+        appointment_id: dto.appointment_id
+          ? this.toBigIntId(dto.appointment_id)
           : undefined,
         rating: dto.rating,
         comment: dto.comment,
@@ -49,11 +49,11 @@ export class DoctorReviewsService {
 
     return okResponse('Create doctor review successfully', {
       id: toNumberId(review.review_id),
-      doctorId: toNumberId(review.doctorId),
-      appointmentId: review.appointmentId ? toNumberId(review.appointmentId) : null,
+      doctor_id: toNumberId(review.doctor_id),
+      appointment_id: review.appointment_id ? toNumberId(review.appointment_id) : null,
       rating: review.rating,
       comment: review.comment,
-      createdAt: review.createdAt,
+      created_at: review.created_at,
     });
   }
 }

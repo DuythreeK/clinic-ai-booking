@@ -23,23 +23,23 @@ export class AppointmentsController {
   @Post()
   @Roles(UserRole.patient)
   async create(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: CreateAppointmentDto,
   ) {
-    return this.appointmentsService.createAppointment(userId, dto);
+    return this.appointmentsService.createAppointment(user_id, dto);
   }
 
   @Get()
-  async getUserAppointments(@CurrentUser('sub') userId: string) {
-    return this.appointmentsService.getUserAppointments(userId);
+  async getUserAppointments(@CurrentUser('sub') user_id: string) {
+    return this.appointmentsService.getUserAppointments(user_id);
   }
 
   @Get(':id')
   async getById(
-    @CurrentUser('sub') userId: string,
-    @Param('id') appointmentId: string,
+    @CurrentUser('sub') user_id: string,
+    @Param('id') appointment_id: string,
   ) {
-    return this.appointmentsService.getAppointmentById(userId, appointmentId);
+    return this.appointmentsService.getAppointmentById(user_id, appointment_id);
   }
 }
 

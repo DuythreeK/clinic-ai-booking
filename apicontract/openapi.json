@@ -549,7 +549,7 @@
                 }
             }
         },
-        "/patient-profiles/{patientId}": {
+        "/patient-profiles/{patient_id}": {
             "get": {
                 "tags": [
                     "Patient Profile"
@@ -564,7 +564,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "patientId",
+                        "name": "patient_id",
                         "in": "path",
                         "required": true,
                         "description": "Patient profile ID",
@@ -641,7 +641,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "patientId",
+                        "name": "patient_id",
                         "in": "path",
                         "required": true,
                         "description": "Patient profile ID",
@@ -1257,7 +1257,7 @@
                 }
             }
         },
-        "/appointments/{appointmentId}": {
+        "/appointments/{appointment_id}": {
             "get": {
                 "tags": [
                     "Appointment"
@@ -1272,7 +1272,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1349,7 +1349,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1456,7 +1456,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1550,7 +1550,7 @@
                 }
             }
         },
-        "/appointments/{appointmentId}/pre-visit-form": {
+        "/appointments/{appointment_id}/pre-visit-form": {
             "get": {
                 "tags": [
                     "Pre-Visit Form"
@@ -1565,7 +1565,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1642,7 +1642,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1746,7 +1746,7 @@
                 }
             }
         },
-        "/appointments/{appointmentId}/pre-visit-form/submit": {
+        "/appointments/{appointment_id}/pre-visit-form/submit": {
             "put": {
                 "tags": [
                     "Pre-Visit Form"
@@ -1761,7 +1761,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1835,7 +1835,7 @@
                 }
             }
         },
-        "/appointments/{appointmentId}/payment": {
+        "/appointments/{appointment_id}/payment": {
             "get": {
                 "tags": [
                     "Payment"
@@ -1850,7 +1850,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -1927,7 +1927,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "appointmentId",
+                        "name": "appointment_id",
                         "in": "path",
                         "required": true,
                         "description": "Appointment ID",
@@ -2099,7 +2099,7 @@
                     "email",
                     "phone",
                     "password",
-                    "fullName",
+                    "full_name",
                     "role"
                 ],
                 "properties": {
@@ -2117,7 +2117,7 @@
                         "minLength": 8,
                         "example": "SecurePassword123"
                     },
-                    "fullName": {
+                    "full_name": {
                         "type": "string",
                         "maxLength": 150,
                         "example": "Nguyễn Văn A"
@@ -2143,7 +2143,7 @@
                     "data": {
                         "type": "object",
                         "properties": {
-                            "userId": {
+                            "user_id": {
                                 "type": "integer",
                                 "format": "int64",
                                 "example": 1
@@ -2156,7 +2156,7 @@
                                 "type": "string",
                                 "example": "0912345678"
                             },
-                            "fullName": {
+                            "full_name": {
                                 "type": "string",
                                 "example": "Nguyễn Văn A"
                             },
@@ -2168,7 +2168,7 @@
                                 "type": "string",
                                 "example": "active"
                             },
-                            "createdAt": {
+                            "created_at": {
                                 "type": "string",
                                 "format": "date-time"
                             }
@@ -2204,7 +2204,7 @@
                     "data": {
                         "type": "object",
                         "properties": {
-                            "userId": {
+                            "user_id": {
                                 "type": "integer",
                                 "format": "int64",
                                 "example": 1
@@ -2361,15 +2361,15 @@
             "PatientProfile": {
                 "type": "object",
                 "properties": {
-                    "patientId": {
+                    "patient_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "userId": {
+                    "user_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "fullName": {
+                    "full_name": {
                         "type": "string"
                     },
                     "phone_number": {
@@ -2436,7 +2436,7 @@
                     "is_primary": {
                         "type": "boolean"
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     },
@@ -2488,10 +2488,10 @@
             "CreatePatientProfileRequest": {
                 "type": "object",
                 "required": [
-                    "fullName"
+                    "full_name"
                 ],
                 "properties": {
-                    "fullName": {
+                    "full_name": {
                         "type": "string",
                         "maxLength": 150
                     },
@@ -2564,7 +2564,7 @@
             "UpdatePatientProfileRequest": {
                 "type": "object",
                 "properties": {
-                    "fullName": {
+                    "full_name": {
                         "type": "string",
                         "maxLength": 150
                     },
@@ -2641,11 +2641,11 @@
                         "type": "integer",
                         "format": "int64"
                     },
-                    "userId": {
+                    "user_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "appointmentId": {
+                    "appointment_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
@@ -2704,7 +2704,7 @@
                         "format": "date-time",
                         "nullable": true
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     },
@@ -2776,7 +2776,7 @@
                         "type": "object",
                         "nullable": true
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     }
@@ -2819,7 +2819,7 @@
                                 },
                                 "nullable": true
                             },
-                            "createdAt": {
+                            "created_at": {
                                 "type": "string",
                                 "format": "date-time"
                             }
@@ -2858,36 +2858,36 @@
             "Appointment": {
                 "type": "object",
                 "properties": {
-                    "appointmentId": {
+                    "appointment_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "appointmentCode": {
+                    "appointment_code": {
                         "type": "string",
                         "example": "APT-20260325-001"
                     },
-                    "userId": {
+                    "user_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "patientId": {
+                    "patient_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "facilityId": {
+                    "facility_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "doctorId": {
+                    "doctor_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
                     },
-                    "slotId": {
+                    "slot_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "serviceId": {
+                    "service_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
@@ -2904,11 +2904,11 @@
                             "vaccination"
                         ]
                     },
-                    "appointmentDate": {
+                    "appointment_date": {
                         "type": "string",
                         "format": "date"
                     },
-                    "appointmentTime": {
+                    "appointment_time": {
                         "type": "string",
                         "format": "time"
                     },
@@ -2930,7 +2930,7 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "totalAmount": {
+                    "total_amount": {
                         "type": "number",
                         "format": "double"
                     },
@@ -2958,7 +2958,7 @@
                         "format": "date-time",
                         "nullable": true
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     },
@@ -3024,27 +3024,27 @@
             "CreateAppointmentRequest": {
                 "type": "object",
                 "required": [
-                    "patientId",
-                    "facilityId",
-                    "slotId",
+                    "patient_id",
+                    "facility_id",
+                    "slot_id",
                     "appointment_type",
-                    "totalAmount"
+                    "total_amount"
                 ],
                 "properties": {
-                    "patientId": {
+                    "patient_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "facilityId": {
+                    "facility_id": {
                         "type": "integer",
                         "format": "int64"
                     },
-                    "doctorId": {
+                    "doctor_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
                     },
-                    "slotId": {
+                    "slot_id": {
                         "type": "integer",
                         "format": "int64"
                     },
@@ -3055,7 +3055,7 @@
                             "vaccination"
                         ]
                     },
-                    "serviceId": {
+                    "service_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
@@ -3069,7 +3069,7 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "totalAmount": {
+                    "total_amount": {
                         "type": "number",
                         "format": "double"
                     }
@@ -3115,7 +3115,7 @@
                     "data": {
                         "type": "object",
                         "properties": {
-                            "appointmentId": {
+                            "appointment_id": {
                                 "type": "integer",
                                 "format": "int64"
                             },
@@ -3145,7 +3145,7 @@
                         "type": "integer",
                         "format": "int64"
                     },
-                    "appointmentId": {
+                    "appointment_id": {
                         "type": "integer",
                         "format": "int64"
                     },
@@ -3183,7 +3183,7 @@
                             "REVIEWED"
                         ]
                     },
-                    "submitted_by_userId": {
+                    "submitted_by_user_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
@@ -3193,7 +3193,7 @@
                         "format": "date-time",
                         "nullable": true
                     },
-                    "reviewed_by_userId": {
+                    "reviewed_by_user_id": {
                         "type": "integer",
                         "format": "int64",
                         "nullable": true
@@ -3207,7 +3207,7 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     },
@@ -3275,7 +3275,7 @@
                                 "type": "integer",
                                 "format": "int64"
                             },
-                            "appointmentId": {
+                            "appointment_id": {
                                 "type": "integer",
                                 "format": "int64"
                             },
@@ -3283,7 +3283,7 @@
                                 "type": "string",
                                 "example": "SUBMITTED"
                             },
-                            "submitted_by_userId": {
+                            "submitted_by_user_id": {
                                 "type": "integer",
                                 "format": "int64"
                             },
@@ -3302,7 +3302,7 @@
                         "type": "integer",
                         "format": "int64"
                     },
-                    "appointmentId": {
+                    "appointment_id": {
                         "type": "integer",
                         "format": "int64"
                     },
@@ -3366,7 +3366,7 @@
                         "type": "string",
                         "nullable": true
                     },
-                    "createdAt": {
+                    "created_at": {
                         "type": "string",
                         "format": "date-time"
                     },
@@ -3426,7 +3426,7 @@
                                 "type": "integer",
                                 "format": "int64"
                             },
-                            "appointmentId": {
+                            "appointment_id": {
                                 "type": "integer",
                                 "format": "int64"
                             },
@@ -3445,7 +3445,7 @@
                                 "type": "string",
                                 "nullable": true
                             },
-                            "createdAt": {
+                            "created_at": {
                                 "type": "string",
                                 "format": "date-time"
                             }
@@ -3467,7 +3467,7 @@
                                 "type": "integer",
                                 "format": "int64"
                             },
-                            "appointmentId": {
+                            "appointment_id": {
                                 "type": "integer",
                                 "format": "int64"
                             },

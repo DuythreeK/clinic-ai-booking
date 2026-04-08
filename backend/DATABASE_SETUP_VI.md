@@ -132,7 +132,7 @@ npx prisma migrate dev --name add_new_field_to_users
 model NewEntity {
   id String @id @default(cuid())
   name String
-  createdAt DateTime @default(now())
+  created_at DateTime @default(now())
 }
 ```
 
@@ -177,9 +177,9 @@ npx prisma generate
 model User {
   id String @id
   email String @unique
-  createdAt DateTime @default(now())
+  created_at DateTime @default(now())
   
-  @@index([createdAt])
+  @@index([created_at])
   @@index([email])
 }
 ```

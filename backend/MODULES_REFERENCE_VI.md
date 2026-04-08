@@ -40,7 +40,7 @@
 - `GET /doctors/:id` - Lấy chi tiết bác sĩ cụ thể
 - `PATCH /doctors/:id` - Cập nhật hồ sơ bác sĩ của riêng bạn
 - `PATCH /doctors/:id/approve` - Phê duyệt bác sĩ (quản trị viên)
-- `GET /doctors/:doctorId/availability` - Lấy tính khả dụng
+- `GET /doctors/:doctor_id/availability` - Lấy tính khả dụng
 
 **Tính Năng**:
 - Quản lý hồ sơ bác sĩ
@@ -176,18 +176,18 @@ PENDING/CONFIRMED/COMPLETED → CANCELLED (từ bất kỳ)
 - `CreateSlotDto`, `CreateBulkSlotsDto`: Xác thực đầu vào
 
 **Mô Hình Cơ Sở Dữ Liệu**:
-- Slot (có ràng buộc duy nhất trên doctorId, clinicId, startAt, endAt)
+- Slot (có ràng buộc duy nhất trên doctor_id, clinicId, startAt, endAt)
 
 **Tính Năng Nâng Cao**:
 ```typescript
 // Tạo hàng loạt
 {
-  doctorId: string;
+  doctor_id: string;
   clinicId: string;
   startDate: "2024-01-15";  // YYYY-MM-DD
   endDate: "2024-01-31";
-  startTime: "09:00";       // HH:mm
-  endTime: "17:00";
+  start_time: "09:00";       // HH:mm
+  end_time: "17:00";
   slotDuration: 30;         // phút
   daysOfWeek: [1, 2, 3, 4, 5];  // Thứ 2-6 (0=Chủ nhật)
 }
@@ -394,7 +394,7 @@ async method() { }
 Trích xuất người dùng hiện tại từ token
 
 ```typescript
-@CurrentUser('sub') userId: string
+@CurrentUser('sub') user_id: string
 @CurrentUser() user: JwtPayload
 ```
 
@@ -414,9 +414,9 @@ Trích xuất người dùng hiện tại từ token
 ```typescript
 where: {
   status: AppointmentStatus.pending,
-  doctorId: string,
-  patientId: string,
-  createdAt: { gte: Date, lte: Date }
+  doctor_id: string,
+  patient_id: string,
+  created_at: { gte: Date, lte: Date }
 }
 ```
 

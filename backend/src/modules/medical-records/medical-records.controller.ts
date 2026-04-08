@@ -9,15 +9,15 @@ export class MedicalRecordsController {
   constructor(private medicalRecordsService: MedicalRecordsService) {}
 
   @Get()
-  async getMine(@CurrentUser('sub') userId: string) {
-    return this.medicalRecordsService.getMyMedicalRecords(userId);
+  async getMine(@CurrentUser('sub') user_id: string) {
+    return this.medicalRecordsService.getMyMedicalRecords(user_id);
   }
 
   @Get(':id')
   async getById(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Param('id') id: string,
   ) {
-    return this.medicalRecordsService.getMedicalRecordById(userId, id);
+    return this.medicalRecordsService.getMedicalRecordById(user_id, id);
   }
 }

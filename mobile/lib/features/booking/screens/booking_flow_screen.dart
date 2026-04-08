@@ -13,11 +13,11 @@ class BookingFlowScreen extends StatefulWidget {
   const BookingFlowScreen({
     super.key,
     required this.authService,
-    this.initialDoctorId,
+    this.initialdoctor_id,
   });
 
   final AuthService authService;
-  final int? initialDoctorId;
+  final int? initialdoctor_id;
 
   @override
   State<BookingFlowScreen> createState() => _BookingFlowScreenState();
@@ -32,7 +32,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   BookingDoctorItem? _selectedDoctor;
   DateTime? _selectedDate;
   String? _selectedTime;
-  int? _selectedSlotId;
+  int? _selectedslot_id;
 
   // Form state
   final TextEditingController _noteCtrl = TextEditingController();
@@ -69,6 +69,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
     try {
       final patients = await _api.getPatientProfiles();
+      print('DEBUG: Tìm thấy ${patients.length} hồ sơ bệnh nhân');
       setState(() {
         _patients = patients;
         if (patients.isNotEmpty) {
@@ -79,8 +80,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         }
       });
 
-      if (widget.initialDoctorId != null) {
-        await _autoselectDoctor(widget.initialDoctorId!);
+      if (widget.initialdoctor_id != null) {
+        await _autoselectDoctor(widget.initialdoctor_id!);
       }
     } catch (e) {
       setState(() {
@@ -142,7 +143,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         _selectedDoctor = null;
         _selectedDate = null;
         _selectedTime = null;
-        _selectedSlotId = null;
+        _selectedslot_id = null;
         _services = <BookingServiceItem>[];
         _selectedService = null;
       }
@@ -202,10 +203,10 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
 
     final selectedDoctor = BookingDoctorItem(
       id: (doctorData['id'] as num?)?.toInt() ?? 0,
-      fullName: doctorData['fullName']?.toString() ?? '',
+      full_name: doctorData['full_name']?.toString() ?? '',
       avatarUrl: doctorData['avatarUrl']?.toString(),
       specialtyName: doctorData['specialtyName']?.toString(),
-      facilityId: (doctorData['facilityId'] as num?)?.toInt(),
+      facility_id: (doctorData['facility_id'] as num?)?.toInt(),
       consultationFee: (doctorData['consultationFee'] as num?)?.toDouble(),
     );
 
@@ -216,7 +217,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       if (previousDoctor?.id != selectedDoctor.id) {
         _selectedDate = null;
         _selectedTime = null;
-        _selectedSlotId = null;
+        _selectedslot_id = null;
       }
     });
 
@@ -250,8 +251,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         context,
         MaterialPageRoute<Map<String, dynamic>>(
           builder: (context) => SlotSelectionScreen(
-            doctorId: doctor!.id,
-            facilityId: _selectedFacility!.id,
+            doctor_id: doctor!.id,
+            facility_id: _selectedFacility!.id,
             dioClient: widget.authService.dioClient,
           ),
         ),
@@ -270,7 +271,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     setState(() {
       _selectedDate = selectedResult['date'] as DateTime;
       _selectedTime = selectedResult['time'] as String;
-      _selectedSlotId = selectedResult['slotId'] as int;
+      _selectedslot_id = selectedResult['slot_id'] as int;
     });
 
     // Load services
@@ -294,22 +295,22 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     }
   }
 
-  Future<void> _autoselectDoctor(int doctorId) async {
+  Future<void> _autoselectDoctor(int doctor_id) async {
     try {
       final doctors = await _api.getDoctors();
-      final found = doctors.where((e) => e.id == doctorId).toList();
+      final found = doctors.where((e) => e.id == doctor_id).toList();
       if (found.isEmpty) return;
 
       final doctor = found.first;
-      final facilityId = doctor.facilityId;
-      if (facilityId == null) return;
+      final facility_id = doctor.facility_id;
+      if (facility_id == null) return;
 
       try {
         final facilityService =
             FacilityService(dioClient: widget.authService.dioClient);
         final facilities = await facilityService.getFacilities();
         final facility = facilities
-            .where((f) => f.id == facilityId)
+            .where((f) => f.id == facility_id)
             .cast<BookingFacilityItem?>()
             .firstOrNull;
 
@@ -325,33 +326,52 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
   }
 
   Future<void> _submitBooking() async {
-    print('--- BẮT ĐẦU SUBMIT BOOKING ---');
+    // Chặn spam nếu đang xử lý
+    if (_submitting) return;
+
+    print('--- 🔍 [KIỂM TRA DỮ LIỆU TRƯỚC KHI GỬI] ---');
+
+    // In chi tiết từng biến
+    print('1. Người khám (_selectedPatient): ${_selectedPatient?.full_name ?? 'BỊ THIẾU ❌'} (ID: ${_selectedPatient?.id})');
+    print('2. Cơ sở (_selectedFacility): ${_selectedFacility?.name ?? 'BỊ THIẾU ❌'} (ID: ${_selectedFacility?.id})');
+    print('3. Bác sĩ (_selectedDoctor): ${_selectedDoctor?.full_name ?? 'BỊ THIẾU ❌'} (ID: ${_selectedDoctor?.id})');
+    print('4. Ngày khám (_selectedDate): ${_selectedDate ?? 'BỊ THIẾU ❌'}');
+    print('5. Giờ khám (_selectedTime): ${_selectedTime ?? 'BỊ THIẾU ❌'}');
+    print('6. Slot ID (_selectedslot_id): ${_selectedslot_id ?? 'BỊ THIẾU ❌'}');
+    print('7. Dịch vụ (_selectedService): ${_selectedService?.name ?? 'BỊ THIẾU ❌'} (ID: ${_selectedService?.id})');
+
     final patient = _selectedPatient;
     final facility = _selectedFacility;
     final doctor = _selectedDoctor;
     final date = _selectedDate;
     final time = _selectedTime;
-    final slotId = _selectedSlotId;
+    final slot_id = _selectedslot_id;
     final service = _selectedService;
 
+    // Kiểm tra các biến cốt lõi
     if (patient == null ||
         facility == null ||
         doctor == null ||
         date == null ||
         time == null ||
-        slotId == null) {
+        slot_id == null) {
+      print('--- ❌ LỖI: Thiếu thông tin cơ bản ---');
       setState(() {
         _error = 'Vui lòng hoàn thành tất cả các bước.';
       });
       return;
     }
 
+    // Kiểm tra dịch vụ
     if (service == null) {
+      print('--- ❌ LỖI: Thiếu thông tin dịch vụ ---');
       setState(() {
         _error = 'Không tìm thấy dịch vụ tại cơ sở này.';
       });
       return;
     }
+
+    print('--- ✅ DỮ LIỆU ĐÃ ĐỦ -> TIẾN HÀNH GỌI API ---');
 
     setState(() {
       _submitting = true;
@@ -359,58 +379,48 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     });
 
     try {
+      // Logic xử lý thời gian
       final timeParts = time.split(':');
       final hour = int.parse(timeParts[0]);
       final minute = int.parse(timeParts[1].split(' ')[0]);
-      final slotDate = DateTime(date.year, date.month, date.day, hour, minute);
+      final slot_date = DateTime(date.year, date.month, date.day, hour, minute);
 
+      // Gọi API tạo Appointment
       final appointment = await _api.createAppointment(
-        patientId: patient.id,
-        facilityId: facility.id,
-        doctorId: doctor.id,
-        serviceId: service.id,
-        slotId: slotId,
-        appointmentDate: slotDate,
+        patient_id: patient.id,
+        facility_id: facility.id,
+        doctor_id: doctor.id,
+        service_id: service.id,
+        slot_id: slot_id,
+        appointment_date: slot_date,
         note: _noteCtrl.text.trim(),
       );
 
-
-      final appointmentId = appointment.id;
-      if (appointmentId == null) {
+      final appointment_id = appointment.id;
+      if (appointment_id == null) {
         throw Exception('Không lấy được mã lịch hẹn từ hệ thống');
       }
 
+      // Tạo thanh toán
       final payment = await _api.createPayment(
-        appointmentId: appointmentId,
+        appointment_id: appointment_id,
         paymentMethod: _paymentMethod,
       );
 
       if (!mounted) return;
-      await showDialog<void>(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title: const Text('Đặt lịch thành công'),
-            content: Text(
-              'Mã lịch hẹn: #${appointmentId}\n'
-              'Trạng thái: ${payment.status ?? 'pending'}\n'
-              '${payment.paymentUrl != null ? 'Link thanh toán: ${payment.paymentUrl}' : ''}',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  Navigator.of(context).pop();
-                },
-                child: const Text('Đóng'),
-              ),
-            ],
-          );
-        },
+
+      // Hiển thị thông báo thành công
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Đặt lịch thành công!'), backgroundColor: Colors.green),
       );
+
+      // Thoát về trang chủ
+      Navigator.of(context).popUntil((route) => route.isFirst);
+
     } catch (e) {
+      print('❌ LỖI API: $e');
       setState(() {
-        _error = 'Lỗi: $e';
+        _error = 'Lỗi hệ thống: $e';
       });
     } finally {
       if (mounted) {
@@ -464,7 +474,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                     InkWell(
                       onTap: () {
                         setState(() {
-                          _selectedSlotId = null;
+                          _selectedslot_id = null;
                           _selectedDate = null;
                           _selectedTime = null;
                         });
@@ -532,7 +542,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                 width: 80,
                                 height: 80,
                                 color: const Color(0xFFE2F5FF),
-                                child: _selectedDoctor?.fullName != null
+                                child: _selectedDoctor?.full_name != null
                                   ? const Icon(Icons.person, size: 40, color: Color(0xFF14CBA8))
                                   : null,
                               ),
@@ -547,7 +557,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                     children: [
                                       Expanded(
                                         child: Text(
-                                          _selectedDoctor?.fullName ?? '',
+                                          _selectedDoctor?.full_name ?? '',
                                           style: const TextStyle(
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
@@ -632,7 +642,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A4A4A)),
                       ),
                       const SizedBox(height: 12),
-                      _buildMockInput(text: _selectedPatient?.fullName ?? 'Bệnh nhân chưa xác định'),
+                      _buildMockInput(text: _selectedPatient?.full_name ?? 'Bệnh nhân chưa xác định'),
                       const SizedBox(height: 16),
                       const Text(
                         'Mô tả triệu chứng(*)',
@@ -768,7 +778,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
       );
     }
 
-    if (_selectedFacility != null && _selectedDoctor != null && _selectedDate != null && _selectedTime != null && _selectedSlotId != null) {
+    if (_selectedFacility != null && _selectedDoctor != null && _selectedDate != null && _selectedTime != null && _selectedslot_id != null) {
       return _buildFinalConfirmationUI(context);
     }
 
@@ -817,7 +827,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
             if (_selectedDoctor != null) ...[
               _buildEditSection(
                 'Bác sĩ',
-                _selectedDoctor!.fullName,
+                _selectedDoctor!.full_name,
                 _changeDoctor,
               ),
               const SizedBox(height: 12),
@@ -869,7 +879,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           const SizedBox(height: 12),
           _summaryRow('Cơ sở:', _selectedFacility?.name ?? ''),
           if (_selectedDoctor != null)
-            _summaryRow('Bác sĩ:', _selectedDoctor!.fullName),
+            _summaryRow('Bác sĩ:', _selectedDoctor!.full_name),
           if (_selectedDate != null && _selectedTime != null)
             _summaryRow(
               'Thời gian:',
@@ -1040,7 +1050,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                   (e) => DropdownMenuItem<BookingPatientItem>(
                     value: e,
                     child: Text(
-                      '${e.fullName}${e.isPrimary ? ' (Mặc định)' : ''}',
+                      '${e.full_name}${e.isPrimary ? ' (Mặc định)' : ''}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -1193,13 +1203,13 @@ class _BookingFlowApi {
   final DioClient dioClient;
 
   Future<List<BookingDoctorItem>> getDoctors(
-      {int? facilityId, String? search}) async {
+      {int? facility_id, String? search}) async {
     final response = await dioClient.get(
       '/doctors',
       queryParameters: {
         'page': 1,
         'limit': 100,
-        if (facilityId != null) 'facilityId': facilityId,
+        if (facility_id != null) 'facility_id': facility_id,
         if (search != null && search.isNotEmpty) 'search': search,
       },
     );
@@ -1211,28 +1221,28 @@ class _BookingFlowApi {
           final facility = item['facility'];
           return BookingDoctorItem(
             id: _toInt(item['id']) ?? 0,
-            fullName: (item['fullName'] ?? '').toString(),
+            full_name: (item['full_name'] ?? '').toString(),
             avatarUrl: item['avatarUrl']?.toString(),
             specialtyName: specialty is Map<String, dynamic>
                 ? specialty['name']?.toString()
                 : null,
-            facilityId: facility is Map<String, dynamic>
+            facility_id: facility is Map<String, dynamic>
                 ? _toInt(facility['id'])
                 : null,
             consultationFee: _toDouble(item['consultationFee']),
           );
         })
-        .where((e) => e.id > 0 && e.fullName.isNotEmpty)
+        .where((e) => e.id > 0 && e.full_name.isNotEmpty)
         .toList();
   }
 
-  Future<List<BookingServiceItem>> getServicesByFacility(int facilityId) async {
+  Future<List<BookingServiceItem>> getServicesByFacility(int facility_id) async {
     final response = await dioClient.get(
       '/services',
       queryParameters: {
         'page': 1,
         'limit': 50,
-        'facilityId': facilityId,
+        'facility_id': facility_id,
       },
     );
 
@@ -1241,7 +1251,7 @@ class _BookingFlowApi {
         .map((item) {
           return BookingServiceItem(
             id: _toInt(item['id']) ?? 0,
-            facilityId: _toInt(item['facilityId']) ?? facilityId,
+            facility_id: _toInt(item['facility_id']) ?? facility_id,
             name: (item['name'] ?? '').toString(),
             price: _toDouble(item['price']) ?? 0,
           );
@@ -1266,9 +1276,9 @@ class _BookingFlowApi {
         .whereType<Map<String, dynamic>>()
         .map((item) {
           return BookingPatientItem(
-            id: _toInt(item['id']) ?? 0,
-            fullName: (item['fullName'] ?? '').toString(),
-            isPrimary: item['isPrimary'] == true,
+            id: _toInt(item['patient_id']) ?? _toInt(item['id']) ?? 0,
+            full_name: (item['full_name'] ?? '').toString(),
+            isPrimary: item['is_primary'] == 1 || item['is_primary'] == true || item['isPrimary'] == true,
           );
         })
         .where((e) => e.id > 0)
@@ -1276,24 +1286,24 @@ class _BookingFlowApi {
   }
 
   Future<_CreateAppointmentResult> createAppointment({
-    required int patientId,
-    required int facilityId,
-    required int doctorId,
-    required int serviceId,
-    required int slotId,
-    required DateTime appointmentDate,
+    required int patient_id,
+    required int facility_id,
+    required int doctor_id,
+    required int service_id,
+    required int slot_id,
+    required DateTime appointment_date,
     String? note,
   }) async {
     final response = await dioClient.post(
       '/appointments',
       data: {
-        'patientId': patientId.toString(),
-        'facilityId': facilityId.toString(),
-        'serviceId': serviceId.toString(),
-        'slotId': slotId.toString(),
+        'patient_id': patient_id.toString(),
+        'facility_id': facility_id.toString(),
+        'service_id': service_id.toString(),
+        'slot_id': slot_id.toString(),
         'appointmentType': 'consultation',
-        'appointmentDate': _dateOnly(appointmentDate),
-        'appointmentTime': _hhmm(appointmentDate),
+        'appointment_date': _dateOnly(appointment_date),
+        'appointment_time': _hhmm(appointment_date),
         if (note != null && note.isNotEmpty) 'note': note,
       },
     );
@@ -1315,13 +1325,13 @@ class _BookingFlowApi {
   }
 
   Future<_CreatePaymentResult> createPayment({
-    required int appointmentId,
+    required int appointment_id,
     required String paymentMethod,
   }) async {
     final response = await dioClient.post(
       '/payments',
       data: {
-        'appointmentId': appointmentId.toString(),
+        'appointment_id': appointment_id.toString(),
         'paymentMethod': paymentMethod,
       },
     );
@@ -1345,13 +1355,13 @@ class _BookingFlowApi {
 
 class BookingServiceItem {
   final int id;
-  final int facilityId;
+  final int facility_id;
   final String name;
   final double price;
 
   BookingServiceItem({
     required this.id,
-    required this.facilityId,
+    required this.facility_id,
     required this.name,
     required this.price,
   });
@@ -1359,12 +1369,12 @@ class BookingServiceItem {
 
 class BookingPatientItem {
   final int id;
-  final String fullName;
+  final String full_name;
   final bool isPrimary;
 
   BookingPatientItem({
     required this.id,
-    required this.fullName,
+    required this.full_name,
     required this.isPrimary,
   });
 }

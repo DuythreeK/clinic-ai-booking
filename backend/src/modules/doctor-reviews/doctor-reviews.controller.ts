@@ -11,9 +11,9 @@ export class DoctorReviewsController {
 
   @Post()
   async create(
-    @CurrentUser('sub') userId: string,
+    @CurrentUser('sub') user_id: string,
     @Body() dto: CreateDoctorReviewDto,
   ) {
-    return this.doctorReviewsService.createReview(userId, dto);
+    return this.doctorReviewsService.createReview(user_id, dto);
   }
 }

@@ -209,9 +209,9 @@ Tất cả các yêu cầu/phản hồi API sử dụng DTOs để xác thực v
 ```typescript
 // Ví dụ: CreateAppointmentDto
 export class CreateAppointmentDto {
-  patientId: string;
-  doctorId: string;
-  slotId: string;
+  patient_id: string;
+  doctor_id: string;
+  slot_id: string;
   reason: string;
   attachments?: string[];
 }

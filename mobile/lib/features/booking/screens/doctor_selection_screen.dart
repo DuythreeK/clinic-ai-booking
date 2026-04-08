@@ -62,30 +62,37 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
       final response = await widget.dioClient.get(
         '/doctors',
         queryParameters: {
-          'facilityId': widget.facility.id,
+          'facility_id': widget.facility.id,
           'page': 1,
           'limit': 100,
         },
       );
-
+      // --- ĐOẠN IN DEBUG BẮT ĐẦU ---
+      print('--- DEBUG DOCTOR SELECTION ---');
+      print('1. Full Response Data: ${response.data}');
+      print('2. Type of Response Data: ${response.data.runtimeType}');
       final items = _unwrapItems(response.data);
+      print('Số lượng items sau khi unwrap: ${items.length}');
       final doctors = items
           .map((item) {
             final specialty = item['specialty'];
             return BookingDoctorItem(
               id: _toInt(item['id']) ?? 0,
-              fullName: (item['fullName'] ?? '').toString(),
-              avatarUrl: item['avatarUrl']?.toString(),
-              specialtyName: specialty is Map<String, dynamic>
-                  ? specialty['name']?.toString()
-                  : null,
-              facilityId: widget.facility.id,
-              consultationFee: _toDouble(item['consultationFee']),
+              full_name: (item['name'] ?? item['full_name'] ?? '').toString(),
+              avatarUrl: item['imageUrl']?.toString() ?? item['avatar_url']?.toString(),
+              specialtyName: item['specialty'] is Map
+                  ? item['specialty']['name']
+                  : item['specialty']?.toString(),
+
+              facility_id: widget.facility.id,
+
+              // 5. Backend trả về 'priceValue' thay vì 'consultationFee'
+              consultationFee: _toDouble(item['priceValue']) ?? _toDouble(item['consultation_fee']) ?? 0,
             );
           })
-          .where((e) => e.id > 0 && e.fullName.isNotEmpty)
+          .where((e) => e.id > 0 && e.full_name.isNotEmpty)
           .toList();
-
+          print('Số lượng bác sĩ sau khi map: ${doctors.length}');
       setState(() {
         _doctors = doctors;
       });
@@ -122,7 +129,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
       // Search filter
       if (query.isNotEmpty) {
         filtered = filtered.where((d) =>
-            d.fullName.toLowerCase().contains(query) ||
+            d.full_name.toLowerCase().contains(query) ||
             (d.specialtyName?.toLowerCase().contains(query) ?? false)).toList();
       }
 
@@ -142,10 +149,10 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
     _selectingDoctor = true;
     Navigator.of(context).pop({
       'id': doctor.id,
-      'fullName': doctor.fullName,
+      'full_name': doctor.full_name,
       'avatarUrl': doctor.avatarUrl,
       'specialtyName': doctor.specialtyName,
-      'facilityId': doctor.facilityId,
+      'facility_id': doctor.facility_id,
       'consultationFee': doctor.consultationFee,
     });
   }
@@ -492,7 +499,7 @@ class _DoctorCard extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Text(
-                              doctor.fullName,
+                              doctor.full_name,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,

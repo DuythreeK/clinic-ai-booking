@@ -20,7 +20,7 @@ export class RegisterRequest {
 
   @IsString()
   @MaxLength(150)
-  fullName!: string;
+  full_name!: string;
 
   @IsEnum(UserRole)
   role!: UserRole;

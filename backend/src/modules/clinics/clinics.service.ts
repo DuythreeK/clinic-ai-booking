@@ -9,7 +9,7 @@ export class ClinicsService {
 
   private toResponse(facility: any) {
     return {
-      id: toNumberId(facility.facilityId),
+      id: toNumberId(facility.facility_id),
       name: facility.name,
       facilityType: facility.facility_type,
       phone: facility.phone,
@@ -27,7 +27,7 @@ export class ClinicsService {
         .filter(Boolean)
         .join(', '),
       ratingAvg: Number(facility.rating_avg),
-      isActive: facility.isActive === 1,
+      is_active: facility.is_active === 1,
     };
   }
 
@@ -64,7 +64,7 @@ export class ClinicsService {
 
   async getClinics(page = 1, limit = 10, search?: string, facilityType?: string) {
     const where = {
-      isActive: 1,
+      is_active: 1,
       facility_type: facilityType as any,
       name: search
         ? {
@@ -76,7 +76,7 @@ export class ClinicsService {
     const [facilities, totalItems] = await Promise.all([
       this.prisma.facility.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -94,10 +94,10 @@ export class ClinicsService {
 
   async getClinicById(id: string) {
     const facility = await this.prisma.facility.findUnique({
-      where: { facilityId: BigInt(id) },
+      where: { facility_id: BigInt(id) },
     });
 
-    if (!facility || facility.isActive !== 1) {
+    if (!facility || facility.is_active !== 1) {
       throw new NotFoundException('Facility not found');
     }
 

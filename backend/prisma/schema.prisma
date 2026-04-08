@@ -286,13 +286,13 @@ model Appointment {
   symptoms_note    String?         @db.Text
   note             String?         @db.Text
   total_amount     Decimal         @db.Decimal(12, 2)
-  
+
   cancellation_reason       String?  @db.VarChar(255)
   cancellation_requested_by BigInt?
   cancellation_requested_at DateTime?
   cancellation_approved_by  BigInt?
   cancellation_approved_at  DateTime?
-  
+
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
@@ -602,4 +602,3 @@ enum SenderRole {
   PATIENT
   AI
 }
-

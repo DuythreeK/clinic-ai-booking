@@ -1,11 +1,11 @@
 import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class MobileProfileDto {
-  userId!: number;
+  user_id!: number;
   profileId!: number | null;
   ecoreId!: string;
   username!: string;
-  fullName!: string;
+  full_name!: string;
   firstName!: string;
   lastName!: string;
   email!: string;
@@ -29,7 +29,7 @@ export class UpdateMobileProfileDto {
   @IsOptional()
   @IsString()
   @MaxLength(150)
-  fullName?: string;
+  full_name?: string;
 
   @IsOptional()
   @IsString()

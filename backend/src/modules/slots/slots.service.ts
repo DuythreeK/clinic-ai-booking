@@ -13,8 +13,8 @@ export class SlotsService {
   async createSlot(dto: CreateSlotDto) {
     const startAt = new Date(dto.startAt);
     const endAt = new Date(dto.endAt);
-    const slotDate = new Date(startAt);
-    slotDate.setHours(0, 0, 0, 0);
+    const slot_date = new Date(startAt);
+    slot_date.setHours(0, 0, 0, 0);
 
     const durationMinutes = Math.max(
       1,
@@ -23,14 +23,14 @@ export class SlotsService {
 
     return this.prisma.slot.create({
       data: {
-        doctorId: this.toBigIntId(dto.doctorId),
-        facilityId: this.toBigIntId(dto.clinicId),
-        slotDate: slotDate,
-        startTime: startAt,
-        endTime: endAt,
+        doctor_id: this.toBigIntId(dto.doctor_id),
+        facility_id: this.toBigIntId(dto.clinicId),
+        slot_date: slot_date,
+        start_time: startAt,
+        end_time: endAt,
         duration_minutes: durationMinutes,
         status: dto.isBlocked ? 'INACTIVE' : 'AVAILABLE',
-        isActive: dto.isBlocked ? 0 : 1,
+        is_active: dto.isBlocked ? 0 : 1,
       },
     });
   }
@@ -43,27 +43,27 @@ export class SlotsService {
     };
   }
 
-  async getSlots(doctorId?: string, clinicId?: string, fromDate?: string, toDate?: string) {
+  async getSlots(doctor_id?: string, clinicId?: string, fromDate?: string, toDate?: string) {
     const where: any = {};
 
-    if (doctorId) where.doctorId = this.toBigIntId(doctorId);
-    if (clinicId) where.facilityId = this.toBigIntId(clinicId);
+    if (doctor_id) where.doctor_id = this.toBigIntId(doctor_id);
+    if (clinicId) where.facility_id = this.toBigIntId(clinicId);
 
     if (fromDate || toDate) {
-      where.slotDate = {};
-      if (fromDate) where.slotDate.gte = new Date(fromDate);
-      if (toDate) where.slotDate.lte = new Date(toDate);
+      where.slot_date = {};
+      if (fromDate) where.slot_date.gte = new Date(fromDate);
+      if (toDate) where.slot_date.lte = new Date(toDate);
     }
 
     return this.prisma.slot.findMany({
       where,
-      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
     });
   }
 
   async getSlotById(id: string) {
     const slot = await this.prisma.slot.findUnique({
-      where: { slotId: this.toBigIntId(id) },
+      where: { slot_id: this.toBigIntId(id) },
     });
 
     if (!slot) throw new NotFoundException('Slot not found');
@@ -74,9 +74,9 @@ export class SlotsService {
     await this.getSlotById(id);
 
     return this.prisma.slot.update({
-      where: { slotId: this.toBigIntId(id) },
+      where: { slot_id: this.toBigIntId(id) },
       data: {
-        isActive: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 0 : 1,
+        is_active: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 0 : 1,
         status: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 'INACTIVE' : 'AVAILABLE',
       },
     });
@@ -84,18 +84,18 @@ export class SlotsService {
 
   async deleteSlot(id: string) {
     return this.prisma.slot.delete({
-      where: { slotId: this.toBigIntId(id) },
+      where: { slot_id: this.toBigIntId(id) },
     });
   }
 
-  async getAvailableSlots(doctorId: string, clinicId: string, fromDate: string, toDate: string) {
+  async getAvailableSlots(doctor_id: string, clinicId: string, fromDate: string, toDate: string) {
     return this.prisma.slot.findMany({
       where: {
-        doctorId: this.toBigIntId(doctorId),
-        facilityId: this.toBigIntId(clinicId),
+        doctor_id: this.toBigIntId(doctor_id),
+        facility_id: this.toBigIntId(clinicId),
 
 
-        slotDate: {
+        slot_date: {
           gte: new Date(fromDate),
           lte: new Date(toDate),
         },
@@ -103,7 +103,7 @@ export class SlotsService {
       include: {
         appointment: true, // Lôi dữ liệu lịch hẹn ra để Flutter check
       },
-      orderBy: [{ slotDate: 'asc' }, { startTime: 'asc' }],
+      orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
     });
   }
 }

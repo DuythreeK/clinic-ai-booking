@@ -9,7 +9,7 @@ class MedicalHistoryItem {
     required this.title,
     required this.day,
     required this.monthYear,
-    required this.doctorId,
+    required this.doctor_id,
     required this.doctorName,
     required this.specialty,
     required this.feeLabel,
@@ -18,7 +18,7 @@ class MedicalHistoryItem {
     required this.orderNumber,
     required this.queueNumber,
     required this.clinicFeeLabel,
-    required this.totalAmountLabel,
+    required this.total_amountLabel,
     required this.symptomNote,
     required this.caseSummary,
     required this.fileName,
@@ -29,7 +29,7 @@ class MedicalHistoryItem {
   final String title;
   final String day;
   final String monthYear;
-  final String doctorId;
+  final String doctor_id;
   final String doctorName;
   final String specialty;
   final String feeLabel;
@@ -38,7 +38,7 @@ class MedicalHistoryItem {
   final String orderNumber;
   final String queueNumber;
   final String clinicFeeLabel;
-  final String totalAmountLabel;
+  final String total_amountLabel;
   final String symptomNote;
   final String caseSummary;
   final String fileName;
@@ -50,7 +50,7 @@ class MedicalHistoryItem {
       title: json['title']?.toString() ?? '',
       day: json['day']?.toString() ?? '',
       monthYear: json['monthYear']?.toString() ?? '',
-      doctorId: json['doctorId']?.toString() ?? '',
+      doctor_id: json['doctor_id']?.toString() ?? '',
       doctorName: json['doctorName']?.toString() ?? '',
       specialty: json['specialty']?.toString() ?? '',
       feeLabel: json['feeLabel']?.toString() ?? '',
@@ -59,7 +59,7 @@ class MedicalHistoryItem {
       orderNumber: json['orderNumber']?.toString() ?? '',
       queueNumber: json['queueNumber']?.toString() ?? '',
       clinicFeeLabel: json['clinicFeeLabel']?.toString() ?? '',
-      totalAmountLabel: json['totalAmountLabel']?.toString() ?? '',
+      total_amountLabel: json['total_amountLabel']?.toString() ?? '',
       symptomNote: json['symptomNote']?.toString() ?? '',
       caseSummary: json['caseSummary']?.toString() ?? '',
       fileName: json['fileName']?.toString() ?? '',
@@ -124,12 +124,12 @@ class MedicalHistoryCatalog {
     return null;
   }
 
-  static DoctorProfile? doctorOf(String doctorId) {
-    return DoctorCatalog.instance.findById(doctorId);
+  static DoctorProfile? doctorOf(String doctor_id) {
+    return DoctorCatalog.instance.findById(doctor_id);
   }
   static DoctorProfile fallbackDoctorForItem(MedicalHistoryItem item) {
     return DoctorProfile(
-      id: item.doctorId,
+      id: item.doctor_id,
       name: item.doctorName,
       specialty: item.specialty,
       focus: item.specialty,
