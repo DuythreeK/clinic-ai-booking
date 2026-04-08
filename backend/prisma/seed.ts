@@ -1,193 +1,313 @@
-import { PrismaClient, UserRole } from '@prisma/client';
+import { PrismaClient, UserRole, FacilityType } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
+async function upsertUser(params: {
+  email: string;
+  fullName: string;
+  phone: string;
+  role: UserRole;
+  password: string;
+}) {
+  const passwordHash = await bcrypt.hash(params.password, 10);
+  return prisma.user.upsert({
+    where: { email: params.email },
+    update: {
+      full_name: params.fullName,
+      phone: params.phone,
+      role: params.role,
+      password_hash: passwordHash,
+      status: 'active',
+    },
+    create: {
+      email: params.email,
+      full_name: params.fullName,
+      phone: params.phone,
+      role: params.role,
+      password_hash: passwordHash,
+      status: 'active',
+    },
+  });
+}
+
+async function ensurePrimaryPatientProfile(userId: bigint, fullName: string, phone: string) {
+  const existing = await prisma.patientProfile.findFirst({
+    where: {
+      user_id: userId,
+      is_primary: 1,
+    },
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.patientProfile.create({
+    data: {
+      user_id: userId,
+      full_name: fullName,
+      phone_number: phone,
+      is_primary: 1,
+      gender: 'male',
+    },
+  });
+}
+
+async function ensureSlotsForDoctor(
+  doctorId: bigint,
+  facilityId: bigint,
+  startHours: number[],
+) {
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
+
+  const existing = await prisma.slot.count({
+    where: {
+      doctor_id: doctorId,
+      facility_id: facilityId,
+      is_active: 1,
+      status: 'AVAILABLE',
+      slot_date: {
+        gte: from,
+        lte: to,
+      },
+    },
+  });
+
+  if (existing > 0) {
+    return;
+  }
+
+  const rows: Array<{
+    facility_id: bigint;
+    doctor_id: bigint;
+    slot_date: Date;
+    start_time: Date;
+    end_time: Date;
+    duration_minutes: number;
+    available_count: number;
+    status: 'AVAILABLE';
+    is_active: number;
+  }> = [];
+
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    for (const h of startHours) {
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, 0, 0);
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, 30, 0);
+
+      rows.push({
+        facility_id: facilityId,
+        doctor_id: doctorId,
+        slot_date: dayStart,
+        start_time: start,
+        end_time: end,
+        duration_minutes: 30,
+        available_count: 10,
+        status: 'AVAILABLE',
+        is_active: 1,
+      });
+    }
+  }
+
+  if (rows.length > 0) {
+    await prisma.slot.createMany({ data: rows });
+  }
+}
+
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('Seeding doctor-facility mappings...');
 
-  // Clear existing data (be careful in production!)
-  await prisma.appointment.deleteMany();
-  await prisma.slot.deleteMany();
-  await prisma.doctorClinic.deleteMany();
-  await prisma.doctor.deleteMany();
-  await prisma.patientProfile.deleteMany();
-  await prisma.clinic.deleteMany();
-  await prisma.specialty.deleteMany();
-  await prisma.adminProfile.deleteMany();
-  await prisma.refreshToken.deleteMany();
-  await prisma.fcmToken.deleteMany();
-  await prisma.user.deleteMany();
-
-  console.log('📋 Creating specialties...');
-  const specialties = await prisma.specialty.createMany({
-    data: [
-      { name: 'Tổng quát', description: 'Bác sĩ đa khoa' },
-      { name: 'Tim mạch', description: 'Chuyên khoa Tim mạch' },
-      { name: 'Da liễu', description: 'Chuyên khoa Da liễu' },
-      { name: 'Tâm thần', description: 'Bác sĩ Tâm thần' },
-      { name: 'Nhi khoa', description: 'Chuyên khoa Nhi khoa' },
-    ],
+  const specialtyGeneral = await prisma.specialty.upsert({
+    where: { name: 'Tong quat' },
+    update: { description: 'Kham tong quat', is_active: 1 },
+    create: { name: 'Tong quat', description: 'Kham tong quat', is_active: 1 },
   });
-  console.log(`✅ Created ${specialties.count} specialties`);
 
-  console.log('🏥 Creating clinics...');
-  const clinics = await Promise.all([
-    prisma.clinic.create({
+  const specialtyCardio = await prisma.specialty.upsert({
+    where: { name: 'Tim mach' },
+    update: { description: 'Chuyen khoa tim mach', is_active: 1 },
+    create: { name: 'Tim mach', description: 'Chuyen khoa tim mach', is_active: 1 },
+  });
+
+  const specialtyDerm = await prisma.specialty.upsert({
+    where: { name: 'Da lieu' },
+    update: { description: 'Chuyen khoa da lieu', is_active: 1 },
+    create: { name: 'Da lieu', description: 'Chuyen khoa da lieu', is_active: 1 },
+  });
+
+  let facilityA = await prisma.facility.findFirst({ where: { name: 'Co so Trung tam Quan 1' } });
+  if (!facilityA) {
+    facilityA = await prisma.facility.create({
       data: {
-        name: 'Phòng khám Trung tâm',
-        address: '123 Đường Lê Lợi',
-        city: 'TP. Hồ Chí Minh',
-        country: 'Vietnam',
-        phone: '+84 28 1234 5678',
-        email: 'contact@clinic-center.vn',
-        hours: JSON.stringify({ mon_fri: '08:00-17:00', sat: '09:00-12:00' }),
+        name: 'Co so Trung tam Quan 1',
+        facility_type: FacilityType.clinic,
+        phone: '02811112222',
+        email: 'q1@clinic.local',
+        address_detail: '123 Le Loi, Quan 1, TP HCM',
+        province: 'TP HCM',
+        district: 'Quan 1',
+        ward: 'Ben Nghe',
+        opening_hours: '08:00-20:00',
+        is_active: 1,
       },
-    }),
-    prisma.clinic.create({
+    });
+  }
+
+  let facilityB = await prisma.facility.findFirst({ where: { name: 'Co so Phu Nhuan' } });
+  if (!facilityB) {
+    facilityB = await prisma.facility.create({
       data: {
-        name: 'Bệnh viện Quốc tế',
-        address: '456 Nguyễn Huệ',
-        city: 'Hanoi',
-        country: 'Vietnam',
-        phone: '+84 24 6789 1234',
-        email: 'info@intl-hospital.vn',
-        hours: JSON.stringify({ mon_sun: '24/7' }),
+        name: 'Co so Phu Nhuan',
+        facility_type: FacilityType.hospital,
+        phone: '02833334444',
+        email: 'pn@clinic.local',
+        address_detail: '45 Hoang Van Thu, Phu Nhuan, TP HCM',
+        province: 'TP HCM',
+        district: 'Phu Nhuan',
+        ward: 'Phuong 9',
+        opening_hours: '07:00-21:00',
+        is_active: 1,
       },
-    }),
+    });
+  }
+
+  const doctorUserA = await upsertUser({
+    email: 'doctor.nguyenvana@clinic.local',
+    fullName: 'Nguyen Van A',
+    phone: '0901111111',
+    role: UserRole.doctor,
+    password: '12345678',
+  });
+
+  const doctorUserB = await upsertUser({
+    email: 'doctor.tranthib@clinic.local',
+    fullName: 'Tran Thi B',
+    phone: '0902222222',
+    role: UserRole.doctor,
+    password: '12345678',
+  });
+
+  const doctorUserC = await upsertUser({
+    email: 'doctor.leduyc@clinic.local',
+    fullName: 'Le Duy C',
+    phone: '0903333333',
+    role: UserRole.doctor,
+    password: '12345678',
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserA.user_id },
+    update: {
+      full_name: 'Bac si Nguyen Van A',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tong quat',
+      bio: '10 nam kinh nghiem kham tong quat',
+      experience_years: 10,
+      consultation_fee: 200000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserA.user_id,
+      full_name: 'Bac si Nguyen Van A',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tong quat',
+      bio: '10 nam kinh nghiem kham tong quat',
+      experience_years: 10,
+      consultation_fee: 200000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserB.user_id },
+    update: {
+      full_name: 'Bac si Tran Thi B',
+      specialty_id: specialtyCardio.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tim mach',
+      bio: '12 nam kinh nghiem tim mach',
+      experience_years: 12,
+      consultation_fee: 350000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserB.user_id,
+      full_name: 'Bac si Tran Thi B',
+      specialty_id: specialtyCardio.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tim mach',
+      bio: '12 nam kinh nghiem tim mach',
+      experience_years: 12,
+      consultation_fee: 350000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserC.user_id },
+    update: {
+      full_name: 'Bac si Le Duy C',
+      specialty_id: specialtyDerm.specialty_id,
+      facility_id: facilityB.facility_id,
+      title: 'Bac si Da lieu',
+      bio: '8 nam kinh nghiem da lieu',
+      experience_years: 8,
+      consultation_fee: 280000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserC.user_id,
+      full_name: 'Bac si Le Duy C',
+      specialty_id: specialtyDerm.specialty_id,
+      facility_id: facilityB.facility_id,
+      title: 'Bac si Da lieu',
+      bio: '8 nam kinh nghiem da lieu',
+      experience_years: 8,
+      consultation_fee: 280000,
+      is_active: 1,
+    },
+  });
+
+  const patientUser = await upsertUser({
+    email: 'a@gmail.com',
+    fullName: 'Nguyen Van Patient A',
+    phone: '0909999999',
+    role: UserRole.patient,
+    password: '12345678',
+  });
+  await ensurePrimaryPatientProfile(patientUser.user_id, 'Nguyen Van Patient A', '0909999999');
+
+  const [doctorA, doctorB, doctorC] = await Promise.all([
+    prisma.doctor.findUnique({ where: { user_id: doctorUserA.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserB.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserC.user_id } }),
   ]);
-  console.log(`✅ Created ${clinics.length} clinics`);
 
-  console.log('👨‍⚕️ Creating admin user...');
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@clinic.local',
-      password: await bcrypt.hash('admin123', 10),
-      firstName: 'Admin',
-      lastName: 'User',
-      role: UserRole.ADMIN,
-      admin: {
-        create: {},
-      },
-    },
-  });
-  console.log(`✅ Admin user created (email: ${adminUser.email})`);
+  if (doctorA != null) {
+    await ensureSlotsForDoctor(doctorA.doctor_id, facilityA.facility_id, [8, 9, 10]);
+  }
 
-  console.log('👨‍⚕️ Creating sample doctors...');
-  const doctor1 = await prisma.user.create({
-    data: {
-      email: 'doctor1@clinic.local',
-      password: await bcrypt.hash('doctor123', 10),
-      firstName: 'Nguyễn',
-      lastName: 'Văn A',
-      phone: '0901234567',
-      role: UserRole.DOCTOR,
-      doctor: {
-        create: {
-          licenseNumber: 'DL001',
-          specialtyId: specialties.data[0].id, // Tổng quát
-          isApproved: true,
-          bio: 'Bác sĩ chuyên khoa Đa khoa có 10 năm kinh nghiệm',
-          yearsExperience: 10,
-          rating: 4.8,
-          totalReviews: 150,
-          doctorClinics: {
-            create: [
-              { clinicId: clinics[0].id },
-              { clinicId: clinics[1].id },
-            ],
-          },
-        },
-      },
-    },
-  });
+  if (doctorB != null) {
+    await ensureSlotsForDoctor(doctorB.doctor_id, facilityA.facility_id, [14, 15, 16]);
+  }
 
-  const doctor2 = await prisma.user.create({
-    data: {
-      email: 'doctor2@clinic.local',
-      password: await bcrypt.hash('doctor123', 10),
-      firstName: 'Trần',
-      lastName: 'Thị B',
-      phone: '0912345678',
-      role: UserRole.DOCTOR,
-      doctor: {
-        create: {
-          licenseNumber: 'DL002',
-          specialtyId: specialties.data[1].id, // Tim mạch
-          isApproved: true,
-          bio: 'Chuyên khoa Tim mạch với bằng cấp quốc tế',
-          yearsExperience: 15,
-          rating: 4.9,
-          totalReviews: 200,
-          doctorClinics: {
-            create: [{ clinicId: clinics[0].id }],
-          },
-        },
-      },
-    },
-  });
-  console.log('✅ Created 2 sample doctors');
+  if (doctorC != null) {
+    await ensureSlotsForDoctor(doctorC.doctor_id, facilityB.facility_id, [9, 10, 11]);
+  }
 
-  console.log('👤 Creating sample patient...');
-  const patientUser = await prisma.user.create({
-    data: {
-      email: 'patient@clinic.local',
-      password: await bcrypt.hash('patient123', 10),
-      firstName: 'Lê',
-      lastName: 'Văn C',
-      phone: '0923456789',
-      role: UserRole.PATIENT,
-      patient: {
-        create: {
-          gender: 'M',
-          address: '789 Trần Hưng Đạo',
-          city: 'TP. Hồ Chí Minh',
-          country: 'Vietnam',
-        },
-      },
-    },
-  });
-  console.log(`✅ Patient created (email: ${patientUser.email})`);
-
-  console.log('📅 Creating sample slots...');
-  const now = new Date();
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  await Promise.all([
-    prisma.slot.create({
-      data: {
-        doctorId: doctor1.doctor!.id,
-        clinicId: clinics[0].id,
-        startAt: new Date(tomorrow.setHours(8, 0, 0, 0)),
-        endAt: new Date(tomorrow.setHours(8, 30, 0, 0)),
-      },
-    }),
-    prisma.slot.create({
-      data: {
-        doctorId: doctor1.doctor!.id,
-        clinicId: clinics[0].id,
-        startAt: new Date(tomorrow.setHours(9, 0, 0, 0)),
-        endAt: new Date(tomorrow.setHours(9, 30, 0, 0)),
-      },
-    }),
-    prisma.slot.create({
-      data: {
-        doctorId: doctor2.doctor!.id,
-        clinicId: clinics[0].id,
-        startAt: new Date(tomorrow.setHours(14, 0, 0, 0)),
-        endAt: new Date(tomorrow.setHours(14, 30, 0, 0)),
-      },
-    }),
-  ]);
-  console.log('✅ Created sample slots');
-
-  console.log('✨ Seeding completed!');
+  console.log('Seed complete. Doctors and slots are attached to facilities.');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed error:', e);
+    console.error('Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

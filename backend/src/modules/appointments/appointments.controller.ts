@@ -29,6 +29,11 @@ export class AppointmentsController {
     return this.appointmentsService.createAppointment(userId, dto);
   }
 
+  @Get()
+  async getUserAppointments(@CurrentUser('sub') userId: string) {
+    return this.appointmentsService.getUserAppointments(userId);
+  }
+
   @Get(':id')
   async getById(
     @CurrentUser('sub') userId: string,
