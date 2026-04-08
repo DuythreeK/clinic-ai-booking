@@ -18,7 +18,7 @@ class VaccinationBookingScreen extends StatefulWidget {
 
 class _VaccinationBookingScreenState extends State<VaccinationBookingScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedTab = 'Tat ca';
+  String _selectedTab = 'Tất cả';
 
   @override
   void dispose() {
@@ -36,7 +36,7 @@ class _VaccinationBookingScreenState extends State<VaccinationBookingScreen> {
     }).toList();
 
     return VaccinationPageScaffold(
-      title: 'Dat lich tiem chung',
+      title: 'Đặt lịch tiêm chủng',
       onBack: widget.embedded
           ? null
           : () {
@@ -54,11 +54,11 @@ class _VaccinationBookingScreenState extends State<VaccinationBookingScreen> {
           ),
           const SizedBox(height: 14),
           SwitchChips(
-            values: const ['Tat ca', 'Co so y te'],
+            values: const ['Tất cả', 'Cơ sở y tế'],
             selected: _selectedTab,
             onSelect: (value) {
               setState(() => _selectedTab = value);
-              if (value == 'Co so y te') {
+              if (value == 'Cơ sở y tế') {
                 context.push('/vaccination-booking/facilities');
               }
             },
@@ -107,7 +107,7 @@ class _VaccinationFacilityScreenState extends State<VaccinationFacilityScreen> {
     }).toList();
 
     return VaccinationPageScaffold(
-      title: 'Dat lich tiem chung',
+      title: 'Đặt lịch tiêm chủng',
       onBack: () => context.pop(),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -121,10 +121,10 @@ class _VaccinationFacilityScreenState extends State<VaccinationFacilityScreen> {
           ),
           const SizedBox(height: 14),
           SwitchChips(
-            values: const ['Tat ca', 'Co so y te'],
-            selected: 'Co so y te',
+            values: const ['Tất cả', 'Cơ sở y tế'],
+            selected: 'Cơ sở y tế',
             onSelect: (value) {
-              if (value == 'Tat ca') {
+              if (value == 'Tất cả') {
                 context.pop();
               }
             },
@@ -163,8 +163,8 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
   late String _selectedService;
 
   static const _dates = ['05/03\nThu 5', '06/03\nThu 6', '07/03\nThu 7'];
-  static const _slotsMorning = ['07:00 - 08:00', '07:00 - 08:00', '07:00 - 08:00'];
-  static const _slotsAfternoon = ['07:00 - 08:00', '07:00 - 08:00', '07:00 - 08:00'];
+  static const _slotsMorning = ['07:00 - 08:00', '08:00 - 09:00', '09:00 - 10:00'];
+  static const _slotsAfternoon = ['13:00 - 14:00', '14:00 - 15:00', '15:00 - 16:00'];
 
   @override
   void initState() {
@@ -179,10 +179,10 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
     final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
 
     return VaccinationPageScaffold(
-      title: 'Chon thong tin kham',
+      title: 'Chọn thông tin khám',
       onBack: () => context.pop(),
       bottom: PrimaryActionBar(
-        label: 'TIEP TUC',
+        label: 'TIẾP TỤC',
         onTap: () {
           context.push(
             '/vaccination-booking/profile',
@@ -207,15 +207,15 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
             subtitle: facility.address,
           ),
           const SizedBox(height: 16),
-          const SectionTitle('Chuyen khoa'),
+          const SectionTitle('Chuyên khoa'),
           const SizedBox(height: 8),
           const _OutlinedSelectTile(
             icon: Icons.medical_services_outlined,
-            title: 'TIEM NGUA',
+            title: 'TIÊM NGỪA',
             subtitle: null,
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Dich vu'),
+          const SectionTitle('Dịch vụ'),
           const SizedBox(height: 8),
           _OutlinedSelectTile(
             icon: Icons.vaccines_outlined,
@@ -223,7 +223,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
             subtitle: widget.draft.servicePriceLabel,
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Ngay kham'),
+          const SectionTitle('Ngày khám'),
           const SizedBox(height: 10),
           Wrap(
             spacing: 8,
@@ -237,7 +237,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
             }).toList(),
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Buoi sang'),
+          const SectionTitle('Buổi sáng'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -251,7 +251,7 @@ class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen>
             }).toList(),
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Buoi chieu'),
+          const SectionTitle('Buổi chiều'),
           const SizedBox(height: 8),
           Wrap(
             spacing: 8,
@@ -281,7 +281,7 @@ class VaccinationProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return VaccinationPageScaffold(
-      title: 'Chon ho so',
+      title: 'Chọn hồ sơ',
       onBack: () => context.pop(),
       bottom: PrimaryActionBar(
         label: draft.profileLabel,
@@ -365,10 +365,10 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
     final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
 
     return VaccinationPageScaffold(
-      title: 'Xac nhan thong tin',
+      title: 'Xác nhận thông tin',
       onBack: () => context.pop(),
       bottom: PrimaryActionBar(
-        label: 'TIEP TUC',
+        label: 'TIẾP TỤC',
         onTap: () {
           context.push(
             '/vaccination-booking/payment',
@@ -406,7 +406,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
             subtitle: facility.address,
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Thong tin dat kham'),
+          const SectionTitle('Thông tin đặt khám'),
           const SizedBox(height: 8),
           _InfoPanel(
             children: [
@@ -424,15 +424,15 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
             ],
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Thong tin nguoi kham'),
+          const SectionTitle('Thông tin người khám'),
           const SizedBox(height: 8),
-          _FormField(label: 'So dien thoai', controller: _phoneController),
-          _FormField(label: 'Ho va ten', controller: _fullNameController),
+          _FormField(label: 'Số điện thoại', controller: _phoneController),
+          _FormField(label: 'Họ và tên', controller: _fullNameController),
           Row(
             children: [
               Expanded(
                 child: _FormField(
-                  label: 'Ngay sinh',
+                  label: 'Ngày sinh',
                   controller: _birthController,
                   suffix: const Icon(Icons.calendar_month_outlined, size: 18),
                 ),
@@ -440,52 +440,52 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: _DropField(
-                  label: 'Gioi tinh',
+                  label: 'Giới tính',
                   value: _gender,
-                  values: const ['Nam', 'Nu'],
+                  values: const ['Nam', 'Nữ'],
                   onChanged: (value) => setState(() => _gender = value),
                 ),
               ),
             ],
           ),
-          _FormField(label: 'Ma dinh danh/CCCD', controller: _identityController),
-          _FormField(label: 'Ma bao hiem y te', controller: _insuranceController),
+          _FormField(label: 'Mã định danh/CCCD', controller: _identityController),
+          _FormField(label: 'Mã bảo hiểm y tế', controller: _insuranceController),
           _FormField(label: 'Email', controller: _emailController),
           _DropField(
-            label: 'Nghe nghiep',
-            value: _occupationController.text.isEmpty ? 'Chon nghe nghiep' : _occupationController.text,
-            values: const ['Chon nghe nghiep', 'Nhan vien van phong', 'Sinh vien'],
-            onChanged: (value) => setState(() => _occupationController.text = value == 'Chon nghe nghiep' ? '' : value),
+            label: 'Nghề nghiệp',
+            value: _occupationController.text.isEmpty ? 'Chọn nghề nghiệp' : _occupationController.text,
+            values: const ['Chọn nghề nghiệp', 'Nhân viên văn phòng', 'Sinh viên'],
+            onChanged: (value) => setState(() => _occupationController.text = value == 'Chọn nghề nghiệp' ? '' : value),
           ),
           _DropField(
-            label: 'Quoc gia',
-            value: _countryController.text.isEmpty ? 'Chon quoc gia' : _countryController.text,
-            values: const ['Chon quoc gia', 'Viet Nam'],
-            onChanged: (value) => setState(() => _countryController.text = value == 'Chon quoc gia' ? '' : value),
+            label: 'Quốc gia',
+            value: _countryController.text.isEmpty ? 'Chọn quốc gia' : _countryController.text,
+            values: const ['Chọn quốc gia', 'Việt Nam'],
+            onChanged: (value) => setState(() => _countryController.text = value == 'Chọn quốc gia' ? '' : value),
           ),
           _DropField(
-            label: 'Dan toc',
-            value: _ethnicityController.text.isEmpty ? 'Chon dan toc' : _ethnicityController.text,
-            values: const ['Chon dan toc', 'Kinh', 'Hoa'],
-            onChanged: (value) => setState(() => _ethnicityController.text = value == 'Chon dan toc' ? '' : value),
+            label: 'Dân tộc',
+            value: _ethnicityController.text.isEmpty ? 'Chọn dân tộc' : _ethnicityController.text,
+            values: const ['Chọn dân tộc', 'Kinh', 'Hoa'],
+            onChanged: (value) => setState(() => _ethnicityController.text = value == 'Chọn dân tộc' ? '' : value),
           ),
           _DropField(
-            label: 'Tinh/Thanh pho',
-            value: _cityController.text.isEmpty ? 'Chon Tinh/Thanh pho' : _cityController.text,
-            values: const ['Chon Tinh/Thanh pho', 'Can Tho', 'Ha Noi', 'TP.HCM'],
-            onChanged: (value) => setState(() => _cityController.text = value == 'Chon Tinh/Thanh pho' ? '' : value),
+            label: 'Tỉnh/Thành phố',
+            value: _cityController.text.isEmpty ? 'Chọn Tỉnh/Thành phố' : _cityController.text,
+            values: const ['Chọn Tỉnh/Thành phố', 'Cần Thơ', 'Hà Nội', 'TP.HCM'],
+            onChanged: (value) => setState(() => _cityController.text = value == 'Chọn Tỉnh/Thành phố' ? '' : value),
           ),
           _DropField(
-            label: 'Quan/Huyen',
-            value: _districtController.text.isEmpty ? 'Chon Quan/Huyen' : _districtController.text,
-            values: const ['Chon Quan/Huyen', 'Ninh Kieu', 'Hai Ba Trung', 'Quan 1'],
-            onChanged: (value) => setState(() => _districtController.text = value == 'Chon Quan/Huyen' ? '' : value),
+            label: 'Quận/Huyện',
+            value: _districtController.text.isEmpty ? 'Chọn Quận/Huyện' : _districtController.text,
+            values: const ['Chọn Quận/Huyện', 'Ninh Kiều', 'Hai Bà Trưng', 'Quận 1'],
+            onChanged: (value) => setState(() => _districtController.text = value == 'Chọn Quận/Huyện' ? '' : value),
           ),
           _DropField(
-            label: 'Phuong/Xa',
-            value: _wardController.text.isEmpty ? 'Chon Phuong/Xa' : _wardController.text,
-            values: const ['Chon Phuong/Xa', 'Cai Khe', 'Pham Dinh Ho', 'Ben Nghe'],
-            onChanged: (value) => setState(() => _wardController.text = value == 'Chon Phuong/Xa' ? '' : value),
+            label: 'Phường/Xã',
+            value: _wardController.text.isEmpty ? 'Chọn Phường/Xã' : _wardController.text,
+            values: const ['Chọn Phường/Xã', 'Cái Khế', 'Phạm Đình Hổ', 'Bến Nghé'],
+            onChanged: (value) => setState(() => _wardController.text = value == 'Chọn Phường/Xã' ? '' : value),
           ),
         ],
       ),
@@ -513,10 +513,10 @@ class VaccinationPaymentScreen extends StatelessWidget {
     );
 
     return VaccinationPageScaffold(
-      title: 'Chon ho so',
+      title: 'Chọn hồ sơ',
       onBack: () => context.pop(),
       bottom: PrimaryActionBar(
-        label: 'THANH TOAN',
+        label: 'THANH TOÁN',
         leadingText: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -531,7 +531,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             const Text(
-              '(Da bao gom thue voi phi)',
+              '(Đã bao gồm thuế với phí)',
               style: TextStyle(fontSize: 12, color: VaccinationBookingColors.subtext),
             ),
           ],
@@ -549,8 +549,8 @@ class VaccinationPaymentScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           SummaryCard(
-            title: 'Thong tin benh nhan',
-            subtitle: draft.patientName.isEmpty ? 'Nguyen Van A' : draft.patientName,
+            title: 'Thông tin bệnh nhân',
+            subtitle: draft.patientName.isEmpty ? 'Nguyễn Văn A' : draft.patientName,
           ),
           const SizedBox(height: 14),
           _InfoPanel(
@@ -586,7 +586,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const SectionTitle('Chon phuong thuc thanh toan'),
+          const SectionTitle('Chọn phương thức thanh toán'),
           const SizedBox(height: 8),
           InkWell(
             onTap: () => _showPaymentMethodDialog(context),
@@ -641,7 +641,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Chon phuong thuc thanh toan',
+                        'Chọn phương thức thanh toán',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -710,9 +710,9 @@ class VaccinationFilterScreen extends StatefulWidget {
 
 class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
   final TextEditingController _searchController = TextEditingController();
-  String _service = 'Tat ca';
-  String _city = 'Thanh pho Can Tho';
-  String _facility = 'Benh vien Phu san Thanh Pho Can Tho';
+  String _service = 'Tất cả';
+  String _city = 'Thành phố Cần Thơ';
+  String _facility = 'Bệnh viện Phụ sản Thành Phố Cần Thơ';
 
   @override
   void dispose() {
@@ -723,35 +723,35 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
   @override
   Widget build(BuildContext context) {
     return VaccinationPageScaffold(
-      title: 'Chon loc theo',
+      title: 'Chọn lọc theo',
       onBack: () => context.pop(),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: [
           VaccinationSearchBar(controller: _searchController),
           const SizedBox(height: 22),
-          const SectionTitle('Loai dich vu'),
+          const SectionTitle('Loại dịch vụ'),
           const SizedBox(height: 10),
           SwitchChips(
-            values: const ['Tat ca', 'Kham benh', 'Vaccine'],
+            values: const ['Tất cả', 'Khám bệnh', 'Vaccine'],
             selected: _service,
             onSelect: (value) => setState(() => _service = value),
           ),
           const SizedBox(height: 22),
-          const SectionTitle('Tinh thanh'),
+          const SectionTitle('Tỉnh thành'),
           const SizedBox(height: 10),
           SwitchChips(
-            values: const ['Thanh pho Ha Noi', 'Thanh pho Ho Chi Minh', 'Thanh pho Can Tho'],
+            values: const ['Thành phố Hà Nội', 'Thành phố Hồ Chí Minh', 'Thành phố Cần Thơ'],
             selected: _city,
             onSelect: (value) => setState(() => _city = value),
           ),
           const SizedBox(height: 22),
-          const SectionTitle('Co so y te'),
+          const SectionTitle('Cơ sở y tế'),
           const SizedBox(height: 10),
           SwitchChips(
             values: const [
-              'Benh vien Phu san Quoc te Sai Gon',
-              'Benh vien Phu san Thanh Pho Can Tho',
+              'Bệnh viện Phụ sản Quốc tế Sài Gòn',
+              'Bệnh viện Phụ sản Thành Phố Cần Thơ',
             ],
             selected: _facility,
             onSelect: (value) => setState(() => _facility = value),
@@ -887,7 +887,7 @@ class _VaccinationPackageCard extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Dat lich',
+                  'Đặt lịch',
                   style: TextStyle(fontWeight: FontWeight.w800),
                 ),
               ),

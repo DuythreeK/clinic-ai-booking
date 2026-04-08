@@ -7,17 +7,17 @@ class PersonalInfoScreen extends StatelessWidget {
   static const _profile = _ProfileData(
     ecoreId: '1092302',
     username: 'nguyenvana',
-    firstName: 'Nguyen',
-    lastName: 'Van A',
+    firstName: 'Nguyễn',
+    lastName: 'Văn A',
     dateOfBirth: '12 - 02 - 1994',
     gender: 'Nam',
     phone: '08189213921',
     email: 'nguyenvana@gmail.com',
-    city: 'Ha Noi',
-    ward: 'Mo Lao',
-    address: 'Duong Nguyen Trai, Mo Lao, Ha Noi',
+    city: 'Hà Nội',
+    ward: 'Mộ Lao',
+    address: 'Đường Nguyễn Trãi, Mộ Lao, Hà Nội',
     citizenId: '001194000123',
-    occupation: 'Nhan vien van phong',
+    occupation: 'Nhân viên văn phòng',
     emergencyContact: '0902123456',
   );
 
@@ -47,7 +47,7 @@ class PersonalInfoScreen extends StatelessWidget {
                     ),
                     const Expanded(
                       child: Text(
-                        'Thong tin ca nhan',
+                        'Thông tin cá nhân',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 22,
@@ -69,7 +69,7 @@ class PersonalInfoScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _SectionLabel('Ho so'),
+                      const _SectionLabel('Hồ sơ'),
                       const SizedBox(height: 10),
                       _InfoCard(
                         child: Column(
@@ -79,23 +79,23 @@ class PersonalInfoScreen extends StatelessWidget {
                                 const SizedBox(),
                                 Expanded(child: _InfoCell(label: 'Ecore ID', value: _profile.ecoreId)),
                                 const SizedBox(width: 18),
-                                Expanded(child: _InfoCell(label: 'Ten nguoi dung', value: _profile.username)),
+                                Expanded(child: _InfoCell(label: 'Tên người dùng', value: _profile.username)),
                               ]..removeAt(0),
                             ),
                             const SizedBox(height: 18),
                             Row(
                               children: [
-                                Expanded(child: _InfoCell(label: 'Ten', value: _profile.firstName)),
+                                Expanded(child: _InfoCell(label: 'Tên', value: _profile.firstName)),
                                 const SizedBox(width: 18),
-                                Expanded(child: _InfoCell(label: 'Ho', value: _profile.lastName)),
+                                Expanded(child: _InfoCell(label: 'Họ', value: _profile.lastName)),
                               ],
                             ),
                             const SizedBox(height: 18),
                             Row(
                               children: [
-                                Expanded(child: _InfoCell(label: 'Ngay sinh', value: _profile.dateOfBirth)),
+                                Expanded(child: _InfoCell(label: 'Ngày sinh', value: _profile.dateOfBirth)),
                                 const SizedBox(width: 18),
-                                Expanded(child: _InfoCell(label: 'Gioi tinh', value: _profile.gender)),
+                                Expanded(child: _InfoCell(label: 'Giới tính', value: _profile.gender)),
                               ],
                             ),
                             const SizedBox(height: 18),
@@ -103,21 +103,21 @@ class PersonalInfoScreen extends StatelessWidget {
                               children: [
                                 Expanded(child: _InfoCell(label: 'CCCD', value: _profile.citizenId)),
                                 const SizedBox(width: 18),
-                                Expanded(child: _InfoCell(label: 'Nghe nghiep', value: _profile.occupation)),
+                                Expanded(child: _InfoCell(label: 'Nghề nghiệp', value: _profile.occupation)),
                               ],
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const _SectionLabel('Thong tin lien he'),
+                      const _SectionLabel('Thông tin liên hệ'),
                       const SizedBox(height: 10),
                       _InfoCard(
                         child: Column(
                           children: [
                             Row(
                               children: [
-                                Expanded(child: _InfoCell(label: 'So dien thoai', value: _profile.phone)),
+                                Expanded(child: _InfoCell(label: 'Số điện thoại', value: _profile.phone)),
                                 const SizedBox(width: 18),
                                 Expanded(child: _InfoCell(label: 'Email', value: _profile.email)),
                               ],
@@ -125,28 +125,28 @@ class PersonalInfoScreen extends StatelessWidget {
                             const SizedBox(height: 18),
                             Row(
                               children: [
-                                Expanded(child: _InfoCell(label: 'Tinh/Thanh pho', value: _profile.city)),
+                                Expanded(child: _InfoCell(label: 'Tỉnh/Thành phố', value: _profile.city)),
                                 const SizedBox(width: 18),
-                                Expanded(child: _InfoCell(label: 'Phuong', value: _profile.ward)),
+                                Expanded(child: _InfoCell(label: 'Phường', value: _profile.ward)),
                               ],
                             ),
                             const SizedBox(height: 18),
-                            _InfoCell(label: 'Dia chi cu the', value: _profile.address),
+                            _InfoCell(label: 'Địa chỉ cụ thể', value: _profile.address),
                             const SizedBox(height: 18),
                             _InfoCell(
-                              label: 'Lien he khan cap',
+                              label: 'Liên hệ khẩn cấp',
                               value: _profile.emergencyContact,
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 18),
-                      const _SectionLabel('Tien ich'),
+                      const _SectionLabel('Tiện ích'),
                       const SizedBox(height: 10),
                       _QuickActionCard(
                         icon: Icons.receipt_long_rounded,
-                        title: 'Lich su phieu kham',
-                        subtitle: 'Xem lai cac lan kham, chi tiet phieu va danh gia',
+                        title: 'Lịch sử phiếu khám',
+                        subtitle: 'Xem lại các lần khám, chi tiết phiếu và đánh giá',
                         onTap: () => context.push('/medical-history'),
                       ),
                     ],
@@ -245,7 +245,7 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const _SectionLabel('Ho so'),
+                      const _SectionLabel('Hồ sơ'),
                       const SizedBox(height: 10),
                       _EditCard(
                         children: [
@@ -253,10 +253,10 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                           _LineField(label: 'Username', controller: _usernameController),
                           _LineField(label: 'Ten', controller: _firstNameController),
                           _LineField(label: 'Ho', controller: _lastNameController),
-                          _DateField(label: 'Ngay sinh', controller: _dateController),
+                          _DateField(label: 'Ngày sinh', controller: _dateController),
                           const SizedBox(height: 14),
                           const Text(
-                            'Gioi tinh',
+                            'Giới tính',
                             style: TextStyle(fontSize: 12, color: Color(0xFF95A3B8)),
                           ),
                           const SizedBox(height: 10),
@@ -279,11 +279,11 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                           ),
                           const SizedBox(height: 8),
                           _LineField(label: 'CCCD', controller: _citizenIdController),
-                          _LineField(label: 'Nghe nghiep', controller: _occupationController),
+                          _LineField(label: 'Nghề nghiệp', controller: _occupationController),
                         ],
                       ),
                       const SizedBox(height: 18),
-                      const _SectionLabel('Thong tin lien he'),
+                      const _SectionLabel('Thông tin liên hệ'),
                       const SizedBox(height: 10),
                       _EditCard(
                         children: [
@@ -297,9 +297,9 @@ class _EditPersonalInfoScreenState extends State<EditPersonalInfoScreen> {
                             controller: _emailController,
                             prefix: const Icon(Icons.mail_outline_rounded, size: 18, color: Color(0xFF8B9BB0)),
                           ),
-                          _LineField(label: 'Tinh/Thanh pho', controller: _cityController),
-                          _LineField(label: 'Phuong', controller: _wardController),
-                          _LineField(label: 'Dia chi cu the', controller: _addressController, maxLines: 2),
+                          _LineField(label: 'Tỉnh/Thành phố', controller: _cityController),
+                          _LineField(label: 'Phường', controller: _wardController),
+                          _LineField(label: 'Địa chỉ cụ thể', controller: _addressController, maxLines: 2),
                         ],
                       ),
                       const SizedBox(height: 24),

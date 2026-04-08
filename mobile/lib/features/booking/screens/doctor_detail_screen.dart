@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import 'doctor_hub_models.dart';
@@ -46,7 +46,7 @@ class DoctorDetailScreen extends StatelessWidget {
                         ),
                         const Expanded(
                           child: Text(
-                            'Chi tiet bac si',
+                            'Chi tiáº¿t bÃ¡c sÄ©',
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 20,
@@ -181,13 +181,16 @@ class DoctorDetailScreen extends StatelessWidget {
                                                 context.push('/booking?doctorId=${doctor.id}');
                                               },
                                               child: Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                                padding: const EdgeInsets.symmetric(
+                                                  horizontal: 18,
+                                                  vertical: 10,
+                                                ),
                                                 decoration: BoxDecoration(
                                                   color: const Color(0xFF26C495),
                                                   borderRadius: BorderRadius.circular(12),
                                                 ),
                                                 child: const Text(
-                                                  'Dat kham',
+                                                  'Đặt khám',
                                                   style: TextStyle(
                                                     color: Colors.white,
                                                     fontWeight: FontWeight.w800,
@@ -202,15 +205,15 @@ class DoctorDetailScreen extends StatelessWidget {
                                   ],
                                 ),
                                 const SizedBox(height: 18),
-                                _InfoStripe(label: 'Gender', value: doctor.gender, color: const Color(0xFF35A7FF)),
-                                _InfoStripe(label: 'Chuyen mon', value: doctor.focus, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Giá»›i tÃ­nh', value: doctor.gender, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'ChuyÃªn mÃ´n', value: doctor.focus, color: const Color(0xFF35A7FF)),
                                 _InfoStripe(label: 'Email', value: doctor.email, color: const Color(0xFF35A7FF)),
-                                _InfoStripe(label: 'Phone', value: doctor.phone, color: const Color(0xFF35A7FF)),
+                                _InfoStripe(label: 'Sá»‘ Ä‘iá»‡n thoáº¡i', value: doctor.phone, color: const Color(0xFF35A7FF)),
                                 const SizedBox(height: 10),
                                 Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
-                                    '${doctor.yearsExperience}+ years of experience',
+                                    '${doctor.yearsExperience}+ nÄƒm kinh nghiá»‡m',
                                     style: const TextStyle(
                                       fontSize: 28,
                                       fontWeight: FontWeight.w900,
@@ -232,7 +235,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 16),
                                 _SectionCard(
-                                  title: 'Co so kham / benh vien',
+                                  title: 'CÆ¡ sá»Ÿ khÃ¡m / bá»‡nh viá»‡n',
                                   borderColor: const Color(0xFF2DC7C4),
                                   child: Column(
                                     children: doctor.facilities.map((facility) {
@@ -292,7 +295,7 @@ class DoctorDetailScreen extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 14),
                                 _SectionCard(
-                                  title: 'Chung chi & dao tao',
+                                  title: 'Chá»©ng chá»‰ & Ä‘Ã o táº¡o',
                                   borderColor: const Color(0xFF2BDC74),
                                   child: Column(
                                     children: doctor.certifications.map((item) {
@@ -351,7 +354,7 @@ class DoctorDetailScreen extends StatelessWidget {
                               child: Column(
                                 children: [
                                   const Text(
-                                    'Xem danh gia',
+                                    'Xem Ä‘Ã¡nh giÃ¡',
                                     style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w800,
@@ -396,28 +399,28 @@ class DoctorDetailScreen extends StatelessWidget {
         avatar: 'QH',
         rating: 4,
         comment:
-            'Minh kham voi bac si thay kha on, tu van ro rang va de hieu. Bac si tham kham ky, huong dan cham soc va dung thuoc chi tiet.',
+            'MÃ¬nh khÃ¡m vá»›i bÃ¡c sÄ© tháº¥y khÃ¡ á»•n, tÆ° váº¥n rÃµ rÃ ng vÃ  dá»… hiá»ƒu. BÃ¡c sÄ© thÄƒm khÃ¡m ká»¹, hÆ°á»›ng dáº«n chÄƒm sÃ³c vÃ  dÃ¹ng thuá»‘c chi tiáº¿t.',
       ),
       _DoctorReview(
         name: 'Minh Anh',
         avatar: 'MA',
         rating: 5,
         comment:
-            'Rat hai long! Bac si nhiet tinh, nhe nhang va lang nghe ky. Chan doan ro rang, giai thich nguyen nhan va huong dieu tri, de hieu. Minh cam thay yen tam va se gioi thieu cho nguoi than.',
+            'Ráº¥t hÃ i lÃ²ng! BÃ¡c sÄ© nhiá»‡t tÃ¬nh, nháº¹ nhÃ ng vÃ  láº¯ng nghe ká»¹. Cháº©n Ä‘oÃ¡n rÃµ rÃ ng, giáº£i thÃ­ch nguyÃªn nhÃ¢n vÃ  hÆ°á»›ng Ä‘iá»u trá»‹ dá»… hiá»ƒu. MÃ¬nh cáº£m tháº¥y yÃªn tÃ¢m vÃ  sáº½ giá»›i thiá»‡u cho ngÆ°á»i thÃ¢n.',
       ),
       _DoctorReview(
         name: 'Duc Minh',
         avatar: 'DM',
         rating: 4,
         comment:
-            'Bac si chuyen mon tot, kham can than va theo doi ky tinh trang. Dan do day du sau khi kham. Neu co the cai thien them phan dat lich nhanh hon thi se tot hon nua.',
+            'BÃ¡c sÄ© chuyÃªn mÃ´n tá»‘t, khÃ¡m cáº©n tháº­n vÃ  theo dÃµi ká»¹ tÃ¬nh tráº¡ng. Dáº·n dÃ² Ä‘áº§y Ä‘á»§ sau khi khÃ¡m. Náº¿u cÃ³ thá»ƒ cáº£i thiá»‡n thÃªm pháº§n Ä‘áº·t lá»‹ch nhanh hÆ¡n thÃ¬ sáº½ tá»‘t hÆ¡n ná»¯a.',
       ),
       _DoctorReview(
         name: 'Lan Huong',
         avatar: 'LH',
         rating: 5,
         comment:
-            'Khong gian kham sach se, lich kham dung gio. Bac si nhin tong quat rat ky va dua ra huong xu ly hop ly.',
+            'KhÃ´ng gian khÃ¡m sáº¡ch sáº½, lá»‹ch khÃ¡m Ä‘Ãºng giá». BÃ¡c sÄ© nhÃ¬n tá»•ng quÃ¡t ráº¥t ká»¹ vÃ  Ä‘Æ°a ra hÆ°á»›ng xá»­ lÃ½ há»£p lÃ½.',
       ),
     ];
   }
@@ -454,7 +457,7 @@ class DoctorDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'Danh gia cua moi nguoi',
+                      'ÄÃ¡nh giÃ¡ cá»§a má»i ngÆ°á»i',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
@@ -707,3 +710,4 @@ class _ReviewTile extends StatelessWidget {
     );
   }
 }
+

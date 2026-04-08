@@ -18,10 +18,10 @@ class MyDoctorsScreen extends StatefulWidget {
 class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
   final DoctorCatalog _catalog = DoctorCatalog.instance;
   final TextEditingController _searchController = TextEditingController();
-  String _selectedCategory = 'Tat ca';
+  String _selectedCategory = 'Tất cả';
   String _selectedSort = DoctorSortOptions.options.first;
 
-  static const _categories = ['Tat ca', 'Nha si', 'Tim mach', 'Than kinh', 'Chinh hinh'];
+  static const _categories = ['Tất cả', 'Nha sĩ', 'Tim mạch', 'Thần kinh', 'Chỉnh hình'];
 
   @override
   void dispose() {
@@ -36,7 +36,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
       builder: (context, _) {
         final doctors = _filteredDoctors();
         return DoctorScaffold(
-          title: 'Bac si cua toi',
+          title: 'Bác sĩ của tôi',
           child: ListView(
             padding: const EdgeInsets.only(bottom: 12),
             children: [
@@ -61,7 +61,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16, vertical: 32),
                   child: Text(
-                    'Ban chua tim bac si nao. Hay bam tim o trang Bac si noi bat de luu lai.',
+                    'Bạn chưa tim bác sĩ nào. Hãy bấm tim ở trang Bác sĩ nổi bật để lưu lại.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 14, height: 1.6, color: Color(0xFF6E829C)),
                   ),
@@ -85,7 +85,7 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
   List<DoctorProfile> _filteredDoctors() {
     final keyword = _searchController.text.trim().toLowerCase();
     var doctors = _catalog.myDoctors.where((doctor) {
-      final matchCategory = _selectedCategory == 'Tat ca' || doctor.specialty == _selectedCategory;
+      final matchCategory = _selectedCategory == 'Tất cả' || doctor.specialty == _selectedCategory;
       final matchKeyword = keyword.isEmpty ||
           doctor.name.toLowerCase().contains(keyword) ||
           doctor.specialty.toLowerCase().contains(keyword) ||
@@ -94,16 +94,16 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
     }).toList();
 
     switch (_selectedSort) {
-      case 'Danh gia cao nhat':
+      case 'Đánh giá cao nhất':
         doctors.sort((a, b) => b.rating.compareTo(a.rating));
         break;
-      case 'Kham nhanh nhat':
+      case 'Khám nhanh nhất':
         doctors.sort((a, b) => a.nextAvailable.compareTo(b.nextAvailable));
         break;
-      case 'Gia kham tang dan':
+      case 'Giá khám tăng dần':
         doctors.sort((a, b) => a.priceValue.compareTo(b.priceValue));
         break;
-      case 'Gia kham giam dan':
+      case 'Giá khám giảm dần':
         doctors.sort((a, b) => b.priceValue.compareTo(a.priceValue));
         break;
       default:

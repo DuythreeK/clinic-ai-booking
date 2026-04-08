@@ -20,10 +20,10 @@ class FeaturedDoctorsScreen extends StatefulWidget {
 class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
   final DoctorCatalog _catalog = DoctorCatalog.instance;
   late final TextEditingController _searchController;
-  String _selectedCategory = 'Tat ca';
+  String _selectedCategory = 'Tất cả';
   String _selectedSort = DoctorSortOptions.options.first;
 
-  static const _categories = ['Tat ca', 'Nha si', 'Tim mach', 'Than kinh', 'Chinh hinh'];
+  static const _categories = ['Tất cả', 'Nha sĩ', 'Tim mạch', 'Thần kinh', 'Chỉnh hình'];
 
   @override
   void initState() {
@@ -44,7 +44,7 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
       builder: (context, _) {
         final doctors = _filteredDoctors();
         return DoctorScaffold(
-          title: 'Bac si noi bat',
+          title: 'Bác sĩ nổi bật',
           child: ListView(
             padding: const EdgeInsets.only(bottom: 12),
             children: [
@@ -83,7 +83,7 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
   List<DoctorProfile> _filteredDoctors() {
     final keyword = _searchController.text.trim().toLowerCase();
     var doctors = _catalog.featuredDoctors.where((doctor) {
-      final matchCategory = _selectedCategory == 'Tat ca' || doctor.specialty == _selectedCategory;
+      final matchCategory = _selectedCategory == 'Tất cả' || doctor.specialty == _selectedCategory;
       final matchKeyword = keyword.isEmpty ||
           doctor.name.toLowerCase().contains(keyword) ||
           doctor.specialty.toLowerCase().contains(keyword) ||
@@ -92,16 +92,16 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
     }).toList();
 
     switch (_selectedSort) {
-      case 'Danh gia cao nhat':
+      case 'Đánh giá cao nhất':
         doctors.sort((a, b) => b.rating.compareTo(a.rating));
         break;
-      case 'Kham nhanh nhat':
+      case 'Khám nhanh nhất':
         doctors.sort((a, b) => a.nextAvailable.compareTo(b.nextAvailable));
         break;
-      case 'Gia kham tang dan':
+      case 'Giá khám tăng dần':
         doctors.sort((a, b) => a.priceValue.compareTo(b.priceValue));
         break;
-      case 'Gia kham giam dan':
+      case 'Giá khám giảm dần':
         doctors.sort((a, b) => b.priceValue.compareTo(a.priceValue));
         break;
       default:

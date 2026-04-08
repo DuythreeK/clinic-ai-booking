@@ -37,13 +37,33 @@ export class DoctorsController {
     );
   }
 
+  @Get('mobile/featured')
+  async getFeaturedDoctors(
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+    @Query('specialty') specialty?: string,
+  ) {
+    return this.doctorsService.getFeaturedDoctors(
+      Number(limit || 10),
+      search,
+      specialty,
+    );
+  }
+
+  @Get('mobile/my')
+  @UseGuards(JwtGuard)
+  async getMyDoctors(
+    @CurrentUser('sub') userId: string,
+    @Query('search') search?: string,
+  ) {
+    return this.doctorsService.getMyDoctors(userId, search);
+  }
+
   @Get('profile/current')
   @UseGuards(JwtGuard)
   @Roles(UserRole.doctor)
   async getCurrentDoctorProfile(@CurrentUser('sub') userId: string) {
-    return this.doctorsService.getDoctors(1, 100).then((response) =>
-      response.data.items.find((doctor) => String(doctor.id) === userId) ?? null,
-    );
+    return this.doctorsService.getDoctorByUserId(userId);
   }
 
   @Get(':id')

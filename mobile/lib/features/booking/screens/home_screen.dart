@@ -56,14 +56,13 @@ class _HomeScreenState extends State<HomeScreen> {
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
       const _ComingSoonPage(
         icon: Icons.calendar_month_rounded,
-        title: 'Lich hen',
-        subtitle: 'Khu vuc nay se hien thi lich hen va lich tai kham cua ban.',
+        title: 'Lịch hẹn',
+        subtitle: 'Khu vực này sẽ hiển thị lịch hẹn và lịch tái khám của bạn.',
       ),
       const _ComingSoonPage(
         icon: Icons.chat_bubble_rounded,
-        title: 'Tin nhan',
-        subtitle:
-            'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
+        title: 'Tin nhắn',
+        subtitle: 'Thông báo tư vấn và trao đổi với phòng khám sẽ hiển thị ở đây.',
       ),
     ];
 
@@ -113,7 +112,7 @@ class _MainBottomNav extends StatelessWidget {
       Icons.home_rounded,
       Icons.favorite_rounded,
       Icons.calendar_month_rounded,
-      Icons.vaccines_rounded,
+      Icons.vaccines_outlined,
       Icons.chat_bubble_rounded,
       Icons.auto_awesome_rounded,
     ];
@@ -151,10 +150,15 @@ class _MainBottomNav extends StatelessWidget {
                     isSelected ? const Color(0x162DC7C4) : Colors.transparent,
                 borderRadius: BorderRadius.circular(18),
               ),
-              child: Icon(
-                items[index],
-                color: isSelected ? selected : unselected,
-                size: 24,
+              child: Center(
+                child: Transform.rotate(
+                  angle: index == 3 ? -0.75 : 0,
+                  child: Icon(
+                    items[index],
+                    color: isSelected ? selected : unselected,
+                    size: index == 3 ? 23 : 24,
+                  ),
+                ),
               ),
             ),
           );

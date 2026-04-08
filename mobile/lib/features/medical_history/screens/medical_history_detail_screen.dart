@@ -21,7 +21,7 @@ class MedicalHistoryDetailScreen extends StatefulWidget {
 class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen> {
   int _rating = 4;
   final TextEditingController _reviewController = TextEditingController(
-    text: 'Bac si tan tam va nhiet tinh! 10 diem cho su tinh te!',
+    text: 'Bác sĩ tận tâm và nhiệt tình! 10 điểm cho sự tinh tế!',
   );
 
   @override
@@ -33,13 +33,13 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
   Future<void> _openAttachment() async {
     final uri = Uri.tryParse(widget.item.fileUrl);
     if (uri == null) {
-      _showMessage('Tai lieu khong hop le');
+      _showMessage('Tài liệu không hợp lệ');
       return;
     }
 
     final opened = await launchUrl(uri, mode: LaunchMode.platformDefault);
     if (!opened && mounted) {
-      _showMessage('Khong mo duoc tai lieu');
+      _showMessage('Không mở được tài liệu');
     }
   }
 
@@ -77,7 +77,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                     ),
                     const Expanded(
                       child: Text(
-                        'Chi tiet phieu kham benh',
+                        'Chi tiết phiếu khám bệnh',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,
@@ -106,7 +106,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                           children: [
                             const Center(
                               child: Text(
-                                'Chi tiet thanh toan',
+                                'Chi tiết thanh toán',
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -115,10 +115,10 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                               ),
                             ),
                             const SizedBox(height: 14),
-                            _PaymentRow(label: 'So don hang', value: item.orderNumber),
-                            _PaymentRow(label: 'Thong tin nhan', value: 'CSYT CTUT Care+'),
-                            _PaymentRow(label: 'Nguoi chuyen', value: 'N.T.Anh Khoa'),
-                            _PaymentRow(label: 'Phi kham', value: item.clinicFeeLabel),
+                            _PaymentRow(label: 'Số đơn hàng', value: item.orderNumber),
+                            _PaymentRow(label: 'Thông tin nhận', value: 'CSYT CTUT Care+'),
+                            _PaymentRow(label: 'Người chuyển', value: 'N.T.Anh Khoa'),
+                            _PaymentRow(label: 'Phí khám', value: item.clinicFeeLabel),
                             const SizedBox(height: 10),
                             Container(
                               width: double.infinity,
@@ -131,7 +131,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                                 children: [
                                   const Expanded(
                                     child: Text(
-                                      'Tong tien thanh toan',
+                                      'Tổng tiền thanh toán',
                                       style: TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFF7E91AA),
@@ -158,9 +158,9 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                         ),
                       ),
                       const SizedBox(height: 14),
-                      _BlueNoteCard(title: 'Nguyen nhan/Trieu chung', body: item.symptomNote),
+                      _BlueNoteCard(title: 'Nguyên nhân/Triệu chứng', body: item.symptomNote),
                       const SizedBox(height: 12),
-                      _BlueNoteCard(title: 'Mo ta ket qua kham', body: item.caseSummary),
+                      _BlueNoteCard(title: 'Mô tả kết quả khám', body: item.caseSummary),
                       const SizedBox(height: 14),
                       Container(
                         width: double.infinity,
@@ -185,7 +185,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                                 SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
-                                    'Tai lieu',
+                                    'Tài liệu',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w800,
@@ -224,7 +224,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                                         borderRadius: BorderRadius.circular(999),
                                       ),
                                       child: const Text(
-                                        'Tai file',
+                                        'Tải file',
                                         style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
                                       ),
                                     ),
@@ -252,7 +252,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                                     ),
                                   ),
                                   child: const Text(
-                                    'Danh gia',
+                                    'Đánh giá',
                                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                                   ),
                                 ),
@@ -397,7 +397,7 @@ class _MedicalHistoryDetailScreenState extends State<MedicalHistoryDetailScreen>
                   ),
                   const SizedBox(height: 18),
                   const Text(
-                    'Danh gia thanh cong',
+                    'Đánh giá thành công',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.w800,

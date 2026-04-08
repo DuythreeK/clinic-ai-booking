@@ -87,7 +87,7 @@ class DoctorSearchBar extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         decoration: InputDecoration(
-          hintText: 'Tim kiem.....',
+          hintText: 'Tìm kiếm.....',
           prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF8FA1B8)),
           suffixIcon: controller.text.isEmpty
               ? const Icon(Icons.close_rounded, color: Color(0xFF8FA1B8))
@@ -174,11 +174,11 @@ class DoctorSortOptions extends StatelessWidget {
   final ValueChanged<String> onSelect;
 
   static const options = <String>[
-    'Tat ca BS',
-    'Danh gia cao nhat',
-    'Kham nhanh nhat',
-    'Gia kham tang dan',
-    'Gia kham giam dan',
+    'Tất cả BS',
+    'Đánh giá cao nhất',
+    'Khám nhanh nhất',
+    'Giá khám tăng dần',
+    'Giá khám giảm dần',
   ];
 
   @override
@@ -370,7 +370,7 @@ class DoctorCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    '${doctor.yearsExperience} kinh nghiem trong nganh',
+                    '${doctor.yearsExperience} kinh nghiệm trong ngành',
                     style: const TextStyle(fontSize: 12, color: Color(0xFF6B7D97)),
                   ),
                   const SizedBox(height: 6),
@@ -380,7 +380,7 @@ class DoctorCard extends StatelessWidget {
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          showBookingHint ? '${doctor.bookingToday} nguoi da dat hom nay' : doctor.focus,
+                          showBookingHint ? '${doctor.bookingToday} người đã đặt hôm nay' : doctor.focus,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 12, color: Color(0xFF6F849F)),
@@ -396,7 +396,7 @@ class DoctorCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Lich kha dung',
+                              'Lịch khả dụng',
                               style: TextStyle(
                                 color: doctor.highlight,
                                 fontSize: 12,
@@ -423,7 +423,7 @@ class DoctorCard extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Text(
-                          'Dat ngay',
+                          'Đặt ngay',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,

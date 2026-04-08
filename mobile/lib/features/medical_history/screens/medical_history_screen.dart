@@ -35,7 +35,7 @@ class MedicalHistoryScreen extends StatelessWidget {
                     ),
                     const Expanded(
                       child: Text(
-                        'Lich kham cua toi',
+                        'Lịch khám của tôi',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 20,

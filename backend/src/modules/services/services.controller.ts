@@ -20,9 +20,32 @@ export class ServicesController {
     );
   }
 
+  @Get('mobile/vaccination-packages')
+  async getVaccinationPackages(
+    @Query('search') search?: string,
+    @Query('facilityId') facilityId?: string,
+  ) {
+    return this.servicesService.getVaccinationPackages(search, facilityId);
+  }
+
   @Get(':id')
   async getServiceById(@Param('id') id: string) {
     return this.servicesService.getServiceById(id);
+  }
+
+  @Get(':id/mobile-vaccination-detail')
+  async getVaccinationBookingDetail(
+    @Param('id') id: string,
+    @Query('date') date?: string,
+    @Query('fromDate') fromDate?: string,
+    @Query('toDate') toDate?: string,
+  ) {
+    return this.servicesService.getVaccinationBookingDetail(
+      id,
+      date,
+      fromDate,
+      toDate,
+    );
   }
 
   @Get(':id/available-slots')
