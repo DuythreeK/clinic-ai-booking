@@ -386,7 +386,7 @@ Giới hạn các endpoint cho các vai trò cụ thể
 
 ```typescript
 @UseGuards(JwtGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.admin)
 async method() { }
 ```
 
@@ -413,7 +413,7 @@ Trích xuất người dùng hiện tại từ token
 ### Lọc
 ```typescript
 where: {
-  status: AppointmentStatus.PENDING,
+  status: AppointmentStatus.pending,
   doctorId: string,
   patientId: string,
   createdAt: { gte: Date, lte: Date }

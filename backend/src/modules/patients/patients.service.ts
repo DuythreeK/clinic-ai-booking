@@ -13,9 +13,9 @@ export class PatientsService {
 
   private toResponse(profile: any) {
     return {
-      patientId: profile.patient_id.toString(),
-      userId: profile.user_id.toString(),
-      fullName: profile.full_name,
+      patientId: profile.patientId.toString(),
+      userId: profile.userId.toString(),
+      fullName: profile.fullName,
       phoneNumber: profile.phone_number,
       gender: profile.gender,
       dateOfBirth: profile.date_of_birth,
@@ -28,7 +28,7 @@ export class PatientsService {
       emergencyContact: profile.emergency_contact,
       relationshipToUser: profile.relationship_to_user,
       isPrimary: profile.is_primary === 1,
-      createdAt: profile.created_at,
+      createdAt: profile.createdAt,
       updatedAt: profile.updated_at,
     };
   }
@@ -36,8 +36,8 @@ export class PatientsService {
   async createPatientProfile(userId: string, dto: CreatePatientProfileDto) {
     const profile = await this.prisma.patientProfile.create({
       data: {
-        user_id: this.toBigIntId(userId),
-        full_name: dto.fullName,
+        userId: this.toBigIntId(userId),
+        fullName: dto.fullName,
         phone_number: dto.phoneNumber,
         occupation: dto.occupation,
         ethnicity: dto.ethnicity,
@@ -59,8 +59,8 @@ export class PatientsService {
     return okResponse(
       'Create patient profile successfully',
       {
-        id: Number(profile.patient_id),
-        fullName: profile.full_name,
+        id: Number(profile.patientId),
+        fullName: profile.fullName,
         phoneNumber: profile.phone_number,
         gender: profile.gender,
         dateOfBirth: profile.date_of_birth,
@@ -79,15 +79,15 @@ export class PatientsService {
 
   async getPatientProfiles(userId: string) {
     const profiles = await this.prisma.patientProfile.findMany({
-      where: { user_id: this.toBigIntId(userId) },
-      orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
+      where: { userId: this.toBigIntId(userId) },
+      orderBy: [{ is_primary: 'desc' }, { createdAt: 'desc' }],
     });
 
     return okResponse(
       'Get patient profiles successfully',
       profiles.map((profile) => ({
-        id: Number(profile.patient_id),
-        fullName: profile.full_name,
+        id: Number(profile.patientId),
+        fullName: profile.fullName,
         phoneNumber: profile.phone_number,
         gender: profile.gender,
         dateOfBirth: profile.date_of_birth,

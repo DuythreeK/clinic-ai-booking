@@ -386,7 +386,7 @@ Restricts endpoints to specific roles
 
 ```typescript
 @UseGuards(JwtGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@Roles(UserRole.admin)
 async method() { }
 ```
 
@@ -413,7 +413,7 @@ Extract current user from token
 ### Filtering
 ```typescript
 where: {
-  status: AppointmentStatus.PENDING,
+  status: AppointmentStatus.pending,
   doctorId: string,
   patientId: string,
   createdAt: { gte: Date, lte: Date }

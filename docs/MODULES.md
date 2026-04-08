@@ -305,7 +305,7 @@ async sendAppointmentReminders() {
 ### RolesGuard
 ```typescript
 @UseGuards(JwtGuard, RolesGuard)
-@Roles(UserRole.PATIENT)
+@Roles(UserRole.patient)
 // Checks if user.role matches required roles
 // Must combine with @Roles() decorator
 ```

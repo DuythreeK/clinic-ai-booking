@@ -13,16 +13,16 @@ export class ServicesService {
 
   private toResponse(service: any) {
     return {
-      serviceId: service.service_id.toString(),
-      facilityId: service.facility_id.toString(),
+      serviceId: service.serviceId.toString(),
+      facilityId: service.facilityId.toString(),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.is_active === 1,
+      isActive: service.isActive === 1,
       facility: service.facility
         ? {
-            facilityId: service.facility.facility_id.toString(),
+            facilityId: service.facility.facilityId.toString(),
             name: service.facility.name,
           }
         : null,
@@ -39,8 +39,8 @@ export class ServicesService {
 
   async getServices(page = 1, limit = 10, facilityId?: string, search?: string) {
     const where = {
-      is_active: 1,
-      facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
+      isActive: 1,
+      facilityId: facilityId ? this.toBigIntId(facilityId) : undefined,
       name: search
         ? {
             contains: search,
@@ -67,13 +67,13 @@ export class ServicesService {
     ]);
 
     const items = services.map((service) => ({
-      id: Number(service.service_id),
-      facilityId: Number(service.facility_id),
+      id: Number(service.serviceId),
+      facilityId: Number(service.facilityId),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.is_active === 1,
+      isActive: service.isActive === 1,
     }));
 
     return paginatedResponse('Get services successfully', items, page, limit, totalItems);
@@ -81,7 +81,7 @@ export class ServicesService {
 
   async getServiceById(id: string) {
     const service = await this.prisma.service.findUnique({
-      where: { service_id: this.toBigIntId(id) },
+      where: { serviceId: this.toBigIntId(id) },
       include: {
         facility: true,
         vaccines: {
@@ -92,21 +92,21 @@ export class ServicesService {
       },
     });
 
-    if (!service || service.is_active !== 1) {
+    if (!service || service.isActive !== 1) {
       throw new NotFoundException('Service not found');
     }
 
     return okResponse('Get service detail successfully', {
-      id: Number(service.service_id),
-      facilityId: Number(service.facility_id),
+      id: Number(service.serviceId),
+      facilityId: Number(service.facilityId),
       name: service.name,
       description: service.description,
       price: Number(service.price),
       durationMinutes: service.duration_minutes,
-      isActive: service.is_active === 1,
+      isActive: service.isActive === 1,
       facility: service.facility
         ? {
-            id: Number(service.facility.facility_id),
+            id: Number(service.facility.facilityId),
             name: service.facility.name,
           }
         : null,
@@ -122,10 +122,10 @@ export class ServicesService {
 
   async getAvailableSlots(id: string, date?: string, fromDate?: string, toDate?: string) {
     const service = await this.prisma.service.findUnique({
-      where: { service_id: this.toBigIntId(id) },
+      where: { serviceId: this.toBigIntId(id) },
     });
 
-    if (!service || service.is_active !== 1) {
+    if (!service || service.isActive !== 1) {
       throw new NotFoundException('Service not found');
     }
 
@@ -139,8 +139,8 @@ export class ServicesService {
 
     const slots = await this.prisma.slot.findMany({
       where: {
-        facility_id: service.facility_id,
-        is_active: 1,
+        facilityId: service.facilityId,
+        isActive: 1,
         status: 'AVAILABLE',
         slot_date: rangeFrom || rangeTo
           ? {
@@ -157,10 +157,10 @@ export class ServicesService {
     });
 
     return okResponse('Get available slots successfully', {
-      serviceId: toNumberId(service.service_id),
+      serviceId: toNumberId(service.serviceId),
       date: date ?? formatDateOnly(slots[0]?.slot_date),
       slots: slots.map((slot) => ({
-        slotId: toNumberId(slot.slot_id),
+        slotId: toNumberId(slot.slotId),
         startTime: formatTimeOnly(slot.start_time),
         endTime: formatTimeOnly(slot.end_time),
         availableCount: slot.available_count,

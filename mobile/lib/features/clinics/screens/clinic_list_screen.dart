@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/api/dio_client.dart';
 import 'clinic_detail_screen.dart';
+
 class ClinicListScreen extends StatefulWidget {
   const ClinicListScreen({super.key});
 
@@ -10,16 +12,15 @@ class ClinicListScreen extends StatefulWidget {
 }
 
 class _ClinicListScreenState extends State<ClinicListScreen> {
-  // Thêm dòng này
-
   final TextEditingController _searchController = TextEditingController();
-  // Cập nhật lại đoạn này ở đầu class _ClinicListScreenState
+
   final Map<String, List<String>> locationData = {
     "Hà Nội": ["Đống Đa", "Hoàn Kiếm", "Hà Đông", "Long Biên", "Ba Đình", "Hai Bà Trưng", "Tây Hồ", "Cầu Giấy"],
     "Hồ Chí Minh": ["Quận 1", "Quận 3", "Quận 5", "Bình Thạnh", "Tân Bình", "Thủ Đức"],
   };
-  String selectedCategory = "Tất cả"; // Biến lưu category đang chọn
-  String searchQuery = ""; // Biến lưu nội dung tìm kiếm
+
+  String selectedCategory = "Tất cả";
+  String searchQuery = "";
   List<dynamic> clinics = [];
   bool isLoading = true;
 
@@ -29,53 +30,79 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
     fetchClinics();
   }
 
-  // Sử dụng DioClient của nhóm để gọi API từ NestJS
+  // Lấy dữ liệu từ Backend và xử lý bóc tách mảng linh hoạt
   Future<void> fetchClinics() async {
     try {
+      setState(() => isLoading = true);
       final dioClient = DioClient(secureStorage: const FlutterSecureStorage());
-      // Gọi đến endpoint /clinics (NestJS)
-      final response = await dioClient.dio.get('/clinics');
+
+      // Sử dụng đường dẫn tuyệt đối bắt đầu bằng '/' để Dio kết hợp đúng với baseUrl
+      final response = await dioClient.dio.get('/facilities');
+
+      debugPrint("--- CLINIC LIST DEBUG ---");
+      debugPrint("Raw Response Data: ${response.data}");
 
       setState(() {
-        clinics = response.data;
+        final resData = response.data;
+
+        // LOGIC BÓC TÁCH KHỚP VỚI BACKEND: { success: true, data: { items: [...] } }
+        if (resData is Map) {
+          final dataWrapper = resData['data'];
+          if (dataWrapper != null && dataWrapper is Map && dataWrapper['items'] != null) {
+            clinics = dataWrapper['items'];
+          }
+          else if (resData['items'] != null) {
+            clinics = resData['items'];
+          }
+          else if (dataWrapper != null && dataWrapper is List) {
+            clinics = dataWrapper;
+          } else {
+            clinics = [];
+          }
+        } else if (resData is List) {
+          clinics = resData;
+        }
+
+        debugPrint("Parsed Clinics Count: ${clinics.length}");
         isLoading = false;
       });
     } catch (e) {
       debugPrint("Lỗi lấy dữ liệu từ Backend: $e");
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Logic lọc danh sách
     final filteredClinics = clinics.where((clinic) {
-      // Lấy Tên và Địa chỉ từ DB ra, ép kiểu về String và viết thường để so sánh
       final name = (clinic['name'] ?? "").toString().toLowerCase();
-      final address = (clinic['address'] ?? "").toString().toLowerCase();
-      final city = (clinic['city'] ?? "").toString().toLowerCase();
-
+      final address = (clinic['addressDetail'] ?? clinic['address'] ?? "").toString().toLowerCase();
+      final type = (clinic['facilityType'] ?? "").toString().toLowerCase();
       final query = searchQuery.toLowerCase();
 
-      // 1. Lọc theo Tab (Bệnh viện/Phòng khám) - Giữ nguyên logic cũ của bạn
+      // 1. Lọc theo Tab (Bệnh viện/Phòng khám) dựa trên facilityType từ Backend
       bool matchesCategory = true;
       if (selectedCategory == "Bệnh viện") {
-        matchesCategory = name.contains("bệnh viện");
+        matchesCategory = type == 'hospital';
       } else if (selectedCategory == "Phòng khám") {
-        matchesCategory = name.contains("phòng khám");
+        matchesCategory = type == 'clinic' || type == 'vaccination_center';
       }
 
-      // 2. Lọc theo Search Query (Chấp nhận khớp Tên HOẶC Địa chỉ HOẶC Thành phố)
-      // Việc này giúp khi bạn chọn "Cầu Giấy", nó sẽ khớp với "123 Cầu Giấy" trong address
-      bool matchesSearch = name.contains(query) || address.contains(query) || city.contains(query);
+      // 2. Lọc theo nội dung tìm kiếm
+      bool matchesSearch = name.contains(query) || address.contains(query);
 
       return matchesCategory && matchesSearch;
     }).toList();
+
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC), // Màu nền nhạt chuẩn Design
+      backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        leading: const Icon(Icons.arrow_back, color: Colors.black),
+        // SỬA NÚT BACK: Quay lại trang chủ
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
         title: const Text(
           "Chọn cơ sở y tế",
           style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
@@ -84,27 +111,60 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
         elevation: 0,
         centerTitle: false,
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          _buildCategories(),
-          Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator(color: Color(0xFF2F80ED)))
-                : clinics.isEmpty
-                ? const Center(child: Text("Không có phòng khám nào trong DB"))
-                : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: filteredClinics.length, // Dùng danh sách đã qua bộ lọc
-              itemBuilder: (context, index) => _buildClinicCard(filteredClinics[index]),
+      body: RefreshIndicator(
+        onRefresh: fetchClinics,
+        color: const Color(0xFF2DC7C4),
+        child: Column(
+          children: [
+            _buildSearchAndFilter(),
+            _buildCategories(),
+            Expanded(
+              child: isLoading
+                  ? const Center(child: CircularProgressIndicator(color: Color(0xFF2DC7C4)))
+                  : filteredClinics.isEmpty
+                  ? ListView( // Dùng ListView để RefreshIndicator hoạt động khi rỗng
+                children: [
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.2),
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.search_off_rounded, size: 64, color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          clinics.isEmpty
+                              ? "Chưa có dữ liệu. Dũng hãy thêm vào DB bằng Prisma Studio nhé!"
+                              : "Không tìm thấy kết quả phù hợp",
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton.icon(
+                          onPressed: fetchClinics,
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text("Tải lại dữ liệu"),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2DC7C4),
+                            foregroundColor: Colors.white,
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                ],
+              )
+                  : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: filteredClinics.length,
+                itemBuilder: (context, index) => _buildClinicCard(filteredClinics[index]),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  // 1. Thanh tìm kiếm và nút Lọc
   Widget _buildSearchAndFilter() {
     return Padding(
       padding: const EdgeInsets.all(16.0),
@@ -115,26 +175,21 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
               ),
               child: TextField(
-                controller: _searchController, // Gắn bộ điều khiển vào
-                onChanged: (value) {
-                  setState(() {
-                    searchQuery = value;
-                  });
-                },
+                controller: _searchController,
+                onChanged: (value) => setState(() => searchQuery = value),
                 decoration: InputDecoration(
-                  hintText: "Tìm kiếm...",
+                  hintText: "Tìm tên hoặc địa chỉ...",
                   prefixIcon: const Icon(Icons.search, color: Colors.grey),
-                  // LOGIC HIỆN NÚT X:
                   suffixIcon: searchQuery.isNotEmpty
                       ? IconButton(
                     icon: const Icon(Icons.clear, color: Colors.grey),
                     onPressed: () {
                       setState(() {
-                        _searchController.clear(); // Xóa chữ trong ô nhập
-                        searchQuery = "";         // Reset biến lọc về rỗng
-                        selectedCategory = "Tất cả"; // (Tùy chọn) Reset luôn category
+                        _searchController.clear();
+                        searchQuery = "";
                       });
                     },
                   )
@@ -146,7 +201,6 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          // Nút 3 gạch (Filter) giữ nguyên của bạn
           GestureDetector(
             onTap: () => _showFilterLocation(context),
             child: Container(
@@ -154,6 +208,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
               ),
               child: const Icon(Icons.tune, color: Colors.black),
             ),
@@ -163,34 +218,28 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
     );
   }
 
-  // 2. Các nút phân loại (Tất cả, Bệnh viện...)
   Widget _buildCategories() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.only(left: 16, bottom: 16),
-      child: Row(
-        children: [
-          _categoryChip("Tất cả"),
-          _categoryChip("Bệnh viện"),
-          _categoryChip("Phòng khám"),
-        ],
+    final categories = ["Tất cả", "Bệnh viện", "Phòng khám"];
+    return SizedBox(
+      height: 50,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.only(left: 16, bottom: 10),
+        itemCount: categories.length,
+        itemBuilder: (ctx, i) => _categoryChip(categories[i]),
       ),
     );
   }
 
   Widget _categoryChip(String label) {
-    final isSelected = selectedCategory == label; // Kiểm tra xem có đang chọn nút này không
+    final isSelected = selectedCategory == label;
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedCategory = label; // Cập nhật trạng thái khi nhấn
-        });
-      },
+      onTap: () => setState(() => selectedCategory = label),
       child: Container(
         margin: const EdgeInsets.only(right: 8),
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2F80ED) : Colors.grey[200],
+          color: isSelected ? const Color(0xFF2DC7C4) : Colors.grey[200],
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -204,7 +253,6 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
     );
   }
 
-  // 3. Card hiển thị thông tin Phòng khám lấy từ DB
   Widget _buildClinicCard(dynamic clinic) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -212,28 +260,17 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Logo Placeholder
               Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFEAF2FF),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.local_hospital, color: Color(0xFF2F80ED), size: 35),
+                width: 70, height: 70,
+                decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.local_hospital_rounded, color: Color(0xFF2DC7C4), size: 35),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -241,20 +278,17 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      clinic['name'] ?? 'Tên phòng khám',
+                      clinic['name'] ?? 'Tên cơ sở y tế',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      clinic['address'] ?? 'Địa chỉ đang cập nhật',
+                      clinic['addressDetail'] ?? 'Địa chỉ đang cập nhật',
                       style: TextStyle(color: Colors.grey[600], fontSize: 13, height: 1.4),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        const Text("(4) ", style: TextStyle(color: Colors.orange, fontSize: 12)),
-                        ...List.generate(5, (i) => Icon(Icons.star, size: 14, color: i < 4 ? Colors.orange : Colors.grey[300])),
-                      ],
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -266,22 +300,11 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () {
-                    // In ra console để kiểm tra xem nút có ăn lệnh không
-                    debugPrint("Đang nhấn vào clinic: ${clinic['name']}");
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ClinicDetailScreen(clinic: clinic),
-                      ),
-                    );
-                  },
+                  onPressed: () => context.push('/clinic-detail', extra: clinic),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF2F80ED),
-                    side: const BorderSide(color: Color(0xFF56CCF2)),
+                    foregroundColor: const Color(0xFF2DC7C4),
+                    side: const BorderSide(color: Color(0xFF2DC7C4)),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    backgroundColor: const Color(0xFF56CCF2).withOpacity(0.1),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
                   child: const Text("Xem chi tiết", style: TextStyle(fontWeight: FontWeight.bold)),
@@ -291,10 +314,10 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Sẽ code logic Đặt khám (chọn Slot) sau
+                    // Chuyển sang đặt lịch khám
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2F80ED),
+                    backgroundColor: const Color(0xFF2DC7C4),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     elevation: 0,
@@ -308,9 +331,9 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
       ),
     );
   }
+
   void _showFilterLocation(BuildContext context) {
     String tempCity = "Hà Nội";
-    String? tempDistrict; // Quận đang được chọn tạm thời
     bool isSelectingCity = true;
 
     showModalBottomSheet(
@@ -326,79 +349,40 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
                 : locationData[tempCity]!;
 
             return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
+              height: MediaQuery.of(context).size.height * 0.7,
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  // Header (Nút X và Tiêu đề) - Giữ nguyên như cũ
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
-                      const Text("Lọc theo", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const Text("Lọc địa điểm", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(width: 40),
                     ],
                   ),
-                  // Tabs
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _filterTab("Tỉnh/Thành phố", isSelectingCity, () => setModalState(() => isSelectingCity = true)),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
-                      _filterTab("Quận/Huyện", !isSelectingCity, () => setModalState(() => isSelectingCity = false)),
-                    ],
-                  ),
                   const SizedBox(height: 16),
-                  // List View
                   Expanded(
                     child: ListView.builder(
                       itemCount: currentList.length,
                       itemBuilder: (context, index) {
                         String item = currentList[index];
-
-                        // LOGIC QUAN TRỌNG: Kiểm tra xem dòng này có đang được chọn không để tô xanh
-                        bool isSelected = isSelectingCity
-                            ? (item == tempCity)
-                            : (item == tempDistrict);
-
-                        return GestureDetector(
+                        return ListTile(
+                          title: Text(item),
                           onTap: () {
-                            setModalState(() {
-                              if (isSelectingCity) {
+                            if (isSelectingCity) {
+                              setModalState(() {
                                 tempCity = item;
-                                tempDistrict = null; // Reset quận khi đổi tỉnh
-                                isSelectingCity = false; // Tự nhảy sang tab Quận
-                              } else {
-                                tempDistrict = item; // Tô xanh quận vừa chọn
-                                // Đợi 200ms cho người dùng thấy màu xanh rồi mới đóng
-                                Future.delayed(const Duration(milliseconds: 200), () {
-                                  setState(() {
-                                    searchQuery = item; // 1. Gán giá trị để lọc danh sách phòng khám
-                                    _searchController.text = item; // 2. Hiển thị chữ lên thanh Search (nếu bạn có dùng Controller)
-                                  });
-                                  Navigator.pop(context);
-                                });
-                              }
-                            });
+                                isSelectingCity = false;
+                              });
+                            } else {
+                              setState(() {
+                                searchQuery = item;
+                                _searchController.text = item;
+                              });
+                              Navigator.pop(context);
+                            }
                           },
-                          child: Container(
-                            width: double.infinity,
-                            margin: const EdgeInsets.only(bottom: 10),
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              // NẾU CHỌN THÌ XANH, KHÔNG THÌ TRẮNG
-                              color: isSelected ? const Color(0xFF2F80ED) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: isSelected ? const Color(0xFF2F80ED) : Colors.grey[300]!),
-                            ),
-                            child: Text(
-                              item,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.black,
-                                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ),
                         );
                       },
                     ),
@@ -409,21 +393,6 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
           },
         );
       },
-    );
-  }
-
-// Widget phụ trợ cho cái Tab xanh xanh ở trên
-  Widget _filterTab(String label, bool active, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: active ? const Color(0xFF2F80ED) : Colors.grey[300],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(label, style: TextStyle(color: active ? Colors.white : Colors.black54, fontSize: 12)),
-      ),
     );
   }
 }

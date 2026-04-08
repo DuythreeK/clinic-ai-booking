@@ -14,8 +14,8 @@ export class UsersService {
 
   private toCurrentUserResponse(user: any) {
     return {
-      id: toNumberId(user.user_id),
-      fullName: user.full_name,
+      id: toNumberId(user.userId),
+      fullName: user.fullName,
       email: user.email,
       phone: user.phone,
       avatarUrl: user.avatar_url,
@@ -25,7 +25,7 @@ export class UsersService {
 
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
-      where: { user_id: this.toBigIntId(id) },
+      where: { userId: this.toBigIntId(id) },
     });
 
     if (!user) {
@@ -37,7 +37,7 @@ export class UsersService {
 
   async updateUser(id: string, dto: UpdateUserDto) {
     const existing = await this.prisma.user.findUnique({
-      where: { user_id: this.toBigIntId(id) },
+      where: { userId: this.toBigIntId(id) },
     });
 
     if (!existing) {
@@ -45,17 +45,17 @@ export class UsersService {
     }
 
     const user = await this.prisma.user.update({
-      where: { user_id: this.toBigIntId(id) },
+      where: { userId: this.toBigIntId(id) },
       data: {
-        full_name: dto.fullName,
+        fullName: dto.fullName,
         phone: dto.phone,
         avatar_url: dto.avatarUrl,
       },
     });
 
     return okResponse('Update profile successfully', {
-      id: toNumberId(user.user_id),
-      fullName: user.full_name,
+      id: toNumberId(user.userId),
+      fullName: user.fullName,
       email: user.email,
       phone: user.phone,
       avatarUrl: user.avatar_url,

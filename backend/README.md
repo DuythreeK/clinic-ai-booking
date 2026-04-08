@@ -162,7 +162,7 @@ Dùng Role-based Access Control:
 
 ```typescript
 // Protect endpoint với role
-@Roles(UserRole.PATIENT)
+@Roles(UserRole.patient)
 @UseGuards(JwtGuard, RolesGuard)
 async myEndpoint(@CurrentUser('sub') userId: string) {
   // Only PATIENT can access

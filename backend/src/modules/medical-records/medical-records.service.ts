@@ -15,7 +15,7 @@ export class MedicalRecordsService {
     const records = await this.prisma.medicalRecord.findMany({
       where: {
         patient: {
-          user_id: this.toBigIntId(userId),
+          userId: this.toBigIntId(userId),
         },
       },
       include: {
@@ -26,20 +26,20 @@ export class MedicalRecordsService {
           },
         },
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     const items = records.map((record) => ({
       recordId: toNumberId(record.record_id),
-      appointmentId: toNumberId(record.appointment_id),
-      appointmentCode: record.appointment.appointment_code,
-      appointmentDate: formatDateOnly(record.appointment.appointment_date),
+      appointmentId: toNumberId(record.appointmentId),
+      appointmentCode: record.appointment.appointmentCode,
+      appointmentDate: formatDateOnly(record.appointment.appointmentDate),
       doctor: {
-        id: toNumberId(record.doctor_id),
-        fullName: record.doctor.full_name,
+        id: toNumberId(record.doctorId),
+        fullName: record.doctor.fullName,
       },
       facility: {
-        id: toNumberId(record.appointment.facility_id),
+        id: toNumberId(record.appointment.facilityId),
         name: record.appointment.facility.name,
       },
       diagnosis: record.diagnosis,
@@ -62,20 +62,20 @@ export class MedicalRecordsService {
       },
     });
 
-    if (!record || record.patient.user_id !== this.toBigIntId(userId)) {
+    if (!record || record.patient.userId !== this.toBigIntId(userId)) {
       throw new NotFoundException('Medical record not found');
     }
 
     return okResponse('Get medical record detail successfully', {
       recordId: toNumberId(record.record_id),
-      appointmentId: toNumberId(record.appointment_id),
+      appointmentId: toNumberId(record.appointmentId),
       patient: {
-        id: toNumberId(record.patient_id),
-        fullName: record.patient.full_name,
+        id: toNumberId(record.patientId),
+        fullName: record.patient.fullName,
       },
       doctor: {
-        id: toNumberId(record.doctor_id),
-        fullName: record.doctor.full_name,
+        id: toNumberId(record.doctorId),
+        fullName: record.doctor.fullName,
       },
       symptoms: record.symptoms,
       diagnosis: record.diagnosis,
@@ -83,7 +83,7 @@ export class MedicalRecordsService {
       prescription: Array.isArray(record.prescription) ? record.prescription : [],
       followUpDate: formatDateOnly(record.follow_up_date),
       attachments: Array.isArray(record.attachments) ? record.attachments : [],
-      createdAt: record.created_at,
+      createdAt: record.createdAt,
     });
   }
 }

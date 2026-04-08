@@ -194,7 +194,7 @@ curl -X POST http://localhost:3000/appointments \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "slotId":"<slot_id>",
+    "slotId":"<slotId>",
     "reason":"Check up symptoms"
   }'
 
@@ -231,7 +231,7 @@ curl -X POST http://localhost:3000/ai/previsit-summary \
   -H "Content-Type: application/json" \
   -d '{
     "patientData":{"firstName":"Nguyễn","age":30},
-    "appointmentId":"<appointment_id>"
+    "appointmentId":"<appointmentId>"
   }'
 
 # Response:

@@ -14,25 +14,25 @@ export class PaymentsService {
 
   async createPayment(userId: string, dto: CreatePaymentDto) {
     const appointment = await this.prisma.appointment.findUnique({
-      where: { appointment_id: this.toBigIntId(dto.appointmentId) },
+      where: { appointmentId: this.toBigIntId(dto.appointmentId) },
     });
 
-    if (!appointment || appointment.user_id !== this.toBigIntId(userId)) {
+    if (!appointment || appointment.userId !== this.toBigIntId(userId)) {
       throw new NotFoundException('Appointment not found');
     }
 
     const payment = await this.prisma.payment.create({
       data: {
-        appointment_id: appointment.appointment_id,
+        appointmentId: appointment.appointmentId,
         payment_method: dto.paymentMethod as any,
-        amount: appointment.total_amount,
+        amount: appointment.totalAmount,
         transaction_code: `PAY-${Date.now()}`,
       },
     });
 
     return okResponse('Create payment successfully', {
       id: toNumberId(payment.payment_id),
-      appointmentId: toNumberId(payment.appointment_id),
+      appointmentId: toNumberId(payment.appointmentId),
       paymentMethod: payment.payment_method,
       amount: Number(payment.amount),
       status: payment.status,
@@ -59,7 +59,7 @@ export class PaymentsService {
     });
 
     return okResponse('Payment callback processed successfully', {
-      appointmentId: toNumberId(updated.appointment_id),
+      appointmentId: toNumberId(updated.appointmentId),
       paymentStatus: updated.status,
     });
   }

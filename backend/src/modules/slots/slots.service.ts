@@ -23,14 +23,14 @@ export class SlotsService {
 
     return this.prisma.slot.create({
       data: {
-        doctor_id: this.toBigIntId(dto.doctorId),
-        facility_id: this.toBigIntId(dto.clinicId),
+        doctorId: this.toBigIntId(dto.doctorId),
+        facilityId: this.toBigIntId(dto.clinicId),
         slot_date: slotDate,
         start_time: startAt,
         end_time: endAt,
         duration_minutes: durationMinutes,
         status: dto.isBlocked ? 'INACTIVE' : 'AVAILABLE',
-        is_active: dto.isBlocked ? 0 : 1,
+        isActive: dto.isBlocked ? 0 : 1,
       },
     });
   }
@@ -46,8 +46,8 @@ export class SlotsService {
   async getSlots(doctorId?: string, clinicId?: string, fromDate?: string, toDate?: string) {
     const where: any = {};
 
-    if (doctorId) where.doctor_id = this.toBigIntId(doctorId);
-    if (clinicId) where.facility_id = this.toBigIntId(clinicId);
+    if (doctorId) where.doctorId = this.toBigIntId(doctorId);
+    if (clinicId) where.facilityId = this.toBigIntId(clinicId);
 
     if (fromDate || toDate) {
       where.slot_date = {};
@@ -63,7 +63,7 @@ export class SlotsService {
 
   async getSlotById(id: string) {
     const slot = await this.prisma.slot.findUnique({
-      where: { slot_id: this.toBigIntId(id) },
+      where: { slotId: this.toBigIntId(id) },
     });
 
     if (!slot) throw new NotFoundException('Slot not found');
@@ -74,9 +74,9 @@ export class SlotsService {
     await this.getSlotById(id);
 
     return this.prisma.slot.update({
-      where: { slot_id: this.toBigIntId(id) },
+      where: { slotId: this.toBigIntId(id) },
       data: {
-        is_active: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 0 : 1,
+        isActive: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 0 : 1,
         status: dto.isBlocked === undefined ? undefined : dto.isBlocked ? 'INACTIVE' : 'AVAILABLE',
       },
     });
@@ -84,17 +84,17 @@ export class SlotsService {
 
   async deleteSlot(id: string) {
     return this.prisma.slot.delete({
-      where: { slot_id: this.toBigIntId(id) },
+      where: { slotId: this.toBigIntId(id) },
     });
   }
 
   async getAvailableSlots(doctorId: string, clinicId: string, fromDate: string, toDate: string) {
     return this.prisma.slot.findMany({
       where: {
-        doctor_id: this.toBigIntId(doctorId),
-        facility_id: this.toBigIntId(clinicId),
+        doctorId: this.toBigIntId(doctorId),
+        facilityId: this.toBigIntId(clinicId),
         status: 'AVAILABLE',
-        is_active: 1,
+        isActive: 1,
         slot_date: {
           gte: new Date(fromDate),
           lte: new Date(toDate),

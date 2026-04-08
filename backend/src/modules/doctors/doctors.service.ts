@@ -15,29 +15,29 @@ export class DoctorsService {
     return {
       doctorId: doctor.doctor_id.toString(),
       userId: doctor.user_id.toString(),
-      fullName: doctor.full_name,
+      fullName: doctor.fullName,
       title: doctor.title,
       bio: doctor.bio,
       experienceYears: doctor.experience_years,
       avatarUrl: doctor.avatar_url,
       consultationFee: doctor.consultation_fee ? Number(doctor.consultation_fee) : null,
-      isActive: doctor.is_active === 1,
+      isActive: doctor.isActive === 1,
       specialty: doctor.specialty
         ? {
-            specialtyId: doctor.specialty.specialty_id.toString(),
+            id: doctor.specialty.specialty_id.toString(),
             name: doctor.specialty.name,
             description: doctor.specialty.description,
           }
         : null,
       facility: doctor.facility
         ? {
-            facilityId: doctor.facility.facility_id.toString(),
+            id: doctor.facility.facilityId.toString(),
             name: doctor.facility.name,
             facilityType: doctor.facility.facility_type,
             addressDetail: doctor.facility.address_detail,
           }
         : null,
-      createdAt: doctor.created_at,
+      createdAt: doctor.createdAt,
       updatedAt: doctor.updated_at,
     };
   }
@@ -50,10 +50,10 @@ export class DoctorsService {
     facilityId?: string,
   ) {
     const where = {
-      is_active: 1,
+      isActive: 1,
       specialty_id: specialtyId ? this.toBigIntId(specialtyId) : undefined,
       facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
-      full_name: search
+      fullName: search
         ? {
             contains: search,
           }
@@ -67,7 +67,7 @@ export class DoctorsService {
           specialty: true,
           facility: true,
         },
-        orderBy: { created_at: 'desc' },
+        orderBy: { createdAt: 'desc' },
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -75,8 +75,8 @@ export class DoctorsService {
     ]);
 
     const items = doctors.map((doctor) => ({
-      id: Number(doctor.doctor_id),
-      fullName: doctor.full_name,
+      id: Number(doctor.doctorId),
+      fullName: doctor.fullName,
       title: doctor.title,
       experienceYears: doctor.experience_years,
       consultationFee: doctor.consultation_fee ? Number(doctor.consultation_fee) : null,
@@ -88,7 +88,7 @@ export class DoctorsService {
         : null,
       facility: doctor.facility
         ? {
-            id: Number(doctor.facility.facility_id),
+            id: Number(doctor.facility.facilityId),
             name: doctor.facility.name,
           }
         : null,
@@ -100,20 +100,20 @@ export class DoctorsService {
 
   async getDoctorById(id: string) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { doctor_id: this.toBigIntId(id) },
+      where: { doctorId: this.toBigIntId(id) },
       include: {
         specialty: true,
         facility: true,
       },
     });
 
-    if (!doctor || doctor.is_active !== 1) {
+    if (!doctor || doctor.isActive !== 1) {
       throw new NotFoundException('Doctor not found');
     }
 
     return okResponse('Get doctor detail successfully', {
-      id: Number(doctor.doctor_id),
-      fullName: doctor.full_name,
+      id: Number(doctor.doctorId),
+      fullName: doctor.fullName,
       title: doctor.title,
       bio: doctor.bio,
       experienceYears: doctor.experience_years,
@@ -126,13 +126,13 @@ export class DoctorsService {
         : null,
       facility: doctor.facility
         ? {
-            id: Number(doctor.facility.facility_id),
+            id: Number(doctor.facility.facilityId),
             name: doctor.facility.name,
           }
         : null,
       ratingAvg: 4.8,
       reviewCount: await this.prisma.doctorReview.count({
-        where: { doctor_id: doctor.doctor_id, is_visible: 1 },
+        where: { doctorId: doctor.doctorId, is_visible: 1 },
       }),
     });
   }
@@ -142,23 +142,23 @@ export class DoctorsService {
 
     const reviews = await this.prisma.doctorReview.findMany({
       where: {
-        doctor_id: this.toBigIntId(id),
+        doctorId: this.toBigIntId(id),
         is_visible: 1,
       },
       include: {
         user: true,
       },
-      orderBy: { created_at: 'desc' },
+      orderBy: { createdAt: 'desc' },
     });
 
     const items = reviews.map((review) => ({
       id: Number(review.review_id),
       rating: review.rating,
       comment: review.comment,
-      createdAt: review.created_at,
+      createdAt: review.createdAt,
       user: {
-        id: Number(review.user_id),
-        fullName: review.user.full_name,
+        id: Number(review.userId),
+        fullName: review.user.fullName,
       },
     }));
 
@@ -168,10 +168,10 @@ export class DoctorsService {
   async createDoctor(userId: string, dto: CreateDoctorDto) {
     const doctor = await this.prisma.doctor.create({
       data: {
-        user_id: this.toBigIntId(userId),
-        full_name: dto.fullName,
+        userId: this.toBigIntId(userId),
+        fullName: dto.fullName,
         specialty_id: this.toBigIntId(dto.specialtyId),
-        facility_id: this.toBigIntId(dto.facilityId),
+        facilityId: this.toBigIntId(dto.facilityId),
         title: dto.title,
         bio: dto.bio,
         experience_years: dto.yearsExperience,
@@ -189,11 +189,11 @@ export class DoctorsService {
     await this.getDoctorById(id);
 
     const doctor = await this.prisma.doctor.update({
-      where: { doctor_id: this.toBigIntId(id) },
+      where: { doctorId: this.toBigIntId(id) },
       data: {
-        full_name: dto.fullName,
+        fullName: dto.fullName,
         specialty_id: dto.specialtyId ? this.toBigIntId(dto.specialtyId) : undefined,
-        facility_id: dto.facilityId ? this.toBigIntId(dto.facilityId) : undefined,
+        facilityId: dto.facilityId ? this.toBigIntId(dto.facilityId) : undefined,
         title: dto.title,
         bio: dto.bio,
         experience_years: dto.yearsExperience,

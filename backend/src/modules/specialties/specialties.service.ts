@@ -29,7 +29,7 @@ export class SpecialtiesService {
 
   async getSpecialties() {
     return this.prisma.specialty.findMany({
-      where: { is_active: 1 },
+      where: { isActive: 1 },
       orderBy: { name: 'asc' },
     });
   }

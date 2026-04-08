@@ -28,8 +28,8 @@ class AuthService {
           'email': email,
           'phone': phone,
           'password': password,
-          'full_name': fullName,
-          'role': role,
+          'fullName': fullName,
+          'role': role.toLowerCase(),
         },
       );
 
@@ -73,7 +73,7 @@ class AuthService {
           refreshToken: responseData['refresh_token'] as String,
         );
         await authStorage.saveUser({
-          'user_id': responseData['user_id'],
+          'userId': responseData['userId'],
           'email': email,
         });
 

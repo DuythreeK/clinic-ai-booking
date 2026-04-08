@@ -49,20 +49,20 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: {
         role: dto.role,
-        full_name: dto.full_name,
+        fullName: dto.fullName,
         email: dto.email,
         phone: dto.phone,
         password_hash: hashedPassword,
         status: UserStatus.active,
       },
       select: {
-        user_id: true,
+        userId: true,
         email: true,
         phone: true,
-        full_name: true,
+        fullName: true,
         role: true,
         status: true,
-        created_at: true,
+        createdAt: true,
       },
     });
 
@@ -75,13 +75,14 @@ export class AuthService {
   async login(dto: LoginRequest) {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
-      select: {
-        user_id: true,
-        email: true,
-        password_hash: true,
-        role: true,
-        status: true,
-      },
+
+      /* select: {
+              userId: true,
+              email: true,
+              password_hash: true,
+              role: true,
+              status: true,
+      }, */
     });
 
     if (!user) {
@@ -97,12 +98,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    const tokens = await this.generateTokens(user.user_id, user.email, user.role);
+    const tokens = await this.generateTokens(user.userId, user.email, user.role);
 
     return {
       success: true,
       data: {
-        user_id: user.user_id,
+        userId: user.userId.toString(),
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_type: 'Bearer',
@@ -127,7 +128,7 @@ export class AuthService {
     const tokenRecord = await this.prisma.refreshToken.findFirst({
       where: {
         token: refreshToken,
-        user_id: userId,
+        userId: userId,
         is_revoked: 0,
       },
     });
@@ -136,7 +137,7 @@ export class AuthService {
       throw new UnauthorizedException('Token revoked or invalid');
     }
 
-    if (tokenRecord.expires_at <= new Date()) {
+    if (tokenRecord.expiresAt <= new Date()) {
       await this.prisma.refreshToken.update({
         where: { id: tokenRecord.id },
         data: { is_revoked: 1 },
@@ -145,9 +146,9 @@ export class AuthService {
     }
 
     const user = await this.prisma.user.findUnique({
-      where: { user_id: userId },
+      where: { userId: userId },
       select: {
-        user_id: true,
+        userId: true,
         email: true,
         role: true,
         status: true,
@@ -163,7 +164,7 @@ export class AuthService {
       data: { is_revoked: 1 },
     });
 
-    const newTokens = await this.generateTokens(user.user_id, user.email, user.role);
+    const newTokens = await this.generateTokens(user.userId, user.email, user.role);
 
     return {
       success: true,
@@ -179,7 +180,7 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { email: dto.email },
       select: {
-        user_id: true,
+        userId: true,
         email: true,
       },
     });
@@ -193,10 +194,10 @@ export class AuthService {
 
     await this.prisma.passwordResetToken.create({
       data: {
-        user_id: user.user_id,
+        userId: user.userId,
         token: resetToken,
         status: PasswordResetStatus.PENDING,
-        expires_at: expiresAt,
+        expiresAt: expiresAt,
       },
     });
 
@@ -216,7 +217,7 @@ export class AuthService {
       include: {
         user: {
           select: {
-            user_id: true,
+            userId: true,
           },
         },
       },
@@ -230,7 +231,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid or expired token');
     }
 
-    if (tokenRecord.expires_at <= new Date()) {
+    if (tokenRecord.expiresAt <= new Date()) {
       await this.prisma.passwordResetToken.update({
         where: { id: tokenRecord.id },
         data: { status: PasswordResetStatus.EXPIRED },
@@ -242,7 +243,7 @@ export class AuthService {
 
     await this.prisma.$transaction([
       this.prisma.user.update({
-        where: { user_id: tokenRecord.user.user_id },
+        where: { userId: tokenRecord.user.userId },
         data: { password_hash: passwordHash },
       }),
       this.prisma.passwordResetToken.update({
@@ -265,7 +266,7 @@ export class AuthService {
 
     await this.prisma.refreshToken.updateMany({
       where: {
-        user_id: parsedUserId,
+        userId: parsedUserId,
         is_revoked: 0,
       },
       data: {
@@ -297,13 +298,13 @@ export class AuthService {
       expiresIn: this.durationToSeconds(process.env.JWT_REFRESH_EXPIRES_IN || '7d'),
     });
 
-    const expires_at = new Date(Date.now() + this.getRefreshTokenTtlMs());
+    const expiresAt = new Date(Date.now() + this.getRefreshTokenTtlMs());
 
     await this.prisma.refreshToken.create({
       data: {
-        user_id: userId,
+        userId: userId,
         token: refresh_token,
-        expires_at,
+        expiresAt,
         is_revoked: 0,
       },
     });

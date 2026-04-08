@@ -352,7 +352,7 @@ await prisma.$transaction(async (tx) => {
 
 ### Role-Based Access Control
 ```typescript
-@Roles(UserRole.PATIENT)
+@Roles(UserRole.patient)
 @UseGuards(JwtGuard, RolesGuard)
 async bookAppointment() {
   // Only PATIENT can call

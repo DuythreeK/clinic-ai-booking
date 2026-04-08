@@ -1,5 +1,6 @@
 const bool useLocalServer = true;
-const String localServerBaseUrl = 'http://localhost:3000';
+// const String localServerBaseUrl = 'http://localhost:3000';
+const String localServerBaseUrl = 'http://10.0.2.2:3000';
 const String tunnelServerBaseUrl = 'https://factually-humane-doberman.ngrok-free.app';
 const String serverBaseUrl =
     useLocalServer ? localServerBaseUrl : tunnelServerBaseUrl;

@@ -8,7 +8,7 @@ This plan will address generating the DTOs from `openapi.json`, setting up MySQL
 > This will overwrite your existing `auth.controller.ts`, `auth.service.ts`, and `auth.dto.ts` directly, as their current shapes conflict with the newly provided Prisma schema and OpenAPI expectations.
 
 > [!IMPORTANT]
-> The default `@nestjs/common` validation pipe will automatically serialize data, but Prisma returns database records containing JS `BigInt`s (e.g. `user_id`). Unless patched, this causes a `TypeError: Do not know how to serialize a BigInt`. To resolve this natively across all endpoints, the plan modifies `main.ts` to monkey-patch `BigInt.prototype.toJSON = function() { return this.toString() }`.
+> The default `@nestjs/common` validation pipe will automatically serialize data, but Prisma returns database records containing JS `BigInt`s (e.g. `userId`). Unless patched, this causes a `TypeError: Do not know how to serialize a BigInt`. To resolve this natively across all endpoints, the plan modifies `main.ts` to monkey-patch `BigInt.prototype.toJSON = function() { return this.toString() }`.
 
 ## Proposed Changes
 
@@ -46,9 +46,9 @@ Set up the MySQL database container. Note: I assume we want `.env` to be updated
 
 #### [MODIFY] [auth.service.ts](file:///c:/Users/ADMIN/Desktop/developer/app/clinic-ai-booking/backend/src/modules/auth/auth.service.ts)
 - Re-architect queries matching `schema.prisma` logic.
-- Register user uses `user_id`, `role`, `full_name`, `email`, `phone`, `password_hash`.
+- Register user uses `userId`, `role`, `fullName`, `email`, `phone`, `password_hash`.
 - Validates passwords using `bcrypt`.
-- Signs JWT using `{ sub: user_id, email, role }`.
+- Signs JWT using `{ sub: userId, email, role }`.
 - Insert token to `tblRefreshTokens` using database `RefreshTokens` model via Prisma.
 
 ## Verification Plan
