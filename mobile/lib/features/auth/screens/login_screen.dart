@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+import 'dart:math' as math;
 
 import '../services/auth_service.dart';
 
@@ -44,7 +45,7 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       if (mounted) {
-        context.go('/');
+        context.go('/home');
       }
     } catch (e) {
       setState(() => errorMessage = 'Login failed. Check your credentials.');
@@ -74,9 +75,12 @@ class _LoginScreenState extends State<LoginScreen> {
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   return SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 14),
                     child: ConstrainedBox(
-                      constraints: BoxConstraints(minHeight: constraints.maxHeight - 28),
+                      constraints: BoxConstraints(
+                        minHeight: math.max(0, constraints.maxHeight - 28),
+                      ),
                       child: IntrinsicHeight(
                         child: Form(
                           key: formKey,
@@ -139,7 +143,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: emailController,
                                   keyboardType: TextInputType.emailAddress,
                                   decoration: const InputDecoration(
-                                    hintText: 'giabao@gmail.com',
+                                    hintText: 'Nhập email của bạn',
                                     border: InputBorder.none,
                                     isDense: true,
                                     suffixIcon: Icon(
@@ -166,12 +170,13 @@ class _LoginScreenState extends State<LoginScreen> {
                                   controller: passwordController,
                                   obscureText: obscurePassword,
                                   decoration: InputDecoration(
-                                    hintText: '••••••••',
+                                    hintText: 'Nhập mật khẩu',
                                     border: InputBorder.none,
                                     isDense: true,
                                     suffixIcon: IconButton(
                                       onPressed: () {
-                                        setState(() => obscurePassword = !obscurePassword);
+                                        setState(() =>
+                                            obscurePassword = !obscurePassword);
                                       },
                                       icon: const Icon(
                                         Icons.visibility_off_outlined,
@@ -198,7 +203,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                   child: Text(
                                     errorMessage!,
-                                    style: const TextStyle(color: Color(0xFFB71C1C)),
+                                    style: const TextStyle(
+                                        color: Color(0xFFB71C1C)),
                                   ),
                                 ),
                               const SizedBox(height: 14),
@@ -206,7 +212,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: BoxDecoration(
                                   borderRadius: BorderRadius.circular(12),
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFF11C59B), Color(0xFF3A8DFF)],
+                                    colors: [
+                                      Color(0xFF11C59B),
+                                      Color(0xFF3A8DFF)
+                                    ],
                                   ),
                                   boxShadow: const [
                                     BoxShadow(
@@ -222,7 +231,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     backgroundColor: Colors.transparent,
                                     foregroundColor: Colors.white,
                                     shadowColor: Colors.transparent,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 14),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(12),
                                     ),
@@ -273,7 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                     style: TextButton.styleFrom(
                                       minimumSize: Size.zero,
                                       padding: EdgeInsets.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
                                     child: const Text(
                                       'Đăng kí',

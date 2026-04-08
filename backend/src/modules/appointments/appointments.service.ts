@@ -91,7 +91,7 @@ export class AppointmentsService {
           status: AppointmentStatus.pending,
           symptoms_note: dto.symptomsNote,
           note: dto.note,
-          total_amount: service?.price ?? 0,
+          total_amount: slot.doctor?.consultation_fee ?? service?.price ?? 0,
         },
       });
 
@@ -180,5 +180,54 @@ export class AppointmentsService {
         : null,
     });
   }
-}
+  async getUserAppointments(userId: string) {
+    const appointments = await this.prisma.appointment.findMany({
+      where: { user_id: this.toBigIntId(userId, 'userId') },
+      include: {
+        patient: true,
+        doctor: {
+          include: { specialty: true },
+        },
+        facility: true,
+        service: true,
+        slot: true,
+      },
+      orderBy: [
+        { appointment_date: 'desc' },
+        { appointment_time: 'desc' },
+      ],
+    });
 
+    return okResponse('Get user appointments successfully', appointments.map(apt => ({
+      id: toNumberId(apt.appointment_id),
+      appointmentCode: apt.appointment_code,
+      appointmentType: apt.appointment_type,
+      appointmentDate: formatDateOnly(apt.appointment_date),
+      appointmentTime: formatTimeOnly(apt.appointment_time),
+      status: apt.status,
+      note: apt.note,
+      symptomsNote: apt.symptoms_note,
+      totalAmount: Number(apt.total_amount),
+      doctor: apt.doctor
+        ? {
+            id: toNumberId(apt.doctor.doctor_id),
+            name: apt.doctor.full_name,
+            specialty: apt.doctor.specialty?.name,
+            imageUrl: apt.doctor.avatar_url,
+          }
+        : null,
+      patient: apt.patient
+        ? {
+            id: toNumberId(apt.patient.patient_id),
+            fullName: apt.patient.full_name,
+          }
+        : null,
+      service: apt.service
+        ? {
+            id: toNumberId(apt.service.service_id),
+            name: apt.service.name,
+          }
+        : null,
+    })));
+  }
+}
