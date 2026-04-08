@@ -38,8 +38,6 @@ class _MyAppState extends State<MyApp> {
       authStorage: authStorage,
     );
 
-    final isAuthenticated = await authService.isAuthenticated();
-
     if (!mounted) {
       return;
     }
@@ -47,7 +45,6 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _router = createAppRouter(
         authService: authService,
-        isAuthenticated: isAuthenticated,
       );
       _isInitializing = false;
     });

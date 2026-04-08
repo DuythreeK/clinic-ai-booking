@@ -4,6 +4,15 @@ import 'package:logger/logger.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/storage/auth_storage.dart';
 
+class AuthException implements Exception {
+  AuthException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class AuthService {
   final DioClient dioClient;
   final AuthStorage authStorage;

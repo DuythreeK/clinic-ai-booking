@@ -3,162 +3,549 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Đang bắt đầu nạp dữ liệu mẫu (seeding)...');
+const DOCTOR_AVATAR_A =
+  'https://images.pexels.com/photos/6749778/pexels-photo-6749778.jpeg?auto=compress&cs=tinysrgb&w=400';
+const DOCTOR_AVATAR_B =
+  'https://images.pexels.com/photos/5214995/pexels-photo-5214995.jpeg?auto=compress&cs=tinysrgb&w=400';
+const DOCTOR_AVATAR_C =
+  'https://images.pexels.com/photos/5215017/pexels-photo-5215017.jpeg?auto=compress&cs=tinysrgb&w=400';
+const DOCTOR_AVATAR_D =
+  'https://images.pexels.com/photos/6129041/pexels-photo-6129041.jpeg?auto=compress&cs=tinysrgb&w=400';
+const DOCTOR_AVATAR_E =
+  'https://images.pexels.com/photos/7108348/pexels-photo-7108348.jpeg?auto=compress&cs=tinysrgb&w=400';
+const DOCTOR_AVATAR_F =
+  'https://images.pexels.com/photos/8460157/pexels-photo-8460157.jpeg?auto=compress&cs=tinysrgb&w=400';
 
-  // 1. Dọn dẹp dữ liệu cũ (Xóa theo thứ tự để tránh lỗi khóa ngoại)
-  console.log('🧹 Đang dọn dẹp dữ liệu cũ...');
-  await prisma.doctorReview.deleteMany();
-  await prisma.medicalRecord.deleteMany();
-  await prisma.appointmentStatusLog.deleteMany();
-  await prisma.appointment.deleteMany();
-  await prisma.slot.deleteMany();
-  await prisma.doctor.deleteMany();
-  await prisma.facility.deleteMany();
-  await prisma.specialty.deleteMany();
-  await prisma.patientProfile.deleteMany();
-  await prisma.user.deleteMany();
+async function upsertUser(params: {
+  email: string;
+  fullName: string;
+  phone: string;
+  role: UserRole;
+  password: string;
+  avatarUrl?: string;
+}) {
+  const passwordHash = await bcrypt.hash(params.password, 10);
+  return prisma.user.upsert({
+    where: { email: params.email },
+    update: {
+      full_name: params.fullName,
+      phone: params.phone,
+      role: params.role,
+      password_hash: passwordHash,
+      avatar_url: params.avatarUrl,
+      status: 'active',
+    },
+    create: {
+      email: params.email,
+      full_name: params.fullName,
+      phone: params.phone,
+      role: params.role,
+      password_hash: passwordHash,
+      avatar_url: params.avatarUrl,
+      status: 'active',
+    },
+  });
+}
 
-  const hashedPassword = await bcrypt.hash('password123', 10);
+async function ensurePrimaryPatientProfile(userId: bigint, fullName: string, phone: string) {
+  const existing = await prisma.patientProfile.findFirst({
+    where: {
+      user_id: userId,
+      is_primary: 1,
+    },
+  });
 
-  // 2. Tạo Chuyên khoa
-  console.log('🧬 Đang tạo chuyên khoa...');
-  const specialtiesData = [
-    { name: 'Nội tổng quát', description: 'Khám sức khỏe đa khoa và tư vấn tổng quát' },
-    { name: 'Tim mạch', description: 'Chuyên khoa điều trị các bệnh lý về tim và mạch máu' },
-    { name: 'Nhi khoa', description: 'Chăm sóc sức khỏe toàn diện cho trẻ em' },
-    { name: 'Sản phụ khoa', description: 'Chăm sóc sức khỏe phụ nữ và thai sản' },
-    { name: 'Răng Hàm Mặt', description: 'Điều trị và thẩm mỹ nha khoa' },
-  ];
+  if (existing) {
+    return existing;
+  }
 
-  const createdSpecialties = await Promise.all(
-    specialtiesData.map(data => prisma.specialty.create({ data }))
-  );
+  return prisma.patientProfile.create({
+    data: {
+      user_id: userId,
+      full_name: fullName,
+      phone_number: phone,
+      is_primary: 1,
+      gender: 'male',
+    },
+  });
+}
 
-  // 3. Danh sách 20 Cơ sở y tế (Hà Nội & HCM)
-  console.log('🏥 Đang tạo 20 bệnh viện và phòng khám...');
-  const facilitiesData = [
-    // HÀ NỘI
-    { name: "Bệnh viện Bạch Mai", type: FacilityType.hospital, address: "78 Giải Phóng, Đống Đa, Hà Nội", province: "Hà Nội", district: "Đống Đa" },
-    { name: "Bệnh viện Việt Đức", type: FacilityType.hospital, address: "40 Tràng Thi, Hoàn Kiếm, Hà Nội", province: "Hà Nội", district: "Hoàn Kiếm" },
-    { name: "Bệnh viện Trung ương Quân đội 108", type: FacilityType.hospital, address: "1 Trần Hưng Đạo, Hai Bà Trưng, Hà Nội", province: "Hà Nội", district: "Hai Bà Trưng" },
-    { name: "Bệnh viện Đa khoa Tâm Anh", type: FacilityType.hospital, address: "108 Hoàng Như Tiếp, Long Biên, Hà Nội", province: "Hà Nội", district: "Long Biên" },
-    { name: "Bệnh viện Nhi Trung ương", type: FacilityType.hospital, address: "18/879 La Thành, Đống Đa, Hà Nội", province: "Hà Nội", district: "Đống Đa" },
-    { name: "Phòng khám Đa khoa Thu Cúc TCI", type: FacilityType.clinic, address: "286 Thụy Khuê, Tây Hồ, Hà Nội", province: "Hà Nội", district: "Tây Hồ" },
-    { name: "Bệnh viện Đa khoa Hồng Ngọc", type: FacilityType.hospital, address: "55 Yên Ninh, Ba Đình, Hà Nội", province: "Hà Nội", district: "Ba Đình" },
-    { name: "Phòng khám Đa khoa Medlatec", type: FacilityType.clinic, address: "42 Nghĩa Dũng, Ba Đình, Hà Nội", province: "Hà Nội", district: "Ba Đình" },
-    { name: "Phòng khám Vinmec Times City", type: FacilityType.clinic, address: "458 Minh Khai, Hai Bà Trưng, Hà Nội", province: "Hà Nội", district: "Hai Bà Trưng" },
-    { name: "Trung tâm Tiêm chủng VNVC Hà Nội", type: FacilityType.vaccination_center, address: "180 Trường Chinh, Đống Đa, Hà Nội", province: "Hà Nội", district: "Đống Đa" },
-    // HCM
-    { name: "Bệnh viện Chợ Rẫy", type: FacilityType.hospital, address: "201B Nguyễn Chí Thanh, Quận 5, TP.HCM", province: "Hồ Chí Minh", district: "Quận 5" },
-    { name: "Bệnh viện Đại học Y Dược", type: FacilityType.hospital, address: "215 Hồng Bàng, Quận 5, TP.HCM", province: "Hồ Chí Minh", district: "Quận 5" },
-    { name: "Bệnh viện Từ Dũ", type: FacilityType.hospital, address: "284 Cống Quỳnh, Quận 1, TP.HCM", province: "Hồ Chí Minh", district: "Quận 1" },
-    { name: "Bệnh viện Nhi Đồng 1", type: FacilityType.hospital, address: "341 Sư Vạn Hạnh, Quận 10, TP.HCM", province: "Hồ Chí Minh", district: "Quận 10" },
-    { name: "Bệnh viện Ung bướu TP.HCM", type: FacilityType.hospital, address: "3 Nơ Trang Long, Bình Thạnh, TP.HCM", province: "Hồ Chí Minh", district: "Bình Thạnh" },
-    { name: "Bệnh viện FV (Pháp Việt)", type: FacilityType.hospital, address: "6 Nguyễn Lương Bằng, Quận 7, TP.HCM", province: "Hồ Chí Minh", district: "Quận 7" },
-    { name: "Phòng khám Victoria Healthcare", type: FacilityType.clinic, address: "37 Lương Hữu Khánh, Quận 1, TP.HCM", province: "Hồ Chí Minh", district: "Quận 1" },
-    { name: "Bệnh viện Quân y 175", type: FacilityType.hospital, address: "786 Nguyễn Kiệm, Gò Vấp, TP.HCM", province: "Hồ Chí Minh", district: "Gò Vấp" },
-    { name: "Phòng khám CarePlus Tân Bình", type: FacilityType.clinic, address: "107 Tân Hải, Tân Bình, TP.HCM", province: "Hồ Chí Minh", district: "Tân Bình" },
-    { name: "Trung tâm VNVC Hoàng Văn Thụ", type: FacilityType.vaccination_center, address: "198 Hoàng Văn Thụ, Phú Nhuận, TP.HCM", province: "Hồ Chí Minh", district: "Phú Nhuận" },
-  ];
+async function ensureSlotsForDoctor(
+  doctorId: bigint,
+  facilityId: bigint,
+  timeBlocks: Array<[number, number]>,
+) {
+  const today = new Date();
+  const from = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const to = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 14);
 
-  const lastNames = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Huỳnh', 'Phan', 'Vũ', 'Đặng', 'Bùi'];
-  const middleNames = ['Văn', 'Thị', 'Minh', 'Anh', 'Quang', 'Hữu', 'Đức', 'Hoàng'];
-  const firstNames = ['An', 'Bình', 'Cường', 'Dũng', 'Em', 'Giang', 'Hương', 'Hùng', 'Kiên', 'Linh', 'Nam', 'Phúc', 'Sơn', 'Tâm'];
+  await prisma.slot.deleteMany({
+    where: {
+      doctor_id: doctorId,
+      facility_id: facilityId,
+      appointment: null,
+      slot_date: {
+        gte: from,
+        lte: to,
+      },
+    },
+  });
 
-  let doctorCounter = 1;
+  const rows: Array<{
+    facility_id: bigint;
+    doctor_id: bigint;
+    slot_date: Date;
+    start_time: Date;
+    end_time: Date;
+    duration_minutes: number;
+    available_count: number;
+    status: 'AVAILABLE';
+    is_active: number;
+  }> = [];
 
-  for (const f of facilitiesData) {
-    // Tạo cơ sở y tế
-    const facility = await prisma.facility.create({
-      data: {
-        name: f.name,
-        facility_type: f.type,
-        address_detail: f.address,
-        province: f.province,
-        district: f.district,
-        phone: `024${Math.floor(1000000 + Math.random() * 9000000)}`,
-        email: `contact@${f.name.toLowerCase().replace(/\s/g, '')}.vn`,
-        opening_hours: "07:30 - 17:00",
-        rating_avg: 4.5 + Math.random() * 0.5,
-        isActive: 1
-      }
-    });
+  for (let i = 1; i <= 7; i++) {
+    const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() + i);
+    const dayStart = new Date(d.getFullYear(), d.getMonth(), d.getDate());
 
-    // Tạo 2-3 bác sĩ cho mỗi cơ sở
-    const numDoctors = Math.floor(Math.random() * 2) + 2; // Random 2 hoặc 3
-    for (let i = 0; i < numDoctors; i++) {
-      const lName = lastNames[Math.floor(Math.random() * lastNames.length)];
-      const mName = middleNames[Math.floor(Math.random() * middleNames.length)];
-      const fName = firstNames[Math.floor(Math.random() * firstNames.length)];
-      const fullName = `${lName} ${mName} ${fName}`;
+    for (const [h, m] of timeBlocks) {
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, 0);
+      const end = new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m + 30, 0);
 
-      const email = `doctor${doctorCounter}@clinic.ai`;
-
-      // 1. Tạo User trước
-      const user = await prisma.user.create({
-        data: {
-          fullName: fullName,
-          email: email,
-          phone: `09${Math.floor(10000000 + Math.random() * 90000000)}`,
-          password_hash: hashedPassword,
-          role: UserRole.doctor,
-          status: 'active'
-        }
+      rows.push({
+        facility_id: facilityId,
+        doctor_id: doctorId,
+        slot_date: dayStart,
+        start_time: start,
+        end_time: end,
+        duration_minutes: 30,
+        available_count: 10,
+        status: 'AVAILABLE',
+        is_active: 1,
       });
-
-      // 2. Tạo Doctor profile liên kết với User và Facility
-      await prisma.doctor.create({
-        data: {
-          userId: user.userId,
-          fullName: fullName,
-          specialty_id: createdSpecialties[Math.floor(Math.random() * createdSpecialties.length)].specialty_id,
-          facilityId: facility.facilityId,
-          title: i === 0 ? "Thạc sĩ, Bác sĩ" : "Bác sĩ chuyên khoa I",
-          experience_years: 5 + Math.floor(Math.random() * 15),
-          consultation_fee: 200000 + (Math.floor(Math.random() * 6) * 50000),
-          bio: `Bác sĩ ${fullName} có nhiều năm kinh nghiệm công tác tại các bệnh viện lớn, chuyên môn cao và tận tâm với bệnh nhân.`,
-          isActive: 1
-        }
-      });
-
-      doctorCounter++;
     }
   }
 
-  // 4. Tạo một bệnh nhân mẫu để Dũng test app
-  console.log('👤 Đang tạo tài khoản bệnh nhân mẫu...');
-  const patientUser = await prisma.user.create({
-    data: {
-      fullName: "Nguyễn Trung Dũng",
-      email: "dung.patient@gmail.com",
-      phone: "0988888888",
-      password_hash: hashedPassword,
-      role: UserRole.patient,
-      status: 'active'
-    }
+  if (rows.length > 0) {
+    await prisma.slot.createMany({ data: rows });
+  }
+}
+
+async function ensureServiceForFacility(
+  facilityId: bigint,
+  name: string,
+  price: number,
+  durationMinutes: number,
+) {
+  const existing = await prisma.service.findFirst({
+    where: {
+      facility_id: facilityId,
+      name,
+    },
   });
 
-  await prisma.patientProfile.create({
+  if (existing) {
+    return existing;
+  }
+
+  return prisma.service.create({
     data: {
-      userId: patientUser.userId,
-      fullName: "Nguyễn Trung Dũng",
-      is_primary: 1
-    }
+      facility_id: facilityId,
+      name,
+      price,
+      duration_minutes: durationMinutes,
+      is_active: 1,
+    },
+  });
+}
+
+async function main() {
+  console.log('Seeding doctor-facility mappings...');
+
+  const specialtyGeneral = await prisma.specialty.upsert({
+    where: { name: 'Tong quat' },
+    update: { description: 'Kham tong quat', is_active: 1 },
+    create: { name: 'Tong quat', description: 'Kham tong quat', is_active: 1 },
   });
 
-  console.log(`
-  ✨ HOÀN TẤT SEED DỮ LIỆU:
-  - Chuyên khoa: ${createdSpecialties.length}
-  - Cơ sở y tế: ${facilitiesData.length}
-  - Tổng số bác sĩ: ${doctorCounter - 1}
-  - Tài khoản Patient: dung.patient@gmail.com / password123
-  `);
+  const specialtyCardio = await prisma.specialty.upsert({
+    where: { name: 'Tim mach' },
+    update: { description: 'Chuyen khoa tim mach', is_active: 1 },
+    create: { name: 'Tim mach', description: 'Chuyen khoa tim mach', is_active: 1 },
+  });
+
+  const specialtyDerm = await prisma.specialty.upsert({
+    where: { name: 'Da lieu' },
+    update: { description: 'Chuyen khoa da lieu', is_active: 1 },
+    create: { name: 'Da lieu', description: 'Chuyen khoa da lieu', is_active: 1 },
+  });
+
+  const specialtyPediatrics = await prisma.specialty.upsert({
+    where: { name: 'Nhi khoa' },
+    update: { description: 'Chuyen khoa nhi', is_active: 1 },
+    create: { name: 'Nhi khoa', description: 'Chuyen khoa nhi', is_active: 1 },
+  });
+
+  const specialtyEnt = await prisma.specialty.upsert({
+    where: { name: 'Tai mui hong' },
+    update: { description: 'Chuyen khoa tai mui hong', is_active: 1 },
+    create: {
+      name: 'Tai mui hong',
+      description: 'Chuyen khoa tai mui hong',
+      is_active: 1,
+    },
+  });
+
+  let facilityA = await prisma.facility.findFirst({ where: { name: 'Co so Trung tam Quan 1' } });
+  if (!facilityA) {
+    facilityA = await prisma.facility.create({
+      data: {
+        name: 'Co so Trung tam Quan 1',
+        facility_type: FacilityType.clinic,
+        phone: '02811112222',
+        email: 'q1@clinic.local',
+        address_detail: '123 Le Loi, Quan 1, TP HCM',
+        province: 'TP HCM',
+        district: 'Quan 1',
+        ward: 'Ben Nghe',
+        opening_hours: '08:00-20:00',
+        is_active: 1,
+      },
+    });
+  }
+
+  let facilityB = await prisma.facility.findFirst({ where: { name: 'Co so Phu Nhuan' } });
+  if (!facilityB) {
+    facilityB = await prisma.facility.create({
+      data: {
+        name: 'Co so Phu Nhuan',
+        facility_type: FacilityType.hospital,
+        phone: '02833334444',
+        email: 'pn@clinic.local',
+        address_detail: '45 Hoang Van Thu, Phu Nhuan, TP HCM',
+        province: 'TP HCM',
+        district: 'Phu Nhuan',
+        ward: 'Phuong 9',
+        opening_hours: '07:00-21:00',
+        is_active: 1,
+      },
+    });
+  }
+
+  let facilityC = await prisma.facility.findFirst({ where: { name: 'Co so Thu Duc' } });
+  if (!facilityC) {
+    facilityC = await prisma.facility.create({
+      data: {
+        name: 'Co so Thu Duc',
+        facility_type: FacilityType.clinic,
+        phone: '02855556666',
+        email: 'thuduc@clinic.local',
+        address_detail: '89 Vo Van Ngan, Thu Duc, TP HCM',
+        province: 'TP HCM',
+        district: 'Thu Duc',
+        ward: 'Linh Chieu',
+        opening_hours: '08:00-17:00',
+        is_active: 1,
+      },
+    });
+  }
+
+  let facilityD = await prisma.facility.findFirst({ where: { name: 'Co so Binh Thanh' } });
+  if (!facilityD) {
+    facilityD = await prisma.facility.create({
+      data: {
+        name: 'Co so Binh Thanh',
+        facility_type: FacilityType.hospital,
+        phone: '02877778888',
+        email: 'binhthanh@clinic.local',
+        address_detail: '16 Dien Bien Phu, Binh Thanh, TP HCM',
+        province: 'TP HCM',
+        district: 'Binh Thanh',
+        ward: 'Phuong 15',
+        opening_hours: '08:00-17:00',
+        is_active: 1,
+      },
+    });
+  }
+
+  const doctorUserA = await upsertUser({
+    email: 'doctor.nguyenvana@clinic.local',
+    fullName: 'Nguyen Van A',
+    phone: '0901111111',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_A,
+  });
+
+  const doctorUserB = await upsertUser({
+    email: 'doctor.tranthib@clinic.local',
+    fullName: 'Tran Thi B',
+    phone: '0902222222',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_B,
+  });
+
+  const doctorUserC = await upsertUser({
+    email: 'doctor.leduyc@clinic.local',
+    fullName: 'Le Duy C',
+    phone: '0903333333',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_C,
+  });
+
+  const doctorUserD = await upsertUser({
+    email: 'doctor.phamthid@clinic.local',
+    fullName: 'Pham Thi D',
+    phone: '0904444444',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_D,
+  });
+
+  const doctorUserE = await upsertUser({
+    email: 'doctor.nguyenvane@clinic.local',
+    fullName: 'Nguyen Van E',
+    phone: '0905555555',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_E,
+  });
+
+  const doctorUserF = await upsertUser({
+    email: 'doctor.tranthif@clinic.local',
+    fullName: 'Tran Thi F',
+    phone: '0906666666',
+    role: UserRole.doctor,
+    password: '12345678',
+    avatarUrl: DOCTOR_AVATAR_F,
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserA.user_id },
+    update: {
+      full_name: 'Bac si Nguyen Van A',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tong quat',
+      bio: '10 nam kinh nghiem kham tong quat',
+      experience_years: 10,
+        avatar_url: DOCTOR_AVATAR_A,
+      consultation_fee: 200000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserA.user_id,
+      full_name: 'Bac si Nguyen Van A',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tong quat',
+      bio: '10 nam kinh nghiem kham tong quat',
+      experience_years: 10,
+        avatar_url: DOCTOR_AVATAR_A,
+      consultation_fee: 200000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserB.user_id },
+    update: {
+      full_name: 'Bac si Tran Thi B',
+      specialty_id: specialtyCardio.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tim mach',
+      bio: '12 nam kinh nghiem tim mach',
+      experience_years: 12,
+        avatar_url: DOCTOR_AVATAR_B,
+      consultation_fee: 350000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserB.user_id,
+      full_name: 'Bac si Tran Thi B',
+      specialty_id: specialtyCardio.specialty_id,
+      facility_id: facilityA.facility_id,
+      title: 'Bac si Tim mach',
+      bio: '12 nam kinh nghiem tim mach',
+      experience_years: 12,
+        avatar_url: DOCTOR_AVATAR_B,
+      consultation_fee: 350000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserC.user_id },
+    update: {
+      full_name: 'Bac si Le Duy C',
+      specialty_id: specialtyDerm.specialty_id,
+      facility_id: facilityB.facility_id,
+      title: 'Bac si Da lieu',
+      bio: '8 nam kinh nghiem da lieu',
+      experience_years: 8,
+        avatar_url: DOCTOR_AVATAR_C,
+      consultation_fee: 280000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserC.user_id,
+      full_name: 'Bac si Le Duy C',
+      specialty_id: specialtyDerm.specialty_id,
+      facility_id: facilityB.facility_id,
+      title: 'Bac si Da lieu',
+      bio: '8 nam kinh nghiem da lieu',
+      experience_years: 8,
+        avatar_url: DOCTOR_AVATAR_C,
+      consultation_fee: 280000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserD.user_id },
+    update: {
+      full_name: 'Bac si Pham Thi D',
+      specialty_id: specialtyPediatrics.specialty_id,
+      facility_id: facilityC.facility_id,
+      title: 'Bac si Nhi khoa',
+      bio: '9 nam kinh nghiem nhi khoa',
+      experience_years: 9,
+        avatar_url: DOCTOR_AVATAR_D,
+      consultation_fee: 260000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserD.user_id,
+      full_name: 'Bac si Pham Thi D',
+      specialty_id: specialtyPediatrics.specialty_id,
+      facility_id: facilityC.facility_id,
+      title: 'Bac si Nhi khoa',
+      bio: '9 nam kinh nghiem nhi khoa',
+      experience_years: 9,
+        avatar_url: DOCTOR_AVATAR_D,
+      consultation_fee: 260000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserE.user_id },
+    update: {
+      full_name: 'Bac si Nguyen Van E',
+      specialty_id: specialtyEnt.specialty_id,
+      facility_id: facilityD.facility_id,
+      title: 'Bac si Tai Mui Hong',
+      bio: '11 nam kinh nghiem tai mui hong',
+      experience_years: 11,
+        avatar_url: DOCTOR_AVATAR_E,
+      consultation_fee: 300000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserE.user_id,
+      full_name: 'Bac si Nguyen Van E',
+      specialty_id: specialtyEnt.specialty_id,
+      facility_id: facilityD.facility_id,
+      title: 'Bac si Tai Mui Hong',
+      bio: '11 nam kinh nghiem tai mui hong',
+      experience_years: 11,
+        avatar_url: DOCTOR_AVATAR_E,
+      consultation_fee: 300000,
+      is_active: 1,
+    },
+  });
+
+  await prisma.doctor.upsert({
+    where: { user_id: doctorUserF.user_id },
+    update: {
+      full_name: 'Bac si Tran Thi F',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityC.facility_id,
+      title: 'Bac si Noi tong hop',
+      bio: '7 nam kinh nghiem noi tong hop',
+      experience_years: 7,
+        avatar_url: DOCTOR_AVATAR_F,
+      consultation_fee: 240000,
+      is_active: 1,
+    },
+    create: {
+      user_id: doctorUserF.user_id,
+      full_name: 'Bac si Tran Thi F',
+      specialty_id: specialtyGeneral.specialty_id,
+      facility_id: facilityC.facility_id,
+      title: 'Bac si Noi tong hop',
+      bio: '7 nam kinh nghiem noi tong hop',
+      experience_years: 7,
+        avatar_url: DOCTOR_AVATAR_F,
+      consultation_fee: 240000,
+      is_active: 1,
+    },
+  });
+
+  const patientUser = await upsertUser({
+    email: 'a@gmail.com',
+    fullName: 'Nguyen Van Patient A',
+    phone: '0909999999',
+    role: UserRole.patient,
+    password: '12345678',
+  });
+  await ensurePrimaryPatientProfile(patientUser.user_id, 'Nguyen Van Patient A', '0909999999');
+
+  const [doctorA, doctorB, doctorC, doctorD, doctorE, doctorF] = await Promise.all([
+    prisma.doctor.findUnique({ where: { user_id: doctorUserA.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserB.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserC.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserD.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserE.user_id } }),
+    prisma.doctor.findUnique({ where: { user_id: doctorUserF.user_id } }),
+  ]);
+
+  // Gio hanh chinh: 08:00-11:30 va 13:00-16:30
+  const businessHourBlocks: Array<[number, number]> = [
+    [8, 0], [8, 30], [9, 0], [9, 30], [10, 0], [10, 30], [11, 0],
+    [13, 0], [13, 30], [14, 0], [14, 30], [15, 0], [15, 30], [16, 0],
+  ];
+
+  if (doctorA != null) {
+    await ensureSlotsForDoctor(doctorA.doctor_id, facilityA.facility_id, businessHourBlocks);
+  }
+
+  if (doctorB != null) {
+    await ensureSlotsForDoctor(doctorB.doctor_id, facilityA.facility_id, businessHourBlocks);
+  }
+
+  if (doctorC != null) {
+    await ensureSlotsForDoctor(doctorC.doctor_id, facilityB.facility_id, businessHourBlocks);
+  }
+
+  if (doctorD != null) {
+    await ensureSlotsForDoctor(doctorD.doctor_id, facilityC.facility_id, businessHourBlocks);
+  }
+
+  if (doctorE != null) {
+    await ensureSlotsForDoctor(doctorE.doctor_id, facilityD.facility_id, businessHourBlocks);
+  }
+
+  if (doctorF != null) {
+    await ensureSlotsForDoctor(doctorF.doctor_id, facilityC.facility_id, businessHourBlocks);
+  }
+
+  await ensureServiceForFacility(facilityA.facility_id, 'Kham tong quat', 200000, 30);
+  await ensureServiceForFacility(facilityB.facility_id, 'Kham da lieu', 280000, 30);
+  await ensureServiceForFacility(facilityC.facility_id, 'Kham nhi tong quat', 260000, 30);
+  await ensureServiceForFacility(facilityD.facility_id, 'Kham tai mui hong', 300000, 30);
+
+  const facilityCount = await prisma.facility.count({ where: { is_active: 1 } });
+  const doctorCount = await prisma.doctor.count({ where: { is_active: 1 } });
+  console.log(
+    `Seed complete. Facilities: ${facilityCount}, Doctors: ${doctorCount}. Slots are in business hours.`,
+  );
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Lỗi khi seed:', e);
+    console.error('Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

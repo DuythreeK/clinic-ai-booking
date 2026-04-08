@@ -1,14 +1,18 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'doctor_hub_models.dart';
+import '../../auth/services/auth_service.dart';
 
 class DoctorDetailScreen extends StatelessWidget {
   const DoctorDetailScreen({
     super.key,
     required this.doctor,
+    required this.authService,
   });
 
   final DoctorProfile doctor;
+  final AuthService authService;
 
   @override
   Widget build(BuildContext context) {
@@ -172,17 +176,22 @@ class DoctorDetailScreen extends StatelessWidget {
                                           const SizedBox(height: 10),
                                           Align(
                                             alignment: Alignment.centerLeft,
-                                            child: Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                                              decoration: BoxDecoration(
-                                                color: const Color(0xFF26C495),
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              child: const Text(
-                                                'Dat kham',
-                                                style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w800,
+                                            child: GestureDetector(
+                                              onTap: () {
+                                                context.push('/booking?doctorId=${doctor.id}');
+                                              },
+                                              child: Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                                decoration: BoxDecoration(
+                                                  color: const Color(0xFF26C495),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: const Text(
+                                                  'Dat kham',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w800,
+                                                  ),
                                                 ),
                                               ),
                                             ),

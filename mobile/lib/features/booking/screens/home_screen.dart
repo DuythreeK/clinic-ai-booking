@@ -1,12 +1,10 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-import 'package:clinic_ai_booking/core/api/dio_client.dart';
-import 'package:clinic_ai_booking/features/auth/services/auth_service.dart';
-import 'package:clinic_ai_booking/features/booking/screens/doctor_hub_models.dart';
-import 'package:clinic_ai_booking/features/booking/screens/featured_doctors_screen.dart';
-import 'package:clinic_ai_booking/features/booking/screens/my_doctors_screen.dart';
+import '../../auth/services/auth_service.dart';
+import 'doctor_hub_models.dart';
+import 'my_doctors_screen.dart';
+import 'app_drawer_overlay.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
@@ -25,348 +23,652 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  final DoctorCatalog _catalog = DoctorCatalog.instance;
   late int _currentIndex;
-  bool _isLoading = true;
-  List<dynamic> _doctors = [];
-  List<dynamic> _clinics = [];
-  String? _errorMessage;
+
+  int get _navIndex => _currentIndex == 2 ? 3 : _currentIndex;
 
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.initialTab.clamp(0, 3);
-    _fetchDashboardData();
+    _currentIndex = 0;
   }
 
-  Future<void> _fetchDashboardData() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final dioClient = DioClient(secureStorage: const FlutterSecureStorage());
-
-      // Gọi đúng endpoint với tiền tố /api/ từ main.ts
-      final results = await Future.wait([
-        dioClient.dio.get('/api/doctors', queryParameters: {'limit': 10}),
-        dioClient.dio.get('/api/facilities', queryParameters: {'limit': 5}),
-      ]);
-
+  @override
+  void didUpdateWidget(covariant HomeScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final nextIndex = 0;
+    if (_currentIndex != nextIndex) {
       setState(() {
-        // Bóc tách dữ liệu Bác sĩ
-        final docRes = results[0].data;
-        if (docRes is Map && docRes['data'] != null) {
-          _doctors = docRes['data']['items'] ?? [];
-        } else {
-          _doctors = docRes is List ? docRes : [];
-        }
-
-        // Bóc tách dữ liệu Phòng khám
-        final clinicRes = results[1].data;
-        if (clinicRes is Map && clinicRes['data'] != null) {
-          _clinics = clinicRes['data']['items'] ?? [];
-        } else {
-          _clinics = clinicRes is List ? clinicRes : [];
-        }
-
-        _isLoading = false;
-      });
-    } catch (e) {
-      debugPrint("Lỗi Dashboard: $e");
-      setState(() {
-        _isLoading = false;
-        _errorMessage = "Không thể tải dữ liệu. Dũng kiểm tra 'npx prisma db seed' đã chạy xong chưa nhé!";
+        _currentIndex = nextIndex;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> pages = <Widget>[
-      _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2DC7C4)))
-          : _errorMessage != null
-          ? _buildErrorState()
-          : _UnifiedDashboard(
-        doctors: _doctors,
-        clinics: _clinics,
-        onRefresh: _fetchDashboardData,
+    final pages = [
+      _HomeFeedPage(
+        catalog: _catalog,
+        onOpenDoctor: _openDoctor,
+        authService: widget.authService,
       ),
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
-      const _ComingSoonPage(icon: Icons.vaccines_rounded, title: 'Lịch tiêm'),
-      const _ComingSoonPage(icon: Icons.chat_bubble_rounded, title: 'Tin nhắn'),
+      const _ComingSoonPage(
+        icon: Icons.chat_bubble_rounded,
+        title: 'Tin nhan',
+        subtitle:
+            'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
+      ),
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF9FF), // Màu nền xanh nhạt
-      body: Stack(
-        children: [
-          IndexedStack(index: _currentIndex, children: pages),
-          _buildHeader(),
-        ],
-      ),
+      backgroundColor: const Color(0xFFF4FAFF),
+      body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: _MainBottomNav(
-        currentIndex: _currentIndex,
+        currentIndex: _navIndex,
         onTap: (index) {
-          if (index == 4) { context.push('/ai-triage'); return; }
-          setState(() => _currentIndex = index);
+          if (index == 2) {
+            context.push('/booking');
+            return;
+          }
+
+          if (index == 4) {
+            context.push('/ai-triage');
+            return;
+          }
+
+          setState(() {
+            _currentIndex = index == 3 ? 2 : index;
+          });
         },
       ),
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.cloud_off_rounded, color: Colors.red, size: 54),
-            const SizedBox(height: 16),
-            Text(_errorMessage!, textAlign: TextAlign.center, style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: _fetchDashboardData,
-              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF2DC7C4)),
-              child: const Text("Thử lại", style: TextStyle(color: Colors.white)),
-            )
-          ],
-        ),
-      ),
-    );
+  void _openDoctor(DoctorProfile doctor) {
+    context.push('/doctor/${doctor.id}');
   }
-
-  Widget _buildHeader() {
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Thông báo bên TRÁI
-            _headerBtn(Icons.notifications_none_rounded, () {}, hasBadge: true),
-            const Text(
-                "Clinic AI",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF20304A))
-            ),
-            // Profile bên PHẢI
-            _headerBtn(Icons.person_outline_rounded, () => context.push('/profile')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _headerBtn(IconData icon, VoidCallback onTap, {bool hasBadge = false}) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        width: 44, height: 44,
-        decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)]
-        ),
-        child: Stack(alignment: Alignment.center, children: [
-          Icon(icon, color: const Color(0xFF5D718A), size: 24),
-          if (hasBadge)
-            Positioned(
-                top: 10, right: 12,
-                child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Color(0xFF2DC7C4), shape: BoxShape.circle))
-            ),
-        ]),
-      ),
-    );
-  }
-
-  void _openDoctor(DoctorProfile doctor) => context.push('/doctor/${doctor.id}');
 }
 
-class _UnifiedDashboard extends StatelessWidget {
-  final List<dynamic> doctors;
-  final List<dynamic> clinics;
-  final VoidCallback onRefresh;
-
-  const _UnifiedDashboard({
-    required this.doctors,
-    required this.clinics,
-    required this.onRefresh,
+class _MainBottomNav extends StatelessWidget {
+  const _MainBottomNav({
+    required this.currentIndex,
+    required this.onTap,
   });
+
+  final int currentIndex;
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async => onRefresh(),
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(16, 90, 16, 100),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text("Chào mừng Dũng!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-          const Text("Hệ thống đã sẵn sàng hỗ trợ bạn.", style: TextStyle(color: Colors.grey)),
-          const SizedBox(height: 24),
-
-          _buildSearch(),
-          const SizedBox(height: 28),
-
-          const Text("Các chuyên khoa hiện có", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF20304A))),
-          const SizedBox(height: 16),
-          _buildSpecialtyGrid(),
-          const SizedBox(height: 24),
-
-          _buildBookingBtn(context),
-          const SizedBox(height: 28),
-
-          _buildHeaderSection("Bác sĩ nổi bật", () {}),
-          const SizedBox(height: 12),
-          _buildDoctorList(context),
-          const SizedBox(height: 28),
-
-          _buildHeaderSection("Phòng khám nổi bật", () => context.push('/clinics')),
-          const SizedBox(height: 12),
-          _buildClinicList(context),
-        ]),
-      ),
-    );
-  }
-
-  Widget _buildSearch() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10)]),
-      child: const TextField(decoration: InputDecoration(icon: Icon(Icons.search, color: Color(0xFF2DC7C4)), hintText: "Tìm bác sĩ, chuyên khoa...", border: InputBorder.none)),
-    );
-  }
-
-  Widget _buildSpecialtyGrid() {
-    final specs = [
-      {'icon': Icons.opacity, 'color': const Color(0xFF4C6FFF)},
-      {'icon': Icons.favorite, 'color': const Color(0xFF20D0A4)},
-      {'icon': Icons.health_and_safety, 'color': const Color(0xFFFFB258)},
-      {'icon': Icons.accessibility_new, 'color': const Color(0xFFFF5E5E)},
+    const selected = Color(0xFF2DC7C4);
+    const unselected = Color(0xFF94A3B8);
+    final items = <IconData>[
+      Icons.home_rounded,
+      Icons.favorite_rounded,
+      Icons.calendar_month_rounded,
+      Icons.chat_bubble_rounded,
+      Icons.auto_awesome_rounded,
     ];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: specs.map((s) => Container(
-        width: 75, height: 75,
-        decoration: BoxDecoration(color: s['color'] as Color, borderRadius: BorderRadius.circular(18), boxShadow: [BoxShadow(color: (s['color'] as Color).withOpacity(0.2), blurRadius: 8)]),
-        child: Icon(s['icon'] as IconData, color: Colors.white, size: 32),
-      )).toList(),
-    );
-  }
 
-  Widget _buildBookingBtn(BuildContext context) {
-    return InkWell(
-      onTap: () => context.push('/clinics'),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        decoration: BoxDecoration(
-            color: const Color(0xFF2DC7C4),
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [BoxShadow(color: const Color(0xFF2DC7C4).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))]
-        ),
-        child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(Icons.calendar_month_rounded, color: Colors.white),
-          SizedBox(width: 12),
-          Text("Đặt lịch khám ngay", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-        ]),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x180A4A6A),
+            blurRadius: 22,
+            offset: Offset(0, 10),
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildDoctorList(BuildContext context) {
-    if (doctors.isEmpty) return const Text("Đang cập nhật danh sách bác sĩ...");
-    return SizedBox(
-      height: 170,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: doctors.length,
-        itemBuilder: (ctx, i) {
-          final doc = doctors[i];
-
-          // FIX LỖI: Kiểm tra xem specialty là String hay Map
-          final specialtyData = doc['specialty'];
-          String specialtyName = "Đa khoa";
-          if (specialtyData is Map) {
-            specialtyName = specialtyData['name'] ?? "Đa khoa";
-          } else if (specialtyData is String) {
-            specialtyName = specialtyData;
-          }
-
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: List.generate(items.length, (index) {
+          final isSelected = index == currentIndex && index != 4;
           return InkWell(
-            onTap: () => context.push('/doctor/${doc['id'].toString()}'),
-            child: Container(
-              width: 140, margin: const EdgeInsets.only(right: 12), padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFF1F5F9))),
-              child: Column(children: [
-                const CircleAvatar(radius: 30, backgroundColor: Color(0xFFF1F5F9), child: Icon(Icons.person, color: Colors.grey)),
-                const SizedBox(height: 8),
-                Text(doc['fullName'] ?? "Bác sĩ", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13), maxLines: 1, overflow: TextOverflow.ellipsis),
-
-                // Hiển thị tên chuyên khoa đã được fix
-                Text(specialtyName, style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
-
-                const Spacer(),
-                const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.star, size: 14, color: Colors.orange), Text(" 4.9", style: TextStyle(fontSize: 12))])
-              ]),
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => onTap(index),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              width: 54,
+              height: 44,
+              decoration: BoxDecoration(
+                color:
+                    isSelected ? const Color(0x162DC7C4) : Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(
+                items[index],
+                color: isSelected ? selected : unselected,
+                size: 24,
+              ),
             ),
           );
-        },
+        }),
       ),
     );
   }
+}
 
-  Widget _buildClinicList(BuildContext context) {
-    if (clinics.isEmpty) return const Text("Đang cập nhật danh sách phòng khám...");
-    return ListView.builder(
-      shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), itemCount: clinics.length,
-      itemBuilder: (ctx, i) {
-        final clinic = clinics[i];
-        return InkWell(
-          onTap: () => context.push('/clinic-detail', extra: clinic),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 12), padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
-            child: Row(children: [
-              Container(width: 50, height: 50, decoration: BoxDecoration(color: const Color(0xFFF0FDFA), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.local_hospital, color: Color(0xFF2DC7C4))),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(clinic['name'] ?? "Bệnh viện", style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text(clinic['addressDetail'] ?? clinic['address'] ?? "Địa chỉ", style: const TextStyle(fontSize: 12, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis)
-              ])),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ]),
+class _HomeFeedPage extends StatefulWidget {
+  const _HomeFeedPage({
+    required this.catalog,
+    required this.onOpenDoctor,
+    required this.authService,
+  });
+
+  final DoctorCatalog catalog;
+  final ValueChanged<DoctorProfile> onOpenDoctor;
+  final AuthService authService;
+
+  @override
+  State<_HomeFeedPage> createState() => _HomeFeedPageState();
+}
+
+class _HomeFeedPageState extends State<_HomeFeedPage> {
+  static const _specialties = [
+    _SpecialtyItem('Than', Icons.air, [Color(0xFF5661F6), Color(0xFF3F50E6)]),
+    _SpecialtyItem(
+        'Tim', Icons.favorite_border, [Color(0xFF25D0C8), Color(0xFF1FB8AF)]),
+    _SpecialtyItem('Rang', Icons.emoji_emotions_outlined,
+        [Color(0xFFFFB357), Color(0xFFFF9A3B)]),
+    _SpecialtyItem('Co xuong', Icons.accessibility_new,
+        [Color(0xFFFF6A6D), Color(0xFFFF5A60)]),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.catalog,
+      builder: (context, _) {
+        final featured = widget.catalog.featuredDoctors.take(6).toList();
+        final mine = widget.catalog.myDoctors;
+
+        return Container(
+          color: const Color(0xFFF4F9FF),
+          child: SafeArea(
+            child: Column(
+              children: [
+                _HomeHeader(authService: widget.authService),
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+                    children: [
+                      const SizedBox(height: 12),
+                      _SearchCard(),
+                      const SizedBox(height: 14),
+                      _SectionTitle(title: 'Cac chuyen khoa hien co'),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: _specialties
+                            .map(
+                              (item) => Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.only(right: 8),
+                                  child: _SpecialtyCard(item: item),
+                                ),
+                              ),
+                            )
+                            .toList()
+                          ..removeLast(),
+                      ),
+                      const SizedBox(height: 16),
+                      _SectionTitle(
+                          title: 'Bac si noi bat', actionLabel: 'Xem >'),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 252,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: featured.length,
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(width: 10),
+                          itemBuilder: (context, index) {
+                            final doctor = featured[index];
+                            return _FeaturedDoctorCard(
+                              doctor: doctor,
+                              isFavorite: widget.catalog.isFavorite(doctor.id),
+                              onFavorite: () =>
+                                  widget.catalog.toggleFavorite(doctor.id),
+                              onTap: () => widget.onOpenDoctor(doctor),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      _SectionTitle(
+                          title: 'Bac si cua toi', actionLabel: 'Xem >'),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        height: 64,
+                        child: ListView.separated(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: mine.length,
+                          separatorBuilder: (_, __) => const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final doctor = mine[index];
+                            return _MiniDoctorChip(
+                                doctor: doctor,
+                                onTap: () => widget.onOpenDoctor(doctor));
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },
     );
   }
-
-  Widget _buildHeaderSection(String t, VoidCallback onTap) => Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text(t, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), TextButton(onPressed: onTap, child: const Text("Tất cả", style: TextStyle(color: Color(0xFF2DC7C4))))]);
 }
 
-class _MainBottomNav extends StatelessWidget {
-  final int currentIndex; final ValueChanged<int> onTap;
-  const _MainBottomNav({required this.currentIndex, required this.onTap});
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({required this.authService});
+
+  final AuthService authService;
+
   @override
   Widget build(BuildContext context) {
-    final items = [Icons.home_rounded, Icons.favorite_rounded, Icons.calendar_month_rounded, Icons.chat_bubble_rounded, Icons.auto_awesome_rounded];
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(28), boxShadow: const [BoxShadow(color: Color(0x180A4A6A), blurRadius: 22, offset: Offset(0, 10))]),
-      child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: List.generate(items.length, (i) {
-        final sel = i == currentIndex && i != 4;
-        return InkWell(onTap: () => onTap(i), child: Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: sel ? const Color(0x162DC7C4) : Colors.transparent, shape: BoxShape.circle), child: Icon(items[i], color: sel ? const Color(0xFF2DC7C4) : const Color(0xFF94A3B8), size: 24)));
-      })),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF19C9B7), Color(0xFF2A8BFF)],
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(16),
+          bottomRight: Radius.circular(16),
+        ),
+      ),
+      child: Row(
+        children: [
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                PageRouteBuilder(
+                  opaque: false,
+                  pageBuilder: (_, __, ___) => AppDrawerOverlay(authService: authService),
+                  transitionsBuilder: (_, animation, __, child) {
+                    return FadeTransition(opacity: animation, child: child);
+                  },
+                ),
+              );
+            },
+            child: const CircleAvatar(
+              radius: 26,
+              backgroundColor: Color(0xFFDDE8EF),
+              child: Icon(Icons.person, color: Color(0xFF9FB1BF), size: 32),
+            ),
+          ),
+          const SizedBox(width: 10),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Hi Nguyen Van AI',
+                  style: TextStyle(fontSize: 14, color: Colors.white70),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Tim bac si cua ban',
+                  style: TextStyle(
+                    fontSize: 32,
+                    height: 1.1,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Icon(Icons.notifications_none_rounded,
+                  color: Colors.white, size: 28),
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                      color: Color(0xFFFF3D57), shape: BoxShape.circle),
+                  child: const Center(
+                    child: Text('1',
+                        style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+              color: Color(0x140B4764), blurRadius: 14, offset: Offset(0, 6)),
+        ],
+      ),
+      child: const TextField(
+        decoration: InputDecoration(
+          border: InputBorder.none,
+          hintText: 'Tim kiem.....',
+          prefixIcon: Icon(Icons.search, color: Color(0xFF9AA9B8)),
+          suffixIcon: Icon(Icons.close, color: Color(0xFF9AA9B8)),
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.title, this.actionLabel});
+
+  final String title;
+  final String? actionLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+              fontSize: 27,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF27364D)),
+        ),
+        if (actionLabel != null)
+          Text(actionLabel!,
+              style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF93A0B2),
+                  fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+}
+
+class _SpecialtyItem {
+  const _SpecialtyItem(this.label, this.icon, this.colors);
+
+  final String label;
+  final IconData icon;
+  final List<Color> colors;
+}
+
+class _SpecialtyCard extends StatelessWidget {
+  const _SpecialtyCard({required this.item});
+
+  final _SpecialtyItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 82,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+            colors: item.colors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(item.icon, color: Colors.white, size: 24),
+          const SizedBox(height: 6),
+          Text(item.label,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12)),
+        ],
+      ),
+    );
+  }
+}
+
+class _FeaturedDoctorCard extends StatelessWidget {
+  const _FeaturedDoctorCard({
+    required this.doctor,
+    required this.isFavorite,
+    required this.onFavorite,
+    required this.onTap,
+  });
+
+  final DoctorProfile doctor;
+  final bool isFavorite;
+  final VoidCallback onFavorite;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 160,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: const [
+            BoxShadow(
+                color: Color(0x120B4764), blurRadius: 14, offset: Offset(0, 6)),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(14), topRight: Radius.circular(14)),
+              child: Image.network(
+                doctor.imageUrl,
+                height: 120,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  height: 120,
+                  color: const Color(0xFFE7EEF6),
+                  child: const Icon(Icons.person,
+                      size: 40, color: Color(0xFFA5B2C0)),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(10, 8, 10, 6),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    doctor.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2A3A51)),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(doctor.specialty,
+                      style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF1FB8AF),
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      const Icon(Icons.star_rounded,
+                          size: 14, color: Color(0xFFFFC94D)),
+                      const SizedBox(width: 2),
+                      Text('${doctor.rating.toStringAsFixed(1)}',
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF4B5C74),
+                              fontSize: 12)),
+                      const Spacer(),
+                      InkWell(
+                        onTap: onFavorite,
+                        child: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          size: 16,
+                          color: isFavorite
+                              ? const Color(0xFFFF4D61)
+                              : const Color(0xFF9DAAC0),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniDoctorChip extends StatelessWidget {
+  const _MiniDoctorChip({required this.doctor, required this.onTap});
+
+  final DoctorProfile doctor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(30),
+      child: Container(
+        width: 88,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(color: const Color(0xFFE1E9F2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundImage: NetworkImage(doctor.imageUrl),
+              onBackgroundImageError: (_, __) {},
+            ),
+            const SizedBox(width: 6),
+            Text(
+              doctor.rating.toStringAsFixed(1),
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF556781)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
 class _ComingSoonPage extends StatelessWidget {
-  final IconData icon; final String title;
-  const _ComingSoonPage({required this.icon, required this.title});
+  const _ComingSoonPage({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
   @override
-  Widget build(BuildContext context) => Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(icon, size: 64, color: const Color(0xFF2DC7C4)), const SizedBox(height: 16), Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold))]));
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFFEAF9FF), Color(0xFFF8FEFF)],
+        ),
+      ),
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 28),
+            child: Container(
+              padding: const EdgeInsets.all(28),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(28),
+                boxShadow: const [
+                  BoxShadow(
+                    color: Color(0x160B4564),
+                    blurRadius: 26,
+                    offset: Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 34,
+                    backgroundColor: const Color(0x152DC7C4),
+                    child: Icon(icon, size: 34, color: const Color(0xFF22B8B3)),
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF20304A),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.55,
+                      color: Color(0xFF7A8CA5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

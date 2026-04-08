@@ -1,115 +1,174 @@
 import 'package:clinic_ai_booking/core/api/dio_client.dart';
-import 'package:clinic_ai_booking/core/models/models.dart';
+
+class BookingAppointment {
+  BookingAppointment({
+    required this.appointmentId,
+    required this.slotId,
+    required this.facilityId,
+    required this.appointmentType,
+    required this.status,
+    required this.totalAmount,
+    this.appointmentCode,
+    this.doctorId,
+  });
+
+  final int appointmentId;
+  final int slotId;
+  final int facilityId;
+  final String appointmentType;
+  final String status;
+  final double totalAmount;
+  final String? appointmentCode;
+  final int? doctorId;
+
+  factory BookingAppointment.fromJson(Map<String, dynamic> json) {
+    return BookingAppointment(
+      appointmentId: (json['appointment_id'] as num?)?.toInt() ?? 0,
+      slotId: (json['slot_id'] as num?)?.toInt() ?? 0,
+      facilityId: (json['facility_id'] as num?)?.toInt() ?? 0,
+      appointmentType: (json['appointment_type'] ?? '').toString(),
+      status: (json['status'] ?? '').toString(),
+      totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0,
+      appointmentCode: json['appointment_code']?.toString(),
+      doctorId: (json['doctor_id'] as num?)?.toInt(),
+    );
+  }
+}
+
+class BookingPayment {
+  BookingPayment({
+    required this.paymentId,
+    required this.appointmentId,
+    required this.paymentMethod,
+    required this.amount,
+    required this.status,
+    this.paymentUrl,
+    this.transactionCode,
+  });
+
+  final int paymentId;
+  final int appointmentId;
+  final String paymentMethod;
+  final double amount;
+  final String status;
+  final String? paymentUrl;
+  final String? transactionCode;
+
+  factory BookingPayment.fromJson(Map<String, dynamic> json) {
+    return BookingPayment(
+      paymentId: (json['payment_id'] as num?)?.toInt() ?? 0,
+      appointmentId: (json['appointment_id'] as num?)?.toInt() ?? 0,
+      paymentMethod: (json['payment_method'] ?? '').toString(),
+      amount: (json['amount'] as num?)?.toDouble() ?? 0,
+      status: (json['status'] ?? '').toString(),
+      paymentUrl: json['payment_url']?.toString(),
+      transactionCode: json['transaction_code']?.toString(),
+    );
+  }
+}
 
 class AppointmentService {
-  final DioClient dioClient;
-
   AppointmentService({required this.dioClient});
 
-  /// Tạo lịch hẹn mới
-  Future<Appointment> createAppointment({
-    required String doctorId,
-    required String slotId,
-    required String reason,
-    List<String>? attachments,
+  final DioClient dioClient;
+
+  Future<BookingAppointment> createAppointment({
+    required int patientId,
+    required int facilityId,
+    int? doctorId,
+    required int slotId,
+    required String appointmentType,
+    int? serviceId,
+    int? triageSessionId,
+    String? symptomsNote,
+    required double totalAmount,
   }) async {
     final response = await dioClient.post(
       '/appointments',
       data: {
-        'doctorId': doctorId,
-        'slotId': slotId,
-        'reason': reason,
-        'attachments': attachments ?? [],
+        'patient_id': patientId,
+        'facility_id': facilityId,
+        if (doctorId != null) 'doctor_id': doctorId,
+        'slot_id': slotId,
+        'appointment_type': appointmentType,
+        if (serviceId != null) 'service_id': serviceId,
+        if (triageSessionId != null) 'triage_session_id': triageSessionId,
+        if (symptomsNote != null && symptomsNote.isNotEmpty)
+          'symptoms_note': symptomsNote,
+        'total_amount': totalAmount,
       },
     );
 
-    return Appointment.fromJson(response.data);
+    final data = _unwrapData(response.data);
+    return BookingAppointment.fromJson(data);
   }
 
-  /// Lấy danh sách lịch hẹn của bệnh nhân
-  Future<List<Appointment>> getMyAppointments({
+  Future<List<BookingAppointment>> getAppointments({
     String? status,
-    DateTime? fromDate,
-    DateTime? toDate,
+    int limit = 10,
+    int offset = 0,
   }) async {
-    final queryParams = <String, dynamic>{};
-
-    if (status != null) queryParams['status'] = status;
-    if (fromDate != null) queryParams['fromDate'] = fromDate.toIso8601String();
-    if (toDate != null) queryParams['toDate'] = toDate.toIso8601String();
-
     final response = await dioClient.get(
       '/appointments',
-      queryParameters: queryParams,
-    );
-
-    final appointments = (response.data as List)
-        .map((json) => Appointment.fromJson(json as Map<String, dynamic>))
-        .toList();
-
-    return appointments;
-  }
-
-  /// Lấy chi tiết lịch hẹn
-  Future<Appointment> getAppointmentById(String appointmentId) async {
-    final response = await dioClient.get('/appointments/$appointmentId');
-    return Appointment.fromJson(response.data);
-  }
-
-  /// Cập nhật lịch hẹn
-  Future<Appointment> updateAppointment(
-    String appointmentId, {
-    required String reason,
-    List<String>? attachments,
-  }) async {
-    final response = await dioClient.patch(
-      '/appointments/$appointmentId',
-      data: {
-        'reason': reason,
-        'attachments': attachments ?? [],
+      queryParameters: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        'limit': limit,
+        'offset': offset,
       },
     );
 
-    return Appointment.fromJson(response.data);
+    final body = response.data;
+    if (body is Map<String, dynamic>) {
+      final list = body['data'];
+      if (list is List) {
+        return list
+            .whereType<Map<String, dynamic>>()
+            .map(BookingAppointment.fromJson)
+            .toList();
+      }
+    }
+
+    return <BookingAppointment>[];
   }
 
-  /// Cập nhật trạng thái lịch hẹn
-  Future<Appointment> updateAppointmentStatus(
-    String appointmentId,
-    String newStatus,
-  ) async {
-    final response = await dioClient.patch(
-      '/appointments/$appointmentId/status',
-      data: {'status': newStatus},
-    );
-
-    return Appointment.fromJson(response.data);
+  Future<BookingPayment> getPaymentByAppointment(int appointmentId) async {
+    final response =
+        await dioClient.get('/appointments/$appointmentId/payment');
+    final data = _unwrapData(response.data);
+    return BookingPayment.fromJson(data);
   }
 
-  /// Lên lịch lại lịch hẹn
-  Future<Appointment> rescheduleAppointment(
-    String appointmentId,
-    String newSlotId, {
-    String? reason,
+  Future<BookingPayment> createPayment({
+    required int appointmentId,
+    required String paymentMethod,
+    required double amount,
   }) async {
     final response = await dioClient.post(
-      '/appointments/$appointmentId/reschedule',
+      '/appointments/$appointmentId/payment',
       data: {
-        'newSlotId': newSlotId,
-        if (reason != null) 'reason': reason,
+        'payment_method': paymentMethod,
+        'amount': amount,
       },
     );
 
-    return Appointment.fromJson(response.data);
+    final data = _unwrapData(response.data);
+    return BookingPayment.fromJson(data);
   }
 
-  /// Hủy lịch hẹn
-  Future<void> cancelAppointment(String appointmentId) async {
-    await dioClient.post('/appointments/$appointmentId/cancel');
+  Future<BookingPayment> checkPaymentStatus(int paymentId) async {
+    final response = await dioClient.get('/payments/$paymentId/status');
+    final data = _unwrapData(response.data);
+    return BookingPayment.fromJson(data);
   }
 
-  /// Xóa lịch hẹn (chỉ admin)
-  Future<void> deleteAppointment(String appointmentId) async {
-    await dioClient.delete('/appointments/$appointmentId');
+  Map<String, dynamic> _unwrapData(dynamic body) {
+    if (body is Map<String, dynamic>) {
+      final data = body['data'];
+      if (data is Map<String, dynamic>) {
+        return data;
+      }
+      return body;
+    }
+    return <String, dynamic>{};
   }
 }

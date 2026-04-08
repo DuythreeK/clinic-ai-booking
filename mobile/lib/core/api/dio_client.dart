@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
 import 'package:dio_smart_retry/dio_smart_retry.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/api_config.dart';
 
@@ -10,23 +12,48 @@ class TokenInterceptor extends Interceptor {
   final Dio dio;
   final Logger logger = Logger();
 
+  static const String _accessTokenKey = 'access_token';
+  static const String _refreshTokenKey = 'refresh_token';
+
   TokenInterceptor({
     required this.secureStorage,
     required this.dio,
   });
+
+  Future<String?> _readToken(String key) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString(key);
+    }
+    return secureStorage.read(key: key);
+  }
+
+  Future<void> _writeToken(String key, String value) async {
+    if (kIsWeb) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(key, value);
+      return;
+    }
+    await secureStorage.write(key: key, value: value);
+  }
 
   @override
   Future<void> onRequest(
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    final accessToken = await secureStorage.read(key: 'access_token');
+    // Keep requests relative so Dio preserves `/api` from baseUrl.
+    if (!options.path.startsWith('http')) {
+      options.path = options.path.replaceFirst(RegExp(r'^/+'), '');
+    }
+
+    final accessToken = await _readToken(_accessTokenKey);
 
     if (accessToken != null) {
       options.headers['Authorization'] = 'Bearer $accessToken';
     }
 
-    logger.i('🔹 API Request: ${options.method} ${options.path}');
+    logger.i('🔹 API Request: ${options.method} ${options.uri}');
     return handler.next(options);
   }
 
@@ -35,11 +62,21 @@ class TokenInterceptor extends Interceptor {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
-    if (err.response?.statusCode == 401) {
+    final requestPath = err.requestOptions.path.toLowerCase();
+    final isAuthEndpoint = requestPath.contains('/auth/login') ||
+        requestPath.contains('/auth/register') ||
+        requestPath.contains('/auth/refresh');
+    final hadAccessToken = (err.requestOptions.headers['Authorization']
+                ?.toString()
+                .isNotEmpty ??
+            false) ||
+        ((await _readToken(_accessTokenKey))?.isNotEmpty ?? false);
+
+    if (err.response?.statusCode == 401 && !isAuthEndpoint && hadAccessToken) {
       logger.w('🔄 Token expired, attempting refresh...');
 
       try {
-        final refreshToken = await secureStorage.read(key: 'refresh_token');
+        final refreshToken = await _readToken(_refreshTokenKey);
 
         if (refreshToken == null) {
           logger.e('❌ No refresh token available');
@@ -60,7 +97,7 @@ class TokenInterceptor extends Interceptor {
             return handler.next(err);
           }
 
-          await secureStorage.write(key: 'access_token', value: newAccessToken);
+          await _writeToken(_accessTokenKey, newAccessToken);
           logger.i('✅ Token refreshed successfully');
 
           // Retry original request with new token
@@ -89,7 +126,10 @@ class TokenInterceptor extends Interceptor {
       }
     }
 
-    logger.e('❌ API Error: ${err.message}');
+    logger.e(
+      '❌ API Error [${err.response?.statusCode ?? 'no-status'}] '
+      '${err.requestOptions.method} ${err.requestOptions.uri} - ${err.message}',
+    );
     return handler.next(err);
   }
 
@@ -107,11 +147,18 @@ class DioClient {
   late final Dio _dio;
   final FlutterSecureStorage secureStorage;
 
+  String _normalizePath(String path) {
+    if (path.startsWith('/')) {
+      return path.substring(1);
+    }
+    return path;
+  }
+
   DioClient({FlutterSecureStorage? secureStorage})
       : secureStorage = secureStorage ?? const FlutterSecureStorage() {
     _dio = Dio(
       BaseOptions(
-        baseUrl: baseUrl,
+        baseUrl: '$baseUrl/',
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
         contentType: Headers.jsonContentType,
@@ -151,7 +198,7 @@ class DioClient {
     ProgressCallback? onReceiveProgress,
   }) {
     return _dio.get<T>(
-      path,
+      _normalizePath(path),
       queryParameters: queryParameters,
       options: options,
       cancelToken: cancelToken,
@@ -169,7 +216,7 @@ class DioClient {
     ProgressCallback? onReceiveProgress,
   }) {
     return _dio.post<T>(
-      path,
+      _normalizePath(path),
       data: data,
       queryParameters: queryParameters,
       options: options,
@@ -189,7 +236,7 @@ class DioClient {
     ProgressCallback? onReceiveProgress,
   }) {
     return _dio.put<T>(
-      path,
+      _normalizePath(path),
       data: data,
       queryParameters: queryParameters,
       options: options,
@@ -209,7 +256,7 @@ class DioClient {
     ProgressCallback? onReceiveProgress,
   }) {
     return _dio.patch<T>(
-      path,
+      _normalizePath(path),
       data: data,
       queryParameters: queryParameters,
       options: options,
@@ -227,7 +274,7 @@ class DioClient {
     CancelToken? cancelToken,
   }) {
     return _dio.delete<T>(
-      path,
+      _normalizePath(path),
       data: data,
       queryParameters: queryParameters,
       options: options,
@@ -235,4 +282,3 @@ class DioClient {
     );
   }
 }
-

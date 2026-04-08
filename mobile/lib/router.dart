@@ -5,20 +5,18 @@ import 'features/ai/screens/ai_triage_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/auth/services/auth_service.dart';
+import 'features/booking/screens/booking_flow_screen.dart';
 import 'features/booking/screens/doctor_detail_screen.dart';
 import 'features/booking/screens/doctor_hub_models.dart';
 import 'features/booking/screens/home_screen.dart';
 import 'features/profile/screens/personal_info_screen.dart';
-// Import các file phòng khám của bạn
-import 'features/clinics/screens/clinic_list_screen.dart';
-import 'features/clinics/screens/clinic_detail_screen.dart';
+import 'features/booking/screens/appointment_history_screen.dart';
 
 GoRouter createAppRouter({
   required AuthService authService,
-  required bool isAuthenticated,
 }) {
   return GoRouter(
-    initialLocation: isAuthenticated ? '/' : '/login',
+    initialLocation: '/login',
     routes: [
       GoRoute(
         path: '/',
@@ -26,33 +24,28 @@ GoRouter createAppRouter({
         builder: (context, state) {
           final qp = state.uri.queryParameters;
           final requestedTab = int.tryParse(qp['tab'] ?? '') ?? 0;
+          final initialTab = requestedTab.clamp(0, 2);
           final specialty = qp['specialty'];
+
           return HomeScreen(
             authService: authService,
-            initialTab: requestedTab.clamp(0, 3),
+            initialTab: initialTab,
             prefilledSpecialty: specialty,
           );
         },
       ),
-      // --- THÊM CÁC ROUTE PHÒNG KHÁM ---
-      GoRoute(
-        path: '/clinics',
-        name: 'clinics',
-        builder: (context, state) => const ClinicListScreen(),
-      ),
-      GoRoute(
-        path: '/clinic-detail',
-        name: 'clinic-detail',
-        builder: (context, state) {
-          final clinic = state.extra as dynamic; // Lấy dữ liệu clinic truyền qua extra
-          return ClinicDetailScreen(clinic: clinic);
-        },
-      ),
-      // --------------------------------
       GoRoute(
         path: '/login',
         name: 'login',
         builder: (context, state) => LoginScreen(authService: authService),
+      ),
+      GoRoute(
+        path: '/home',
+        name: 'home-root',
+        builder: (context, state) => HomeScreen(
+          authService: authService,
+          initialTab: 0,
+        ),
       ),
       GoRoute(
         path: '/register',
@@ -70,8 +63,29 @@ GoRouter createAppRouter({
         builder: (context, state) {
           final id = state.pathParameters['id'] ?? '';
           final doctor = DoctorCatalog.instance.findById(id);
-          if (doctor == null) return const Scaffold(body: Center(child: Text('Doctor not found')));
-          return DoctorDetailScreen(doctor: doctor);
+
+          if (doctor == null) {
+            return const Scaffold(
+              body: Center(child: Text('Doctor not found')),
+            );
+          }
+
+          return DoctorDetailScreen(
+            doctor: doctor,
+            authService: authService,
+          );
+        },
+      ),
+      GoRoute(
+        path: '/booking',
+        name: 'booking',
+        builder: (context, state) {
+          final doctorId =
+              int.tryParse(state.uri.queryParameters['doctorId'] ?? '');
+          return BookingFlowScreen(
+            authService: authService,
+            initialDoctorId: doctorId,
+          );
         },
       ),
       GoRoute(
@@ -79,6 +93,24 @@ GoRouter createAppRouter({
         name: 'profile',
         builder: (context, state) => const PersonalInfoScreen(),
       ),
+      GoRoute(
+        path: '/profile/edit',
+        name: 'profile-edit',
+        builder: (context, state) => const EditPersonalInfoScreen(),
+      ),
+      GoRoute(
+        path: '/history',
+        name: 'history',
+        builder: (context, state) => AppointmentHistoryScreen(
+          dioClient: authService.dioClient,
+        ),
+      ),
     ],
+    errorBuilder: (context, state) => Scaffold(
+      appBar: AppBar(title: const Text('Not Found')),
+      body: Center(
+        child: Text('Route not found: ${state.uri}'),
+      ),
+    ),
   );
 }
