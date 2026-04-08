@@ -36,7 +36,12 @@ export class RoomsService {
       this.prisma.room.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total } };
+    const mappedItems = items.map((item) => ({
+      ...item,
+      id: item.room_id.toString(),
+    }));
+
+    return { data: mappedItems, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
@@ -48,7 +53,10 @@ export class RoomsService {
       throw new NotFoundException('Khong tim thay phong');
     }
 
-    return room;
+    return {
+      ...room,
+      id: room.room_id.toString(),
+    };
   }
 
   async create(dto: CreateRoomDto) {

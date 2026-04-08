@@ -22,11 +22,22 @@ export class BigIntInterceptor implements NestInterceptor {
       return data.toString();
     }
 
+    // Preserve Date objects, Buffers, etc.
+    if (data instanceof Date || data instanceof Buffer) {
+      return data;
+    }
+
     if (Array.isArray(data)) {
       return data.map((item) => this.transform(item));
     }
 
     if (typeof data === 'object') {
+      // Only transform plain objects
+      const isPlainObject = Object.getPrototypeOf(data) === Object.prototype || Object.getPrototypeOf(data) === null;
+      if (!isPlainObject) {
+        return data;
+      }
+
       const transformed: any = {};
       for (const key in data) {
         if (Object.prototype.hasOwnProperty.call(data, key)) {

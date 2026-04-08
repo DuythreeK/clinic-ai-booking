@@ -58,7 +58,12 @@ export class SchedulesService {
       this.prisma.schedule.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total } };
+    const mappedItems = items.map((item) => ({
+      ...item,
+      id: item.scheduleId.toString(),
+    }));
+
+    return { data: mappedItems, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
@@ -73,7 +78,10 @@ export class SchedulesService {
       throw new NotFoundException('Khong tim thay lich lam viec');
     }
 
-    return schedule;
+    return {
+      ...schedule,
+      id: schedule.scheduleId.toString(),
+    };
   }
 
   async create(dto: CreateScheduleDto) {
@@ -82,7 +90,7 @@ export class SchedulesService {
     this.validateTimeWindow(dto.startTime, dto.endTime);
 
     try {
-      return await this.prisma.schedule.create({
+      const schedule = await this.prisma.schedule.create({
         data: {
           doctor_id: BigInt(dto.doctorId),
           room_id: dto.roomId ? BigInt(dto.roomId) : null,
@@ -98,6 +106,11 @@ export class SchedulesService {
           room: true,
         },
       });
+
+      return {
+        ...schedule,
+        id: schedule.scheduleId.toString(),
+      };
     } catch (error) {
       this.handleScheduleConstraintError(error, dto.workDate);
     }
@@ -123,7 +136,7 @@ export class SchedulesService {
     this.validateTimeWindow(nextStartTime, nextEndTime);
 
     try {
-      return await this.prisma.schedule.update({
+      const updated = await this.prisma.schedule.update({
         where: { scheduleId: BigInt(id) },
         data: {
           doctor_id: BigInt(nextDoctorId),
@@ -141,6 +154,11 @@ export class SchedulesService {
           room: true,
         },
       });
+
+      return {
+        ...updated,
+        id: updated.scheduleId.toString(),
+      };
     } catch (error) {
       this.handleScheduleConstraintError(error, nextWorkDate);
     }

@@ -26,12 +26,18 @@ class AdminSchedulePayload {
   final bool isAvailable;
 
   Map<String, dynamic> toJson() {
+    String formatTime(DateTime dt) {
+      final h = dt.hour.toString().padLeft(2, '0');
+      final m = dt.minute.toString().padLeft(2, '0');
+      return '$h:$m';
+    }
+
     return {
       'doctorId': doctorId,
       if (roomId != null && roomId!.isNotEmpty) 'roomId': roomId,
-      'workDate': workDate.toUtc().toIso8601String(),
-      'startTime': startTime.toUtc().toIso8601String(),
-      'endTime': endTime.toUtc().toIso8601String(),
+      'workDate': workDate.toIso8601String().split('T')[0],
+      'startTime': formatTime(startTime),
+      'endTime': formatTime(endTime),
       'slotDurationMin': slotDurationMin,
       'maxSlots': maxSlots,
       'isAvailable': isAvailable,

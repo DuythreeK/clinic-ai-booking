@@ -41,12 +41,20 @@ export class SpecialtiesService {
       this.prisma.specialty.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total } };
+    const mappedItems = items.map((item) => ({
+      ...item,
+      id: item.specialty_id.toString(),
+    }));
+
+    return { data: mappedItems, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
     const specialty = await this.getById(id);
-    return specialty;
+    return {
+      ...specialty,
+      id: specialty.specialty_id.toString(),
+    };
   }
 
   async create(dto: CreateSpecialtyDto) {

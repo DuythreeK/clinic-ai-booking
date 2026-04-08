@@ -152,7 +152,12 @@ class AdminAppointment {
       return null;
     }
 
-    return DateTime.tryParse(value.toString());
+    final strValue = value.toString();
+    if (strValue == '{}' || strValue.trim().isEmpty) {
+      return null;
+    }
+
+    return DateTime.tryParse(strValue);
   }
 
   static String _formatDate(DateTime? value) {

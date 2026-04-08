@@ -59,9 +59,17 @@ class AdminSchedule {
 
   static DateTime _parseDate(dynamic value) {
     if (value == null) return DateTime.now();
+
+    final strValue = value.toString();
+    // Defensive check for empty objects "{}" or malformed strings
+    if (strValue == '{}' || strValue.trim().isEmpty) {
+      return DateTime.now();
+    }
+
     try {
-      return DateTime.parse(value.toString()).toLocal();
+      return DateTime.parse(strValue).toLocal();
     } catch (_) {
+      // Return a stable fallback instead of crashing
       return DateTime.now();
     }
   }

@@ -41,7 +41,12 @@ export class DoctorsService {
       this.prisma.doctor.count({ where }),
     ]);
 
-    return { data: items, meta: { page, limit, total } };
+    const mappedItems = items.map((item) => ({
+      ...item,
+      id: item.doctor_id.toString(),
+    }));
+
+    return { data: mappedItems, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
@@ -57,7 +62,10 @@ export class DoctorsService {
       throw new NotFoundException('Khong tim thay bac si');
     }
 
-    return doctor;
+    return {
+      ...doctor,
+      id: doctor.doctor_id.toString(),
+    };
   }
 
   async create(dto: CreateDoctorDto) {

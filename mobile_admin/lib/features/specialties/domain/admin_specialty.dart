@@ -33,7 +33,7 @@ class AdminSpecialty {
       code: json['code']?.toString() ?? '',
       description: json['description']?.toString(),
       sortOrder: _toInt(json['sortOrder']),
-      isActive: json['isActive'] == true,
+      isActive: json['isActive'] == 1 || json['isActive'] == true || json['is_active'] == 1 || json['is_active'] == true,
       doctors: docs,
     );
   }
