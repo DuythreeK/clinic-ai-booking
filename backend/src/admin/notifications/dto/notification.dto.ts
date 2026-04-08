@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { NotifType } from '@prisma/client';
+import { NotificationType } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 import { toBoolean } from '../../common/dto/transformers';
 
@@ -19,8 +19,8 @@ export class NotificationListQueryDto extends PaginationQueryDto {
   appointmentId?: string;
 
   @IsOptional()
-  @IsEnum(NotifType)
-  type?: NotifType;
+  @IsEnum(NotificationType)
+  type?: NotificationType;
 
   @IsOptional()
   @Transform(({ value }) => toBoolean(value))
@@ -42,8 +42,8 @@ export class CreateNotificationDto {
   appointmentId?: string;
 
   @IsOptional()
-  @IsEnum(NotifType)
-  type?: NotifType;
+  @IsEnum(NotificationType)
+  type?: NotificationType;
 
   @IsString()
   title!: string;

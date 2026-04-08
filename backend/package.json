@@ -19,11 +19,11 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "prisma:generate": "prisma generate --schema prisma/admin.schema.prisma",
-    "db:push": "prisma db push --schema prisma/admin.schema.prisma",
-    "db:migrate": "prisma migrate dev --schema prisma/admin.schema.prisma",
-    "db:seed": "ts-node prisma/admin.seed.ts",
-    "db:studio": "prisma studio --schema prisma/admin.schema.prisma"
+    "prisma:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:push": "prisma db push --schema prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:studio": "prisma studio --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@nestjs/common": "^10.2.8",

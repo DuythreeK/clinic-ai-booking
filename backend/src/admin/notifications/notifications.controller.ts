@@ -16,25 +16,25 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findAll(@Query() query: NotificationListQueryDto) {
     return this.notificationsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findOne(@Param('id') id: string) {
     return this.notificationsService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   create(@Body() dto: CreateNotificationDto) {
     return this.notificationsService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   update(@Param('id') id: string, @Body() dto: UpdateNotificationDto) {
     return this.notificationsService.update(id, dto);
   }

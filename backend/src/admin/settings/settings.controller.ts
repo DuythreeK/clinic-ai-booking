@@ -13,13 +13,13 @@ export class SettingsController {
   constructor(private readonly settingsService: SettingsService) {}
 
   @Get('notifications')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   getNotificationSettings(@CurrentUser('sub') userId: string) {
     return this.settingsService.getNotificationSettings(userId);
   }
 
   @Patch('notifications')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   updateNotificationSettings(
     @CurrentUser('sub') userId: string,
     @Body() dto: UpdateNotificationSettingsDto,

@@ -17,25 +17,25 @@ export class AppointmentsController {
   constructor(private readonly appointmentsService: AppointmentsService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findAll(@Query() query: AppointmentListQueryDto) {
     return this.appointmentsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findOne(@Param('id') id: string) {
     return this.appointmentsService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   create(@Body() dto: CreateBookingDto) {
     return this.appointmentsService.createBooking(dto);
   }
 
   @Patch(':id/status')
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   updateStatus(
     @Param('id') id: string,
     @Body() dto: UpdateAppointmentStatusDto,
@@ -44,7 +44,7 @@ export class AppointmentsController {
   }
 
   @Patch(':id/cancel')
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   cancel(@Param('id') id: string, @Body() dto: CancelAppointmentDto) {
     return this.appointmentsService.cancel(id, dto);
   }

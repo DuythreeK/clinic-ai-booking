@@ -1,0 +1,23 @@
+﻿
+> clinic-ai-booking-backend@0.1.0 prebuild
+> npm run prisma:generate && rimraf dist
+
+
+> clinic-ai-booking-backend@0.1.0 prisma:generate
+> prisma generate --schema prisma/schema.prisma
+
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Γ£ö Generated Prisma Client (v5.22.0) to .\node_modules\@prisma\client in 259ms
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+Tip: Want to turn off tips and other hints? https://pris.ly/tip-4-nohints
+
+
+> clinic-ai-booking-backend@0.1.0 build
+> nest build
+
+Found 30 error(s).
+

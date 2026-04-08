@@ -24,9 +24,9 @@ export class SchedulesService {
   async findAll(query: ScheduleListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.ScheduleWhereInput = {
-      doctorId: query.doctorId,
-      roomId: query.roomId,
-      isAvailable: query.isAvailable,
+      doctor_id: query.doctorId ? BigInt(query.doctorId) : undefined,
+      room_id: query.roomId ? BigInt(query.roomId) : undefined,
+      is_active: query.isAvailable !== undefined ? (query.isAvailable ? 1 : 0) : undefined,
       workDate: query.workDate
         ? parseDateOnly(query.workDate)
         : query.fromDate || query.toDate
@@ -37,7 +37,7 @@ export class SchedulesService {
           : undefined,
       OR: query.search
         ? [
-            { doctor: { is: { user: { is: { fullName: { contains: query.search } } } } } },
+            { doctor: { is: { user: { is: { full_name: { contains: query.search } } } } } },
             { room: { is: { name: { contains: query.search } } } },
             { room: { is: { code: { contains: query.search } } } },
           ]
@@ -63,7 +63,7 @@ export class SchedulesService {
 
   async findOne(id: string) {
     const schedule = await this.prisma.schedule.findUnique({
-      where: { id },
+      where: { scheduleId: BigInt(id) },
       include: {
         doctor: { include: { user: true, specialty: true } },
         room: true,
@@ -84,14 +84,14 @@ export class SchedulesService {
     try {
       return await this.prisma.schedule.create({
         data: {
-          doctorId: dto.doctorId,
-          roomId: dto.roomId,
+          doctor_id: BigInt(dto.doctorId),
+          room_id: dto.roomId ? BigInt(dto.roomId) : null,
           workDate: parseDateOnly(dto.workDate),
           startTime: parseTimeOnly(dto.startTime),
           endTime: parseTimeOnly(dto.endTime),
-          slotDurationMin: dto.slotDurationMin ?? 30,
+          slotDuration: dto.slotDurationMin ?? 30,
           maxSlots: dto.maxSlots,
-          isAvailable: dto.isAvailable ?? true,
+          is_active: dto.isAvailable !== false ? 1 : 0,
         },
         include: {
           doctor: { include: { user: true, specialty: true } },
@@ -105,15 +105,16 @@ export class SchedulesService {
 
   async update(id: string, dto: UpdateScheduleDto) {
     const schedule = await this.getScheduleOrThrow(id);
-    const nextDoctorId = dto.doctorId ?? schedule.doctorId;
+    const nextDoctorId = dto.doctorId ?? schedule.doctor_id.toString();
     const nextRoomId =
-      dto.roomId === null || dto.roomId === '' ? null : dto.roomId ?? schedule.roomId;
+      dto.roomId === null || dto.roomId === '' ? null : dto.roomId ?? schedule.room_id?.toString();
     const nextWorkDate = dto.workDate ?? schedule.workDate.toISOString().slice(0, 10);
     const nextStartTime = dto.startTime ?? schedule.startTime.toISOString().slice(11, 16);
     const nextEndTime = dto.endTime ?? schedule.endTime.toISOString().slice(11, 16);
     const nextMaxSlots = dto.maxSlots ?? schedule.maxSlots;
 
-    if (schedule.bookedSlots > nextMaxSlots) {
+    const bookedSlots = (schedule as any).bookedSlots || 0;
+    if (bookedSlots > nextMaxSlots) {
       throw new BadRequestException('maxSlots khong duoc nho hon so slot da dat');
     }
 
@@ -123,17 +124,17 @@ export class SchedulesService {
 
     try {
       return await this.prisma.schedule.update({
-        where: { id },
+        where: { scheduleId: BigInt(id) },
         data: {
-          doctorId: nextDoctorId,
-          roomId: nextRoomId,
+          doctor_id: BigInt(nextDoctorId),
+          room_id: nextRoomId ? BigInt(nextRoomId) : null,
           workDate: parseDateOnly(nextWorkDate),
           startTime: parseTimeOnly(nextStartTime),
           endTime: parseTimeOnly(nextEndTime),
-          slotDurationMin: dto.slotDurationMin,
+          slotDuration: dto.slotDurationMin,
           maxSlots: nextMaxSlots,
-          isAvailable:
-            dto.isAvailable ?? schedule.bookedSlots < nextMaxSlots,
+          is_active:
+            dto.isAvailable !== undefined ? (dto.isAvailable ? 1 : 0) : ((schedule as any).bookedSlots < nextMaxSlots ? 1 : 0),
         },
         include: {
           doctor: { include: { user: true, specialty: true } },
@@ -145,8 +146,8 @@ export class SchedulesService {
     }
   }
 
-  private async getScheduleOrThrow(id: string): Promise<Schedule> {
-    const schedule = await this.prisma.schedule.findUnique({ where: { id } });
+  private async getScheduleOrThrow(id: string): Promise<any> {
+    const schedule = await this.prisma.schedule.findUnique({ where: { scheduleId: BigInt(id) } });
     if (!schedule) {
       throw new NotFoundException('Khong tim thay lich lam viec');
     }
@@ -161,7 +162,7 @@ export class SchedulesService {
   }
 
   private async ensureDoctorExists(id: string) {
-    const doctor = await this.prisma.doctor.findUnique({ where: { id } });
+    const doctor = await this.prisma.doctor.findUnique({ where: { doctor_id: BigInt(id) } });
     if (!doctor) {
       throw new BadRequestException('Bac si khong ton tai');
     }
@@ -172,7 +173,7 @@ export class SchedulesService {
       return;
     }
 
-    const room = await this.prisma.room.findUnique({ where: { id } });
+    const room = await this.prisma.room.findUnique({ where: { room_id: BigInt(id) } });
     if (!room) {
       throw new BadRequestException('Phong khong ton tai');
     }

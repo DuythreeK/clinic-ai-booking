@@ -12,13 +12,13 @@ export class DoctorsController {
   constructor(private readonly doctorsService: DoctorsService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findAll(@Query() query: DoctorListQueryDto) {
     return this.doctorsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findOne(@Param('id') id: string) {
     return this.doctorsService.findOne(id);
   }

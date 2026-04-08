@@ -12,19 +12,19 @@ export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findAll(@Query() query: ReviewListQueryDto) {
     return this.reviewsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findOne(@Param('id') id: string) {
     return this.reviewsService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   create(@Body() dto: CreateReviewDto) {
     return this.reviewsService.create(dto);
   }

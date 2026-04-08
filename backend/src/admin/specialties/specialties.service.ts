@@ -19,11 +19,11 @@ export class SpecialtiesService {
   async findAll(query: SpecialtyListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.SpecialtyWhereInput = {
-      isActive: query.isActive,
+      isActive: query.isActive !== undefined ? (query.isActive ? 1 : 0) : undefined,
       OR: query.search
         ? [
             { name: { contains: query.search } },
-            { code: { contains: query.search } },
+            { description: { contains: query.search } },
           ]
         : undefined,
     };
@@ -33,7 +33,7 @@ export class SpecialtiesService {
         where,
         skip,
         take,
-        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        orderBy: [{ name: 'asc' }],
         include: {
           doctors: { include: { user: true } },
         },
@@ -50,29 +50,17 @@ export class SpecialtiesService {
   }
 
   async create(dto: CreateSpecialtyDto) {
-    await this.ensureUnique(dto.code, dto.name);
-
     return this.prisma.specialty.create({
       data: {
         name: dto.name,
-        code: dto.code.toUpperCase(),
         description: dto.description,
-        sortOrder: dto.sortOrder ?? 0,
+        isActive: 1,
       },
     });
   }
 
   async update(id: string, dto: UpdateSpecialtyDto) {
     const specialty = await this.getById(id);
-
-    if (dto.code && dto.code.toUpperCase() !== specialty.code) {
-      const existing = await this.prisma.specialty.findUnique({
-        where: { code: dto.code.toUpperCase() },
-      });
-      if (existing) {
-        throw new BadRequestException('Ma chuyen khoa da ton tai');
-      }
-    }
 
     if (dto.name && dto.name !== specialty.name) {
       const existing = await this.prisma.specialty.findFirst({
@@ -84,20 +72,18 @@ export class SpecialtiesService {
     }
 
     return this.prisma.specialty.update({
-      where: { id },
+      where: { specialty_id: BigInt(id) },
       data: {
         name: dto.name,
-        code: dto.code?.toUpperCase(),
         description: dto.description,
-        sortOrder: dto.sortOrder,
-        isActive: dto.isActive,
+        isActive: dto.isActive !== undefined ? (dto.isActive ? 1 : 0) : undefined,
       },
     });
   }
 
   private async getById(id: string) {
     const specialty = await this.prisma.specialty.findUnique({
-      where: { id },
+      where: { specialty_id: BigInt(id) },
       include: {
         doctors: { include: { user: true } },
       },
@@ -107,20 +93,5 @@ export class SpecialtiesService {
     }
 
     return specialty;
-  }
-
-  private async ensureUnique(code: string, name: string) {
-    const [existingCode, existingName] = await Promise.all([
-      this.prisma.specialty.findUnique({ where: { code: code.toUpperCase() } }),
-      this.prisma.specialty.findFirst({ where: { name } }),
-    ]);
-
-    if (existingCode) {
-      throw new BadRequestException('Ma chuyen khoa da ton tai');
-    }
-
-    if (existingName) {
-      throw new BadRequestException('Ten chuyen khoa da ton tai');
-    }
   }
 }

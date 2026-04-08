@@ -16,12 +16,11 @@ export class DoctorsService {
   async findAll(query: DoctorListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.DoctorWhereInput = {
-      specialtyId: query.specialtyId,
-      isActive: query.isActive,
+      specialty_id: query.specialtyId ? BigInt(query.specialtyId) : undefined,
+      is_active: query.isActive !== undefined ? (query.isActive ? 1 : 0) : undefined,
       OR: query.search
         ? [
-            { licenseNumber: { contains: query.search } },
-            { user: { is: { fullName: { contains: query.search } } } },
+            { user: { is: { full_name: { contains: query.search } } } },
             { user: { is: { phone: { contains: query.search } } } },
             { user: { is: { email: { contains: query.search } } } },
           ]
@@ -33,7 +32,7 @@ export class DoctorsService {
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
         include: {
           user: true,
           specialty: true,
@@ -47,7 +46,7 @@ export class DoctorsService {
 
   async findOne(id: string) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { id },
+      where: { doctor_id: BigInt(id) },
       include: {
         user: true,
         specialty: true,
@@ -68,30 +67,32 @@ export class DoctorsService {
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: {
-          fullName: dto.fullName,
+          full_name: dto.fullName,
           phone: dto.phone,
-          email: dto.email,
-          passwordHash: await bcrypt.hash(dto.password, 10),
+          email: dto.email || `${dto.phone}@clinic.com`, // Fallback since schema requires email
+          password_hash: await bcrypt.hash(dto.password, 10),
           role: UserRole.doctor,
-          isActive: dto.isActive ?? true,
+          status: dto.isActive === false ? 'inactive' : 'active',
         },
       });
 
       const doctor = await tx.doctor.create({
         data: {
-          userId: user.id,
-          specialtyId: dto.specialtyId,
+          user_id: user.user_id,
+          full_name: dto.fullName,
+          specialty_id: BigInt(dto.specialtyId),
+          facility_id: BigInt(1), // TODO: Get actual facility_id
           title: dto.title ?? 'BS',
-          licenseNumber: dto.licenseNumber,
           bio: dto.bio,
-          yearsExperience: dto.yearsExperience ?? 0,
-          consultationFee: dto.consultationFee ?? 0,
-          isActive: dto.isActive ?? true,
+          experience_years: dto.yearsExperience ?? 0,
+          license_number: dto.licenseNumber,
+          consultation_fee: new Prisma.Decimal(dto.consultationFee ?? 0),
+          is_active: dto.isActive === false ? 0 : 1,
         },
       });
 
       return tx.doctor.findUniqueOrThrow({
-        where: { id: doctor.id },
+        where: { doctor_id: doctor.doctor_id },
         include: { user: true, specialty: true },
       });
     });
@@ -99,7 +100,7 @@ export class DoctorsService {
 
   async update(id: string, dto: UpdateDoctorDto) {
     const doctor = await this.prisma.doctor.findUnique({
-      where: { id },
+      where: { doctor_id: BigInt(id) },
       include: { user: true },
     });
 
@@ -107,7 +108,7 @@ export class DoctorsService {
       throw new NotFoundException('Khong tim thay bac si');
     }
 
-    if (dto.specialtyId && dto.specialtyId !== doctor.specialtyId) {
+    if (dto.specialtyId && BigInt(dto.specialtyId) !== doctor.specialty_id) {
       await this.ensureSpecialtyExists(dto.specialtyId);
     }
 
@@ -125,9 +126,9 @@ export class DoctorsService {
       }
     }
 
-    if (dto.licenseNumber && dto.licenseNumber !== doctor.licenseNumber) {
+    if (dto.licenseNumber && dto.licenseNumber !== (doctor as any).license_number) {
       const existing = await this.prisma.doctor.findUnique({
-        where: { licenseNumber: dto.licenseNumber },
+        where: { license_number: dto.licenseNumber },
       });
       if (existing) {
         throw new BadRequestException('So chung chi da ton tai');
@@ -136,28 +137,29 @@ export class DoctorsService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.user.update({
-        where: { id: doctor.userId },
+        where: { user_id: doctor.user_id },
         data: {
-          fullName: dto.fullName,
-          phone: dto.phone,
-          email: dto.email,
-          isActive: dto.isActive,
-          passwordHash: dto.password
+          full_name: dto.fullName || undefined,
+          phone: dto.phone || undefined,
+          email: dto.email || undefined,
+          status: dto.isActive !== undefined ? (dto.isActive ? 'active' : 'inactive') : undefined,
+          password_hash: dto.password
             ? await bcrypt.hash(dto.password, 10)
             : undefined,
         },
       });
 
       await tx.doctor.update({
-        where: { id },
+        where: { doctor_id: BigInt(id) },
         data: {
-          specialtyId: dto.specialtyId,
-          title: dto.title,
-          licenseNumber: dto.licenseNumber,
-          bio: dto.bio,
-          yearsExperience: dto.yearsExperience,
-          consultationFee: dto.consultationFee,
-          isActive: dto.isActive,
+          specialty_id: dto.specialtyId ? BigInt(dto.specialtyId) : undefined,
+          full_name: dto.fullName || undefined,
+          title: dto.title || undefined,
+          license_number: dto.licenseNumber || undefined,
+          bio: dto.bio || undefined,
+          experience_years: dto.yearsExperience !== undefined ? dto.yearsExperience : undefined,
+          consultation_fee: dto.consultationFee !== undefined ? new Prisma.Decimal(dto.consultationFee) : undefined,
+          is_active: dto.isActive !== undefined ? (dto.isActive ? 1 : 0) : undefined,
         },
       });
     });
@@ -166,7 +168,7 @@ export class DoctorsService {
   }
 
   private async ensureSpecialtyExists(id: string) {
-    const specialty = await this.prisma.specialty.findUnique({ where: { id } });
+    const specialty = await this.prisma.specialty.findUnique({ where: { specialty_id: BigInt(id) } });
     if (!specialty) {
       throw new BadRequestException('Chuyen khoa khong ton tai');
     }
@@ -180,7 +182,7 @@ export class DoctorsService {
     const [existingPhone, existingEmail, existingLicense] = await Promise.all([
       this.prisma.user.findUnique({ where: { phone } }),
       email ? this.prisma.user.findUnique({ where: { email } }) : null,
-      this.prisma.doctor.findUnique({ where: { licenseNumber } }),
+      this.prisma.doctor.findUnique({ where: { license_number: licenseNumber } }),
     ]);
 
     if (existingPhone) {

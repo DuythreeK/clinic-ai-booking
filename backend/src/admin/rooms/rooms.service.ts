@@ -15,8 +15,8 @@ export class RoomsService {
   async findAll(query: RoomListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.RoomWhereInput = {
-      specialtyId: query.specialtyId,
-      isActive: query.isActive,
+      specialty_id: query.specialtyId ? BigInt(query.specialtyId) : undefined,
+      is_active: query.isActive !== undefined ? (query.isActive ? 1 : 0) : undefined,
       OR: query.search
         ? [
             { name: { contains: query.search } },
@@ -31,7 +31,7 @@ export class RoomsService {
         skip,
         take,
         include: { specialty: true },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       this.prisma.room.count({ where }),
     ]);
@@ -41,7 +41,7 @@ export class RoomsService {
 
   async findOne(id: string) {
     const room = await this.prisma.room.findUnique({
-      where: { id },
+      where: { room_id: BigInt(id) },
       include: { specialty: true },
     });
     if (!room) {
@@ -59,9 +59,9 @@ export class RoomsService {
       data: {
         name: dto.name,
         code: dto.code.toUpperCase(),
-        specialtyId: dto.specialtyId,
+        specialty_id: dto.specialtyId ? BigInt(dto.specialtyId) : null,
         floor: dto.floor,
-        isActive: dto.isActive ?? true,
+        is_active: dto.isActive !== false ? 1 : 0,
       },
       include: { specialty: true },
     });
@@ -78,23 +78,23 @@ export class RoomsService {
     }
 
     return this.prisma.room.update({
-      where: { id },
+      where: { room_id: BigInt(id) },
       data: {
         name: dto.name,
         code: dto.code?.toUpperCase(),
-        specialtyId:
+        specialty_id:
           dto.specialtyId === null || dto.specialtyId === ''
             ? null
-            : dto.specialtyId,
+            : dto.specialtyId ? BigInt(dto.specialtyId) : undefined,
         floor: dto.floor,
-        isActive: dto.isActive,
+        is_active: dto.isActive !== undefined ? (dto.isActive ? 1 : 0) : undefined,
       },
       include: { specialty: true },
     });
   }
 
-  private async getRoomOrThrow(id: string): Promise<Room> {
-    const room = await this.prisma.room.findUnique({ where: { id } });
+  private async getRoomOrThrow(id: string): Promise<any> {
+    const room = await this.prisma.room.findUnique({ where: { room_id: BigInt(id) } });
     if (!room) {
       throw new NotFoundException('Khong tim thay phong');
     }
@@ -107,7 +107,7 @@ export class RoomsService {
       return;
     }
 
-    const specialty = await this.prisma.specialty.findUnique({ where: { id } });
+    const specialty = await this.prisma.specialty.findUnique({ where: { specialty_id: BigInt(id) } });
     if (!specialty) {
       throw new BadRequestException('Chuyen khoa khong ton tai');
     }

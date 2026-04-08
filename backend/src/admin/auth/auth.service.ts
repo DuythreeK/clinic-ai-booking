@@ -29,25 +29,22 @@ export class AuthService {
       },
     });
 
-    if (!user || !user.isActive) {
+    if (!user || user.status !== 'active') {
       throw new UnauthorizedException('Sai tai khoan hoac mat khau');
     }
 
-    const passwordMatched = await bcrypt.compare(dto.password, user.passwordHash);
+    const passwordMatched = await bcrypt.compare(dto.password, user.password_hash);
     if (!passwordMatched) {
       throw new UnauthorizedException('Sai tai khoan hoac mat khau');
     }
 
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    // lastLoginAt not in group schema, skipping update
 
     const accessToken = await this.jwtService.signAsync(
       {
-        sub: user.id,
+        sub: user.user_id.toString(),
         role: user.role,
-        fullName: user.fullName,
+        fullName: user.full_name,
       } satisfies JwtPayload,
       {
         secret: process.env.JWT_SECRET,
@@ -57,16 +54,23 @@ export class AuthService {
 
     return {
       accessToken,
-      user: sanitizeUser({ ...user, lastLoginAt: new Date() }),
+      user: sanitizeUser(user),
     };
   }
 
   async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) {
-      throw new UnauthorizedException('Tai khoan khong ton tai');
-    }
+    try {
+      const user = await this.prisma.user.findUnique({ where: { user_id: BigInt(userId) } });
+      if (!user) {
+        throw new UnauthorizedException('Tai khoan khong ton tai');
+      }
 
-    return sanitizeUser(user);
+      return sanitizeUser(user);
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        throw new UnauthorizedException('Token khong hop le (vui long dang nhap lai)');
+      }
+      throw error;
+    }
   }
 }

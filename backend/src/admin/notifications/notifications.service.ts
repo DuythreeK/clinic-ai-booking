@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { NotifType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { resolvePagination } from '../common/utils/pagination.util';
 import {
@@ -13,7 +13,7 @@ import {
 } from './dto/notification.dto';
 
 const notificationInclude = {
-  patient: true,
+  user: true,
   appointment: true,
 } satisfies Prisma.NotificationInclude;
 
@@ -24,16 +24,15 @@ export class NotificationsService {
   async findAll(query: NotificationListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.NotificationWhereInput = {
-      patientId: query.patientId,
-      appointmentId: query.appointmentId,
-      type: query.type,
-      isRead: query.isRead,
-      isSent: query.isSent,
+      user_id: query.patientId ? BigInt(query.patientId) : undefined,
+      appointment_id: query.appointmentId ? BigInt(query.appointmentId) : undefined,
+      type: query.type as any,
+      is_read: query.isRead !== undefined ? (query.isRead ? 1 : 0) : undefined,
       OR: query.search
         ? [
             { title: { contains: query.search } },
             { message: { contains: query.search } },
-            { patient: { is: { fullName: { contains: query.search } } } },
+            { user: { is: { full_name: { contains: query.search } } } },
           ]
         : undefined,
     };
@@ -44,7 +43,7 @@ export class NotificationsService {
         skip,
         take,
         include: notificationInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       this.prisma.notification.count({ where }),
     ]);
@@ -54,7 +53,7 @@ export class NotificationsService {
 
   async findOne(id: string) {
     const notification = await this.prisma.notification.findUnique({
-      where: { id },
+      where: { id: BigInt(id) },
       include: notificationInclude,
     });
     if (!notification) {
@@ -65,17 +64,17 @@ export class NotificationsService {
   }
 
   async create(dto: CreateNotificationDto) {
-    const patient = await this.prisma.patient.findUnique({
-      where: { id: dto.patientId },
+    const user = await this.prisma.user.findUnique({
+      where: { user_id: BigInt(dto.patientId) },
     });
 
-    if (!patient) {
-      throw new BadRequestException('Benh nhan khong ton tai');
+    if (!user) {
+      throw new BadRequestException('Nguoi dung khong ton tai');
     }
 
     if (dto.appointmentId) {
       const appointment = await this.prisma.appointment.findUnique({
-        where: { id: dto.appointmentId },
+        where: { appointment_id: BigInt(dto.appointmentId) },
       });
       if (!appointment) {
         throw new BadRequestException('Lich hen khong ton tai');
@@ -84,12 +83,12 @@ export class NotificationsService {
 
     return this.prisma.notification.create({
       data: {
-        patientId: dto.patientId,
-        appointmentId: dto.appointmentId,
-        type: dto.type ?? NotifType.system,
+        user_id: BigInt(dto.patientId),
+        appointment_id: dto.appointmentId ? BigInt(dto.appointmentId) : null,
+        type: (dto.type as any) ?? 'system',
+        channel: 'in_app',
         title: dto.title,
         message: dto.message,
-        isSent: dto.isSent ?? false,
       },
       include: notificationInclude,
     });
@@ -99,12 +98,11 @@ export class NotificationsService {
     await this.findOne(id);
 
     return this.prisma.notification.update({
-      where: { id },
+      where: { id: BigInt(id) },
       data: {
         title: dto.title,
         message: dto.message,
-        isRead: dto.isRead,
-        isSent: dto.isSent,
+        is_read: dto.isRead !== undefined ? (dto.isRead ? 1 : 0) : undefined,
       },
       include: notificationInclude,
     });

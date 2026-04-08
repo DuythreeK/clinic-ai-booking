@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ApptStatus } from '@prisma/client';
+import { AppointmentStatus } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { DashboardOverviewQueryDto } from './dto/stats.dto';
 
@@ -19,7 +19,7 @@ export class StatsService {
     const dateFilter =
       query.from || query.to
         ? {
-            apptDate: {
+            appointment_date: {
               gte: from,
               lte: to,
             },
@@ -39,32 +39,32 @@ export class StatsService {
       }),
       this.prisma.appointment.count({
         where: {
-          status: ApptStatus.pending,
+          status: AppointmentStatus.pending,
           ...(dateFilter ?? {}),
         },
       }),
       this.prisma.doctor.count({
-        where: { isActive: true },
+        where: { is_active: 1 },
       }),
-      this.prisma.patient.count(),
+      this.prisma.patientProfile.count(),
       this.prisma.appointment.findMany({
         where: {
-          apptDate: {
+          appointment_date: {
             gte: start,
             lte: end,
           },
         },
         select: {
-          apptDate: true,
+          appointment_date: true,
         },
       }),
       this.prisma.appointment.findMany({
         take: 5,
         orderBy: {
-          updatedAt: 'desc',
+          updated_at: 'desc',
         },
         include: {
-          patient: true,
+          patient: true, // Relation name in Appointment model is "patient" but points to PatientProfile
         },
       }),
     ]);
@@ -75,7 +75,7 @@ export class StatsService {
     }
 
     for (const item of weeklyAppointments) {
-      const label = this.toWeekLabel(item.apptDate);
+      const label = this.toWeekLabel(item.appointment_date);
       weeklyCounts.set(label, (weeklyCounts.get(label) ?? 0) + 1);
     }
 
@@ -95,12 +95,12 @@ export class StatsService {
       recentActivities: recentAppointments.map((appointment) => {
         const action = this.resolveAction(appointment.status);
         return {
-          id: appointment.id,
-          patientName: appointment.patient.fullName,
-          patientInitial: this.toInitial(appointment.patient.fullName),
+          id: appointment.appointment_id.toString(),
+          patientName: appointment.patient.full_name,
+          patientInitial: this.toInitial(appointment.patient.full_name),
           action,
           actionLabel: this.toActionLabel(action),
-          occurredAt: appointment.updatedAt.toISOString(),
+          occurredAt: appointment.updated_at.toISOString(),
         };
       }),
     };
@@ -161,13 +161,13 @@ export class StatsService {
     }
   }
 
-  private resolveAction(status: ApptStatus): DashboardActivityAction {
+  private resolveAction(status: AppointmentStatus): DashboardActivityAction {
     switch (status) {
-      case ApptStatus.cancelled:
+      case AppointmentStatus.cancelled:
         return 'cancelled';
-      case ApptStatus.completed:
+      case AppointmentStatus.completed:
         return 'completed';
-      case ApptStatus.confirmed:
+      case AppointmentStatus.confirmed:
         return 'confirmed';
       default:
         return 'created';

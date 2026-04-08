@@ -12,25 +12,25 @@ export class PatientsController {
   constructor(private readonly patientsService: PatientsService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findAll(@Query() query: PatientListQueryDto) {
     return this.patientsService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   findOne(@Param('id') id: string) {
     return this.patientsService.findOne(id);
   }
 
   @Post()
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   create(@Body() dto: CreatePatientDto) {
     return this.patientsService.create(dto);
   }
 
   @Patch(':id')
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin, )
   update(@Param('id') id: string, @Body() dto: UpdatePatientDto) {
     return this.patientsService.update(id, dto);
   }

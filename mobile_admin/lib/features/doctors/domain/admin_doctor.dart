@@ -54,22 +54,20 @@ class AdminDoctor {
     final specialty = _asMap(json['specialty']);
 
     return AdminDoctor(
-      id: json['id']?.toString() ?? '',
-      userId: json['userId']?.toString() ?? '',
-      fullName: user['fullName']?.toString() ?? 'Chưa rõ bác sĩ',
+      id: (json['doctor_id'] ?? json['id'] ?? '').toString(),
+      userId: (json['user_id'] ?? json['userId'] ?? user['user_id'] ?? '').toString(),
+      fullName: json['full_name']?.toString() ?? user['full_name']?.toString() ?? user['fullName']?.toString() ?? 'Chưa rõ bác sĩ',
       phone: user['phone']?.toString() ?? '',
       email: user['email']?.toString(),
       specialtyId:
-          json['specialtyId']?.toString() ?? specialty['id']?.toString() ?? '',
+          (json['specialty_id'] ?? json['specialtyId'] ?? specialty['specialty_id'] ?? specialty['id'] ?? '').toString(),
       specialtyName: specialty['name']?.toString() ?? 'Chưa rõ chuyên khoa',
       title: json['title']?.toString() ?? 'BS',
-      licenseNumber: json['licenseNumber']?.toString() ?? '',
+      licenseNumber: json['license_number']?.toString() ?? json['licenseNumber']?.toString() ?? '',
       bio: json['bio']?.toString(),
-      yearsExperience: _toDouble(json['yearsExperience']),
-      consultationFee: _toDouble(json['consultationFee']),
-      isActive: json['isActive'] is bool
-          ? json['isActive'] as bool
-          : user['isActive'] == true,
+      yearsExperience: _toDouble(json['experience_years'] ?? json['yearsExperience']),
+      consultationFee: _toDouble(json['consultation_fee'] ?? json['consultationFee']),
+      isActive: json['is_active'] == 1 || json['isActive'] == true || user['status'] == 'active',
     );
   }
 

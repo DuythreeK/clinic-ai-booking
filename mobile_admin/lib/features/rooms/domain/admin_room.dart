@@ -22,12 +22,12 @@ class AdminRoom {
   factory AdminRoom.fromJson(Map<String, dynamic> json) {
     final specialty = json['specialty'] as Map<String, dynamic>?;
     return AdminRoom(
-      id: json['id']?.toString() ?? '',
+      id: (json['room_id'] ?? json['id'] ?? '').toString(),
       name: json['name']?.toString() ?? '',
       code: json['code']?.toString() ?? '',
       floor: _toInt(json['floor']),
-      isActive: json['isActive'] == true,
-      specialtyId: json['specialtyId']?.toString(),
+      isActive: json['is_active'] == 1 || json['isActive'] == true,
+      specialtyId: (json['specialty_id'] ?? json['specialtyId']).toString(),
       specialtyName: specialty?['name']?.toString(),
       description: json['description']?.toString(),
     );

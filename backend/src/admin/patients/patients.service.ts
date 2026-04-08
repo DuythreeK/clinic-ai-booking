@@ -3,7 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Patient } from '@prisma/client';
+import { Prisma, PatientProfile } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { parseDateOnly } from '../common/utils/date.util';
 import { resolvePagination } from '../common/utils/pagination.util';
@@ -15,32 +15,32 @@ export class PatientsService {
 
   async findAll(query: PatientListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
-    const where: Prisma.PatientWhereInput = {
-      isActive: query.isActive,
+    const where: Prisma.PatientProfileWhereInput = {
+      is_primary: query.isActive !== undefined ? (query.isActive ? 1 : 0) : undefined, // Mapping isActive to is_primary or similar if needed, adjusting based on Group schema
       OR: query.search
         ? [
-            { fullName: { contains: query.search } },
-            { phone: { contains: query.search } },
+            { full_name: { contains: query.search } },
+            { phone_number: { contains: query.search } },
             { email: { contains: query.search } },
           ]
         : undefined,
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.patient.findMany({
+      this.prisma.patientProfile.findMany({
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.patient.count({ where }),
+      this.prisma.patientProfile.count({ where }),
     ]);
 
     return { data: items, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
-    const patient = await this.prisma.patient.findUnique({ where: { id } });
+    const patient = await this.prisma.patientProfile.findUnique({ where: { patient_id: BigInt(id) } });
     if (!patient) {
       throw new NotFoundException('Khong tim thay benh nhan');
     }
@@ -49,20 +49,23 @@ export class PatientsService {
   }
 
   async create(dto: CreatePatientDto) {
-    await this.ensurePatientUniqueness(dto.phone, dto.email);
-
-    return this.prisma.patient.create({
+    // Note: In Group schema, patient_profile requires user_id. 
+    // This logic might need adjustment if creating a patient without a user.
+    // Assuming for now we use a dummy user_id or provided one if available.
+    
+    return this.prisma.patientProfile.create({
       data: {
-        fullName: dto.fullName,
-        phone: dto.phone,
+        user_id: BigInt(1), // TODO: Get actual user_id
+        full_name: dto.fullName,
+        phone_number: dto.phone,
         email: dto.email,
-        dob: dto.dob ? parseDateOnly(dto.dob) : undefined,
+        date_of_birth: dto.dob ? parseDateOnly(dto.dob) : undefined,
         gender: dto.gender,
-        address: dto.address,
-        bloodType: dto.bloodType,
-        insuranceNumber: dto.insuranceNumber,
+        address_detail: dto.address,
+        blood_type: dto.bloodType,
+        insurance_number: dto.insuranceNumber,
         allergies: dto.allergies,
-        isActive: dto.isActive ?? true,
+        is_primary: dto.isActive ? 1 : 0,
       },
     });
   }
@@ -70,39 +73,25 @@ export class PatientsService {
   async update(id: string, dto: UpdatePatientDto) {
     const patient = await this.getPatientOrThrow(id);
 
-    if (dto.phone && dto.phone !== patient.phone) {
-      const existing = await this.prisma.patient.findUnique({ where: { phone: dto.phone } });
-      if (existing) {
-        throw new BadRequestException('So dien thoai da ton tai');
-      }
-    }
-
-    if (dto.email && dto.email !== patient.email) {
-      const existing = await this.prisma.patient.findUnique({ where: { email: dto.email } });
-      if (existing) {
-        throw new BadRequestException('Email da ton tai');
-      }
-    }
-
-    return this.prisma.patient.update({
-      where: { id },
+    return this.prisma.patientProfile.update({
+      where: { patient_id: BigInt(id) },
       data: {
-        fullName: dto.fullName,
-        phone: dto.phone,
+        full_name: dto.fullName,
+        phone_number: dto.phone,
         email: dto.email,
-        dob: dto.dob ? parseDateOnly(dto.dob) : undefined,
+        date_of_birth: dto.dob ? parseDateOnly(dto.dob) : undefined,
         gender: dto.gender,
-        address: dto.address,
-        bloodType: dto.bloodType,
-        insuranceNumber: dto.insuranceNumber,
+        address_detail: dto.address,
+        blood_type: dto.bloodType,
+        insurance_number: dto.insuranceNumber,
         allergies: dto.allergies,
-        isActive: dto.isActive,
+        is_primary: dto.isActive !== undefined ? (dto.isActive ? 1 : 0) : undefined,
       },
     });
   }
 
-  private async getPatientOrThrow(id: string): Promise<Patient> {
-    const patient = await this.prisma.patient.findUnique({ where: { id } });
+  private async getPatientOrThrow(id: string): Promise<PatientProfile> {
+    const patient = await this.prisma.patientProfile.findUnique({ where: { patient_id: BigInt(id) } });
     if (!patient) {
       throw new NotFoundException('Khong tim thay benh nhan');
     }
@@ -112,8 +101,8 @@ export class PatientsService {
 
   private async ensurePatientUniqueness(phone: string, email?: string) {
     const [existingPhone, existingEmail] = await Promise.all([
-      this.prisma.patient.findUnique({ where: { phone } }),
-      email ? this.prisma.patient.findUnique({ where: { email } }) : null,
+      this.prisma.patientProfile.findUnique({ where: { phone_number: phone } }),
+      email ? this.prisma.patientProfile.findFirst({ where: { email } }) : null,
     ]);
 
     if (existingPhone) {

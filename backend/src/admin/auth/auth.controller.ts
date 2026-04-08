@@ -19,14 +19,14 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   getMe(@CurrentUser('sub') userId: string) {
     return this.authService.getProfile(userId);
   }
 
   @Post('logout')
   @UseGuards(JwtGuard, RolesGuard)
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   @HttpCode(200)
   logout() {
     return { message: 'Dang xuat thanh cong' };

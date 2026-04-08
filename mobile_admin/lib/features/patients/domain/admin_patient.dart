@@ -57,16 +57,16 @@ class AdminPatient {
 
   factory AdminPatient.fromJson(Map<String, dynamic> json) {
     return AdminPatient(
-      id: json['id']?.toString() ?? '',
-      fullName: json['fullName']?.toString() ?? 'Chưa rõ bệnh nhân',
-      phone: json['phone']?.toString() ?? '',
+      id: (json['patient_id'] ?? json['id'] ?? '').toString(),
+      fullName: json['full_name']?.toString() ?? json['fullName']?.toString() ?? 'Chưa rõ bệnh nhân',
+      phone: json['phone_number']?.toString() ?? json['phone']?.toString() ?? '',
       email: json['email']?.toString(),
       allergies: json['allergies']?.toString(),
-      bloodType: json['bloodType']?.toString(),
-      insuranceNumber: json['insuranceNumber']?.toString(),
-      address: json['address']?.toString(),
+      bloodType: json['blood_type']?.toString() ?? json['bloodType']?.toString(),
+      insuranceNumber: json['insurance_number']?.toString() ?? json['insuranceNumber']?.toString(),
+      address: json['address_detail']?.toString() ?? json['address']?.toString(),
       gender: json['gender']?.toString(),
-      isActive: json['isActive'] == true,
+      isActive: json['is_primary'] == 1 || json['isActive'] == true,
     );
   }
 }

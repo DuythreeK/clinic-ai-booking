@@ -4,13 +4,13 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { ApptStatus } from '@prisma/client';
+import { AppointmentStatus } from '@prisma/client';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
 
 export class AppointmentListQueryDto extends PaginationQueryDto {
   @IsOptional()
-  @IsEnum(ApptStatus)
-  status?: ApptStatus;
+  @IsEnum(AppointmentStatus)
+  status?: AppointmentStatus;
 
   @IsOptional()
   @IsString()
@@ -54,8 +54,8 @@ export class CreateBookingDto {
 }
 
 export class UpdateAppointmentStatusDto {
-  @IsEnum(ApptStatus)
-  status!: ApptStatus;
+  @IsEnum(AppointmentStatus)
+  status!: AppointmentStatus;
 }
 
 export class CancelAppointmentDto {

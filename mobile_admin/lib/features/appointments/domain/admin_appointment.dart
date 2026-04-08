@@ -119,18 +119,18 @@ class AdminAppointment {
     final schedule = _asMap(json['schedule']);
 
     return AdminAppointment(
-      id: json['id']?.toString() ?? '',
-      patientId: patient['id']?.toString() ?? '',
-      refCode: json['refCode']?.toString() ?? '',
+      id: (json['appointment_id'] ?? json['id'] ?? '').toString(),
+      patientId: (patient['patient_id'] ?? patient['id'] ?? '').toString(),
+      refCode: json['appointment_code']?.toString() ?? json['refCode']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
-      patientName: patient['fullName']?.toString() ?? 'Chưa rõ bệnh nhân',
-      patientPhone: patient['phone']?.toString() ?? '',
+      patientName: patient['full_name']?.toString() ?? patient['fullName']?.toString() ?? 'Chưa rõ bệnh nhân',
+      patientPhone: patient['phone_number']?.toString() ?? patient['phone']?.toString() ?? '',
       patientGender: patient['gender']?.toString() ?? 'Chưa cập nhật',
-      patientDob: _tryParseDate(patient['dob']),
-      doctorName: doctorUser['fullName']?.toString() ?? '',
+      patientDob: _tryParseDate(patient['date_of_birth'] ?? patient['dob']),
+      doctorName: doctorUser['full_name']?.toString() ?? doctorUser['fullName']?.toString() ?? '',
       specialtyName: specialty['name']?.toString() ?? 'Chưa rõ chuyên khoa',
-      apptDate: _tryParseDate(json['apptDate']),
-      startTime: _tryParseDate(schedule['startTime'] ?? json['apptTime']),
+      apptDate: _tryParseDate(json['appointment_date'] ?? json['apptDate']),
+      startTime: _tryParseDate(schedule['startTime'] ?? json['appointment_time'] ?? json['apptTime']),
       endTime: _tryParseDate(schedule['endTime']),
     );
   }

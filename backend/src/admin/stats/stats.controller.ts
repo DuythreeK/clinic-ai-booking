@@ -12,7 +12,7 @@ export class StatsController {
   constructor(private readonly statsService: StatsService) {}
 
   @Get('overview')
-  @Roles(UserRole.admin, UserRole.receptionist, UserRole.doctor)
+  @Roles(UserRole.admin, UserRole.doctor)
   getOverview(@Query() query: DashboardOverviewQueryDto) {
     return this.statsService.getOverview(query);
   }

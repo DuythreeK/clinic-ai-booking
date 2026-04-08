@@ -16,9 +16,9 @@ export class SettingsService {
 
   async getNotificationSettings(userId: string) {
     const settings = await this.prisma.adminNotificationSetting.upsert({
-      where: { userId },
+      where: { userId: BigInt(userId) },
       update: {},
-      create: { userId },
+      create: { userId: BigInt(userId) },
     });
 
     return this.toResponse(settings);
@@ -29,33 +29,33 @@ export class SettingsService {
     dto: UpdateNotificationSettingsDto,
   ) {
     const settings = await this.prisma.adminNotificationSetting.upsert({
-      where: { userId },
+      where: { userId: BigInt(userId) },
       update: {
-        pushEnabled: dto.pushEnabled,
-        soundEnabled: dto.soundEnabled,
-        appointmentReminder: dto.appointmentReminder,
-        statusUpdates: dto.statusUpdates,
+        pushEnabled: dto.pushEnabled !== undefined ? (dto.pushEnabled ? 1 : 0) : undefined,
+        soundEnabled: dto.soundEnabled !== undefined ? (dto.soundEnabled ? 1 : 0) : undefined,
+        appointmentReminder: dto.appointmentReminder !== undefined ? (dto.appointmentReminder ? 1 : 0) : undefined,
+        statusUpdates: dto.statusUpdates !== undefined ? (dto.statusUpdates ? 1 : 0) : undefined,
         reminderLeadMinutes: dto.reminderLeadMinutes,
       },
       create: {
-        userId,
-        pushEnabled: dto.pushEnabled ?? true,
-        soundEnabled: dto.soundEnabled ?? true,
-        appointmentReminder: dto.appointmentReminder ?? false,
-        statusUpdates: dto.statusUpdates ?? true,
+        userId: BigInt(userId),
+        pushEnabled: dto.pushEnabled ? 1 : 1, // Fallback to 1
+        soundEnabled: dto.soundEnabled ? 1 : 1,
+        appointmentReminder: dto.appointmentReminder ? 1 : 0,
+        statusUpdates: dto.statusUpdates ? 1 : 1,
         reminderLeadMinutes: dto.reminderLeadMinutes ?? 30,
       },
     });
 
-    return this.toResponse(settings);
+    return this.toResponse(settings as any);
   }
 
-  private toResponse(settings: NotificationSettingsRecord) {
+  private toResponse(settings: any) {
     return {
-      pushEnabled: settings.pushEnabled,
-      soundEnabled: settings.soundEnabled,
-      appointmentReminder: settings.appointmentReminder,
-      statusUpdates: settings.statusUpdates,
+      pushEnabled: settings.pushEnabled === 1,
+      soundEnabled: settings.soundEnabled === 1,
+      appointmentReminder: settings.appointmentReminder === 1,
+      statusUpdates: settings.statusUpdates === 1,
       reminderLeadMinutes: settings.reminderLeadMinutes,
     };
   }

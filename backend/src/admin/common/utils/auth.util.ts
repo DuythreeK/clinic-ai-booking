@@ -1,15 +1,14 @@
 import { User } from '@prisma/client';
 
-export function sanitizeUser(user: User) {
+export function sanitizeUser(user: any) {
   return {
-    id: user.id,
-    fullName: user.fullName,
+    id: user.user_id.toString(),
+    fullName: user.full_name,
     phone: user.phone,
     email: user.email,
     role: user.role,
-    isActive: user.isActive,
-    lastLoginAt: user.lastLoginAt,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
+    isActive: user.status === 'active',
+    createdAt: user.created_at,
+    updatedAt: user.updated_at,
   };
 }

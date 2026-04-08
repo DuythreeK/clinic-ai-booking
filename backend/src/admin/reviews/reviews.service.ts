@@ -3,21 +3,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { ApptStatus, Prisma } from '@prisma/client';
+import { AppointmentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '@/prisma/prisma.service';
 import { resolvePagination } from '../common/utils/pagination.util';
 import { CreateReviewDto, ReviewListQueryDto, UpdateReviewDto } from './dto/review.dto';
 
 const reviewInclude = {
   appointment: true,
-  patient: true,
+  user: true,
   doctor: {
     include: {
       user: true,
       specialty: true,
     },
   },
-} satisfies Prisma.ReviewInclude;
+} satisfies Prisma.DoctorReviewInclude;
 
 @Injectable()
 export class ReviewsService {
@@ -25,36 +25,36 @@ export class ReviewsService {
 
   async findAll(query: ReviewListQueryDto) {
     const { skip, take, page, limit } = resolvePagination(query);
-    const where: Prisma.ReviewWhereInput = {
-      doctorId: query.doctorId,
-      patientId: query.patientId,
-      isVisible: query.isVisible,
+    const where: Prisma.DoctorReviewWhereInput = {
+      doctor_id: query.doctorId ? BigInt(query.doctorId) : undefined,
+      user_id: query.patientId ? BigInt(query.patientId) : undefined,
+      is_visible: query.isVisible !== undefined ? (query.isVisible ? 1 : 0) : undefined,
       OR: query.search
         ? [
-            { appointment: { is: { refCode: { contains: query.search } } } },
-            { patient: { is: { fullName: { contains: query.search } } } },
-            { doctor: { is: { user: { is: { fullName: { contains: query.search } } } } } },
+            { appointment: { is: { appointment_code: { contains: query.search } } } },
+            { user: { is: { full_name: { contains: query.search } } } },
+            { doctor: { is: { full_name: { contains: query.search } } } },
           ]
         : undefined,
     };
 
     const [items, total] = await Promise.all([
-      this.prisma.review.findMany({
+      this.prisma.doctorReview.findMany({
         where,
         skip,
         take,
         include: reviewInclude,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
-      this.prisma.review.count({ where }),
+      this.prisma.doctorReview.count({ where }),
     ]);
 
     return { data: items, meta: { page, limit, total } };
   }
 
   async findOne(id: string) {
-    const review = await this.prisma.review.findUnique({
-      where: { id },
+    const review = await this.prisma.doctorReview.findUnique({
+      where: { review_id: BigInt(id) },
       include: reviewInclude,
     });
     if (!review) {
@@ -67,38 +67,36 @@ export class ReviewsService {
   async create(dto: CreateReviewDto) {
     return this.prisma.$transaction(async (tx) => {
       const appointment = await tx.appointment.findUnique({
-        where: { id: dto.appointmentId },
+        where: { appointment_id: BigInt(dto.appointmentId) },
       });
 
       if (!appointment) {
         throw new NotFoundException('Khong tim thay lich hen');
       }
 
-      if (appointment.status !== ApptStatus.completed) {
+      if (appointment.status !== AppointmentStatus.completed) {
         throw new BadRequestException('Chi duoc danh gia lich hen da hoan thanh');
       }
 
-      const existing = await tx.review.findUnique({
-        where: { appointmentId: dto.appointmentId },
+      const existing = await tx.doctorReview.findUnique({
+        where: { appointment_id: BigInt(dto.appointmentId) },
       });
       if (existing) {
         throw new BadRequestException('Lich hen nay da co danh gia');
       }
 
-      const review = await tx.review.create({
+      const review = await tx.doctorReview.create({
         data: {
-          appointmentId: appointment.id,
-          patientId: appointment.patientId,
-          doctorId: appointment.doctorId,
+          appointment_id: appointment.appointment_id,
+          user_id: appointment.user_id,
+          doctor_id: appointment.doctor_id!,
           rating: dto.rating,
           comment: dto.comment,
         },
       });
 
-      await this.refreshDoctorRating(tx, appointment.doctorId);
-
-      return tx.review.findUniqueOrThrow({
-        where: { id: review.id },
+      return tx.doctorReview.findUniqueOrThrow({
+        where: { review_id: review.review_id },
         include: reviewInclude,
       });
     });
@@ -107,45 +105,14 @@ export class ReviewsService {
   async update(id: string, dto: UpdateReviewDto) {
     const review = await this.findOne(id);
 
-    const updated = await this.prisma.$transaction(async (tx) => {
-      const next = await tx.review.update({
-        where: { id },
-        data: {
-          adminReply: dto.adminReply,
-          isVisible: dto.isVisible,
-        },
-        include: reviewInclude,
-      });
-
-      if (dto.isVisible !== undefined && dto.isVisible !== review.isVisible) {
-        await this.refreshDoctorRating(tx, review.doctorId);
-      }
-
-      return next;
-    });
-
-    return updated;
-  }
-
-  private async refreshDoctorRating(
-    tx: Prisma.TransactionClient,
-    doctorId: string,
-  ) {
-    const aggregate = await tx.review.aggregate({
-      where: {
-        doctorId,
-        isVisible: true,
-      },
-      _avg: {
-        rating: true,
-      },
-    });
-
-    await tx.doctor.update({
-      where: { id: doctorId },
+    return this.prisma.doctorReview.update({
+      where: { review_id: BigInt(id) },
       data: {
-        avgRating: aggregate._avg.rating ?? 0,
+        admin_reply: dto.adminReply,
+        admin_reply_at: dto.adminReply ? new Date() : undefined,
+        is_visible: dto.isVisible !== undefined ? (dto.isVisible ? 1 : 0) : undefined,
       },
+      include: reviewInclude,
     });
   }
 }

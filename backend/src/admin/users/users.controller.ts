@@ -12,13 +12,13 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin)
   findAll(@Query() query: UserListQueryDto) {
     return this.usersService.findAll(query);
   }
 
   @Get(':id')
-  @Roles(UserRole.admin, UserRole.receptionist)
+  @Roles(UserRole.admin)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
   }

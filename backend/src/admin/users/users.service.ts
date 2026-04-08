@@ -18,10 +18,10 @@ export class UsersService {
     const { skip, take, page, limit } = resolvePagination(query);
     const where: Prisma.UserWhereInput = {
       role: query.role,
-      isActive: query.isActive,
+      status: query.isActive !== undefined ? (query.isActive ? 'active' : 'inactive') : undefined,
       OR: query.search
         ? [
-            { fullName: { contains: query.search } },
+            { full_name: { contains: query.search } },
             { phone: { contains: query.search } },
             { email: { contains: query.search } },
           ]
@@ -33,7 +33,7 @@ export class UsersService {
         where,
         skip,
         take,
-        orderBy: { createdAt: 'desc' },
+        orderBy: { created_at: 'desc' },
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -45,7 +45,7 @@ export class UsersService {
   }
 
   async findOne(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({ where: { user_id: BigInt(id) } });
     if (!user) {
       throw new NotFoundException('Khong tim thay nguoi dung');
     }
@@ -62,12 +62,12 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        fullName: dto.fullName,
+        full_name: dto.fullName,
         phone: dto.phone,
-        email: dto.email,
-        passwordHash: await bcrypt.hash(dto.password, 10),
+        email: dto.email ?? '',
+        password_hash: await bcrypt.hash(dto.password, 10),
         role: dto.role,
-        isActive: dto.isActive ?? true,
+        status: dto.isActive === false ? 'inactive' : 'active',
       },
     });
 
@@ -75,7 +75,7 @@ export class UsersService {
   }
 
   async update(id: string, dto: UpdateUserDto) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({ where: { user_id: BigInt(id) } });
     if (!user) {
       throw new NotFoundException('Khong tim thay nguoi dung');
     }
@@ -103,14 +103,14 @@ export class UsersService {
     }
 
     const updated = await this.prisma.user.update({
-      where: { id },
+      where: { user_id: BigInt(id) },
       data: {
-        fullName: dto.fullName,
+        full_name: dto.fullName,
         phone: dto.phone,
         email: dto.email,
         role: dto.role,
-        isActive: dto.isActive,
-        passwordHash: dto.password
+        status: dto.isActive !== undefined ? (dto.isActive ? 'active' : 'inactive') : undefined,
+        password_hash: dto.password
           ? await bcrypt.hash(dto.password, 10)
           : undefined,
       },

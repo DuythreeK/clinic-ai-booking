@@ -36,19 +36,21 @@ class AdminSchedule {
     final room = json['room'] as Map<String, dynamic>?;
 
     return AdminSchedule(
-      id: json['id']?.toString() ?? '',
-      doctorId: json['doctorId']?.toString() ?? '',
-      roomId: json['roomId']?.toString(),
+      id: (json['scheduleId'] ?? json['id'] ?? '').toString(),
+      doctorId: (json['doctor_id'] ?? json['doctorId'] ?? '').toString(),
+      roomId: (json['room_id'] ?? json['roomId'])?.toString(),
       workDate: _parseDate(json['workDate']),
       startTime: _parseDate(json['startTime']),
       endTime: _parseDate(json['endTime']),
-      slotDurationMin: _toInt(json['slotDurationMin'], fallback: 30),
+      slotDurationMin: _toInt(json['slotDuration'] ?? json['slotDurationMin'], fallback: 30),
       maxSlots: _toInt(json['maxSlots'], fallback: 1),
       bookedSlots: _toInt(json['bookedSlots'], fallback: 0),
-      isAvailable: json['isAvailable'] == true,
+      isAvailable: json['is_active'] == 1 || json['isAvailable'] == true,
 
       doctorName:
+          doctor?['full_name']?.toString() ??
           doctor?['fullName']?.toString() ??
+          doctor?['user']?['full_name']?.toString() ??
           doctor?['user']?['fullName']?.toString(),
       doctorTitle: doctor?['title']?.toString(),
       roomName: room?['name']?.toString(),

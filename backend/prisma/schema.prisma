@@ -35,8 +35,25 @@ model User {
   reviewed_forms        PreVisitForm[]         @relation("ReviewedByUser")
   notifications         Notification[]
   ai_triage_sessions    AiTriageSession[]
+  admin_notif_settings  AdminNotificationSetting?
 
   @@map("tblUser")
+}
+
+model AdminNotificationSetting {
+  id                  BigInt   @id @default(autoincrement())
+  userId              BigInt   @unique
+  pushEnabled         Int      @default(1) @db.TinyInt
+  soundEnabled        Int      @default(1) @db.TinyInt
+  appointmentReminder Int      @default(0) @db.TinyInt
+  statusUpdates       Int      @default(1) @db.TinyInt
+  reminderLeadMinutes Int      @default(30)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [user_id], onDelete: Cascade)
+
+  @@map("tblAdminNotificationSettings")
 }
 
 enum UserRole {
@@ -101,6 +118,9 @@ model PatientProfile {
   province            String?  @db.VarChar(100)
   district            String?  @db.VarChar(100)
   ward                String?  @db.VarChar(100)
+  citizen_id          String?  @unique @db.VarChar(30)
+  insurance_number    String?  @db.VarChar(50)
+  email               String?  @db.VarChar(150)
   medical_conditions  String?  @db.Text
   allergies           String?  @db.Text
   emergency_contact   String?  @db.VarChar(100)
@@ -128,11 +148,29 @@ model Specialty {
   specialty_id BigInt  @id @default(autoincrement())
   name         String  @unique @db.VarChar(150)
   description  String? @db.Text
-  is_active    Int     @default(1) @db.TinyInt
+  isActive    Int     @default(1) @db.TinyInt
 
   doctors Doctor[]
+  rooms   Room[]
 
   @@map("tblSpecialty")
+}
+
+model Room {
+  room_id     BigInt     @id @default(autoincrement())
+  specialty_id BigInt?
+  name        String     @db.VarChar(100)
+  code        String     @unique @db.VarChar(20)
+  floor       Int?       @db.SmallInt
+  description String?    @db.Text
+  is_active   Int        @default(1) @db.TinyInt
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+
+  specialty   Specialty? @relation(fields: [specialty_id], references: [specialty_id])
+  schedules   Schedule[]
+
+  @@map("tblRoom")
 }
 
 model Facility {
@@ -176,6 +214,7 @@ model Doctor {
   title            String?  @db.VarChar(100)
   bio              String?  @db.Text
   experience_years Int?
+  license_number   String?  @unique @db.VarChar(50)
   avatar_url       String?  @db.VarChar(255)
   consultation_fee Decimal? @db.Decimal(12, 2)
   is_active        Int      @default(1) @db.TinyInt
@@ -188,10 +227,31 @@ model Doctor {
 
   appointments    Appointment[]
   slots           Slot[]
+  schedules       Schedule[]
   medical_records MedicalRecord[]
   reviews         DoctorReview[]
 
   @@map("tblDoctor")
+}
+
+model Schedule {
+  scheduleId      BigInt   @id @default(autoincrement())
+  doctor_id       BigInt
+  room_id         BigInt?
+  workDate        DateTime @db.Date
+  startTime       DateTime @db.Time
+  endTime         DateTime @db.Time
+  slotDuration    Int      @default(30)
+  maxSlots        Int
+  is_active       Int      @default(1) @db.TinyInt
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  doctor          Doctor   @relation(fields: [doctor_id], references: [doctor_id])
+  room            Room?    @relation(fields: [room_id], references: [room_id])
+  appointments    Appointment[]
+
+  @@map("tblSchedule")
 }
 
 model Service {
@@ -274,6 +334,7 @@ model Appointment {
   facility_id      BigInt
   doctor_id        BigInt?
   slot_id          BigInt          @unique
+  schedule_id      BigInt?
   service_id       BigInt?
   pre_visit_form_id BigInt?        @unique
   appointment_type AppointmentType
@@ -298,6 +359,7 @@ model Appointment {
   facility Facility       @relation(fields: [facility_id], references: [facility_id])
   doctor   Doctor?        @relation(fields: [doctor_id], references: [doctor_id])
   slot     Slot           @relation(fields: [slot_id], references: [slot_id])
+  schedule Schedule?      @relation(fields: [schedule_id], references: [scheduleId])
   service  Service?       @relation(fields: [service_id], references: [service_id])
 
   pre_visit_form          PreVisitForm?
@@ -320,6 +382,8 @@ enum AppointmentType {
 enum AppointmentStatus {
   pending
   confirmed
+  checked_in
+  in_progress
   completed
   cancelled
   no_show
