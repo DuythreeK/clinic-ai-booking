@@ -8,8 +8,12 @@ import 'features/auth/services/auth_service.dart';
 import 'features/booking/screens/appointment_history_screen.dart';
 import 'features/booking/screens/booking_flow_screen.dart';
 import 'features/booking/screens/doctor_detail_screen.dart';
+import 'features/booking/screens/doctor_explore_screen.dart';
+import 'features/booking/screens/doctor_search_screen.dart';
 import 'features/booking/screens/doctor_hub_models.dart';
 import 'features/booking/screens/home_screen.dart';
+import 'features/booking/screens/my_doctors_screen.dart';
+import 'features/booking/screens/featured_doctors_screen.dart';
 import 'features/medical_history/screens/medical_history_detail_screen.dart';
 import 'features/medical_history/screens/medical_history_models.dart';
 import 'features/medical_history/screens/medical_history_screen.dart';
@@ -82,6 +86,38 @@ GoRouter createAppRouter({
         },
       ),
       GoRoute(
+        path: '/doctors/explore',
+        name: 'doctor-explore',
+        builder: (context, state) {
+          final qp = state.uri.queryParameters;
+          return DoctorExploreScreen(
+            authService: authService,
+            initialSearch: qp['search'],
+            initialSpecialty: qp['specialty'],
+          );
+        },
+      ),
+      GoRoute(
+        path: '/doctor-search',
+        name: 'doctor-search',
+        builder: (context, state) => const DoctorSearchScreen(),
+      ),
+      GoRoute(
+        path: '/featured-doctors',
+        name: 'featured-doctors',
+        builder: (context, state) => FeaturedDoctorsScreen(
+          onOpenDoctor: (doctor) => context.push('/doctor/${doctor.id}'),
+          initialKeyword: state.uri.queryParameters['search'],
+        ),
+      ),
+      GoRoute(
+        path: '/my-doctors',
+        name: 'my-doctors',
+        builder: (context, state) => MyDoctorsScreen(
+          onOpenDoctor: (doctor) => context.push('/doctor/${doctor.id}'),
+        ),
+      ),
+      GoRoute(
         path: '/booking',
         name: 'booking',
         builder: (context, state) {
@@ -111,7 +147,7 @@ GoRouter createAppRouter({
             );
           }
 
-          final doctor = MedicalHistoryCatalog.doctorOf(item.doctorId);
+          final doctor = MedicalHistoryCatalog.doctorOf(item.doctorId) ?? MedicalHistoryCatalog.fallbackDoctorForItem(item);
 
           if (doctor == null) {
             return const Scaffold(
@@ -190,6 +226,11 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/history',
         name: 'history',
+        builder: (context, state) => const MedicalHistoryScreen(),
+      ),
+      GoRoute(
+        path: '/appointments',
+        name: 'appointments',
         builder: (context, state) => AppointmentHistoryScreen(
           dioClient: authService.dioClient,
         ),
@@ -203,3 +244,4 @@ GoRouter createAppRouter({
     ),
   );
 }
+

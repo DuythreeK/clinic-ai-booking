@@ -1,3 +1,6 @@
+﻿import 'package:flutter/material.dart';
+
+import '../../../core/api/dio_client.dart';
 import '../../booking/screens/doctor_hub_models.dart';
 
 class MedicalHistoryItem {
@@ -7,6 +10,7 @@ class MedicalHistoryItem {
     required this.day,
     required this.monthYear,
     required this.doctorId,
+    required this.doctorName,
     required this.specialty,
     required this.feeLabel,
     required this.primaryStatus,
@@ -26,6 +30,7 @@ class MedicalHistoryItem {
   final String day;
   final String monthYear;
   final String doctorId;
+  final String doctorName;
   final String specialty;
   final String feeLabel;
   final String primaryStatus;
@@ -38,58 +43,80 @@ class MedicalHistoryItem {
   final String caseSummary;
   final String fileName;
   final String fileUrl;
+
+  factory MedicalHistoryItem.fromApi(Map<String, dynamic> json) {
+    return MedicalHistoryItem(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      day: json['day']?.toString() ?? '',
+      monthYear: json['monthYear']?.toString() ?? '',
+      doctorId: json['doctorId']?.toString() ?? '',
+      doctorName: json['doctorName']?.toString() ?? '',
+      specialty: json['specialty']?.toString() ?? '',
+      feeLabel: json['feeLabel']?.toString() ?? '',
+      primaryStatus: json['primaryStatus']?.toString() ?? '',
+      secondaryStatus: json['secondaryStatus']?.toString() ?? '',
+      orderNumber: json['orderNumber']?.toString() ?? '',
+      queueNumber: json['queueNumber']?.toString() ?? '',
+      clinicFeeLabel: json['clinicFeeLabel']?.toString() ?? '',
+      totalAmountLabel: json['totalAmountLabel']?.toString() ?? '',
+      symptomNote: json['symptomNote']?.toString() ?? '',
+      caseSummary: json['caseSummary']?.toString() ?? '',
+      fileName: json['fileName']?.toString() ?? '',
+      fileUrl: json['fileUrl']?.toString() ?? '',
+    );
+  }
 }
 
 class MedicalHistoryCatalog {
   MedicalHistoryCatalog._();
 
-  static const items = <MedicalHistoryItem>[
-    MedicalHistoryItem(
-      id: 'visit-01',
-      title: 'Viêm ruột cấp tính',
-      day: '03',
-      monthYear: 'Tháng 5\n2025',
-      doctorId: 'dr-pediatrician',
-      specialty: 'Nha sĩ',
-      feeLabel: '100.000đ',
-      primaryStatus: 'NEW',
-      secondaryStatus: 'Chuẩn bị khám',
-      orderNumber: '11458523',
-      queueNumber: '11458523',
-      clinicFeeLabel: '100.000đ',
-      totalAmountLabel: '102.000đ',
-      symptomNote:
-          'Nguyên nhân/Triệu chứng: Lại bị đau bụng nhưng đã kéo dài hơn, vừa đau vừa nôn, đau ở dưới bụng bên phải âm ỉ không dứt.',
-      caseSummary:
-          'Mô tả kết quả khám: Sau khi thăm khám tại CTUT Care+, bệnh nhân cho biết bị đau răng dai dẳng, đau nhói ở vùng dưới hàm bên phải, kèm theo triệu chứng ê buốt sau khi ăn. Bác sĩ chẩn đoán đây có thể là dấu hiệu của viêm nướu cấp tính hoặc vấn đề viêm răng miệng liên quan đến tai mũi họng.',
-      fileName: 'CD_VNdu_cap_tinh.pdf',
-      fileUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
-    ),
-    MedicalHistoryItem(
-      id: 'visit-02',
-      title: 'Viêm khoang miệng',
-      day: '22',
-      monthYear: 'Tháng 3\n2025',
-      doctorId: 'dr-mistry-brick',
-      specialty: 'Nha sĩ',
-      feeLabel: '100.000đ',
-      primaryStatus: '100.000đ',
-      secondaryStatus: 'Kết thúc',
-      orderNumber: '11502008',
-      queueNumber: '11502008',
-      clinicFeeLabel: '100.000đ',
-      totalAmountLabel: '100.000đ',
-      symptomNote:
-          'Nguyên nhân/Triệu chứng: Đau nhức khoang miệng, khó ăn nhai và có vết loét nhỏ tại niêm mạc.',
-      caseSummary:
-          'Mô tả kết quả khám: Bác sĩ vệ sinh, sát khuẩn vùng tổn thương và hướng dẫn chăm sóc tại nhà. Tình trạng đã ổn định sau điều trị.',
-      fileName: 'ket_qua_kham_22_03.pdf',
-      fileUrl: 'https://www.orimi.com/pdf-test.pdf',
-    ),
-  ];
+  static final DioClient _dioClient = DioClient();
+  static List<MedicalHistoryItem> _items = <MedicalHistoryItem>[];
+  static bool _loading = false;
+
+  static List<MedicalHistoryItem> get items => _items;
+  static bool get isLoading => _loading;
+
+  static Future<void> loadRemote({bool force = false}) async {
+    if (_loading) return;
+    if (!force && _items.isNotEmpty) return;
+
+    _loading = true;
+    try {
+      final response = await _dioClient.get('/medical-records');
+      final items = _unwrapItems(response.data)
+          .whereType<Map<String, dynamic>>()
+          .map(MedicalHistoryItem.fromApi)
+          .where((item) => item.id.isNotEmpty)
+          .toList();
+      if (items.isNotEmpty) {
+        _items = items;
+      }
+    } catch (_) {
+      // keep current local items if the backend is not reachable
+    } finally {
+      _loading = false;
+    }
+  }
+
+  static List<dynamic> _unwrapItems(dynamic data) {
+    if (data is Map<String, dynamic>) {
+      final wrapped = data['data'];
+      if (wrapped is List) return wrapped;
+      if (wrapped is Map<String, dynamic>) {
+        final items = wrapped['items'];
+        if (items is List) return items;
+      }
+      final items = data['items'];
+      if (items is List) return items;
+    }
+    if (data is List) return data;
+    return <dynamic>[];
+  }
 
   static MedicalHistoryItem? findById(String id) {
-    for (final item in items) {
+    for (final item in _items) {
       if (item.id == id) {
         return item;
       }
@@ -100,5 +127,30 @@ class MedicalHistoryCatalog {
   static DoctorProfile? doctorOf(String doctorId) {
     return DoctorCatalog.instance.findById(doctorId);
   }
+  static DoctorProfile fallbackDoctorForItem(MedicalHistoryItem item) {
+    return DoctorProfile(
+      id: item.doctorId,
+      name: item.doctorName,
+      specialty: item.specialty,
+      focus: item.specialty,
+      imageUrl: '',
+      rating: 0,
+      reviewCount: 0,
+      priceValue: 0,
+      priceLabel: item.feeLabel,
+      bookingToday: 0,
+      yearsExperience: 0,
+      patientsLabel: item.secondaryStatus,
+      nextAvailable: 'Chưa có lịch',
+      gender: 'Không rõ',
+      email: null,
+      phone: null,
+      about: item.caseSummary,
+      certifications: const <String>[],
+      facilities: const <FacilityInfo>[],
+      highlight: const Color(0xFF20C8C2),
+    );
+  }
 }
+
 

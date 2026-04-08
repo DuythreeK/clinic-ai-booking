@@ -1,8 +1,10 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vietnam_provinces/vietnam_provinces.dart';
 
 import 'vaccination_booking_models.dart';
 import 'vaccination_booking_widgets.dart';
+import '../utils/vietnam_address_catalog.dart';
 
 class VaccinationBookingScreen extends StatefulWidget {
   const VaccinationBookingScreen({
@@ -19,6 +21,14 @@ class VaccinationBookingScreen extends StatefulWidget {
 class _VaccinationBookingScreenState extends State<VaccinationBookingScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedTab = 'Tất cả';
+
+  @override
+  void initState() {
+    super.initState();
+    VaccinationBookingCatalog.loadRemote().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -92,6 +102,14 @@ class _VaccinationFacilityScreenState extends State<VaccinationFacilityScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    VaccinationBookingCatalog.loadRemote().then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
@@ -158,119 +176,249 @@ class VaccinationVisitInfoScreen extends StatefulWidget {
 }
 
 class _VaccinationVisitInfoScreenState extends State<VaccinationVisitInfoScreen> {
-  late String _selectedDate;
-  late String _selectedSlot;
-  late String _selectedService;
-
-  static const _dates = ['05/03\nThu 5', '06/03\nThu 6', '07/03\nThu 7'];
-  static const _slotsMorning = ['07:00 - 08:00', '08:00 - 09:00', '09:00 - 10:00'];
-  static const _slotsAfternoon = ['13:00 - 14:00', '14:00 - 15:00', '15:00 - 16:00'];
+  VaccinationBookingDetail? _detail;
+  String? _selectedDate;
+  int? _selectedSlotId;
+  String? _selectedSlotLabel;
+  bool _loading = true;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _selectedDate = _dates.first;
-    _selectedSlot = _slotsMorning.first;
-    _selectedService = widget.draft.serviceName;
+    VaccinationBookingCatalog.loadRemote();
+    _loadDetail();
+  }
+
+  int? _resolveServiceId() {
+    if (widget.draft.serviceId != null) return widget.draft.serviceId;
+    final candidates = VaccinationBookingCatalog.packages
+        .where((item) => item.facilityId == widget.draft.facilityId)
+        .toList();
+    if (candidates.isEmpty) {
+      return VaccinationBookingCatalog.packages.isEmpty ? null : int.tryParse(VaccinationBookingCatalog.packages.first.id);
+    }
+
+    final matchedByTitle = candidates.where((item) => item.title == widget.draft.serviceName).toList();
+    final package = matchedByTitle.isNotEmpty ? matchedByTitle.first : candidates.first;
+    return int.tryParse(package.id);
+  }
+
+  Future<void> _loadDetail() async {
+    final serviceId = _resolveServiceId();
+    if (serviceId == null) {
+      setState(() {
+        _loading = false;
+        _error = 'Không xác định được gói tiêm chủng.';
+      });
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    final detail = await VaccinationBookingCatalog.loadDetail(serviceId: serviceId.toString());
+    if (!mounted) return;
+
+    if (detail == null || detail.slots.isEmpty) {
+      setState(() {
+        _loading = false;
+        _error = 'Chưa có lịch hẹn khả dụng cho gói này.';
+      });
+      return;
+    }
+
+    final firstGroup = detail.slots.first;
+    final firstSlot = firstGroup.morningSlots.isNotEmpty
+        ? firstGroup.morningSlots.first
+        : firstGroup.afternoonSlots.isNotEmpty
+            ? firstGroup.afternoonSlots.first
+            : null;
+
+    setState(() {
+      _detail = detail;
+      _selectedDate = firstGroup.date;
+      _selectedSlotId = firstSlot?.slotId;
+      _selectedSlotLabel = firstSlot == null ? null : '${firstSlot.startTime ?? ''} - ${firstSlot.endTime ?? ''}'.trim();
+      _loading = false;
+    });
+  }
+
+  VaccinationSlotGroup? _selectedGroup() {
+    final detail = _detail;
+    final selectedDate = _selectedDate;
+    if (detail == null || selectedDate == null) return null;
+    for (final group in detail.slots) {
+      if (group.date == selectedDate) return group;
+    }
+    return detail.slots.isNotEmpty ? detail.slots.first : null;
+  }
+
+  void _selectGroup(VaccinationSlotGroup group) {
+    final slot = group.morningSlots.isNotEmpty
+        ? group.morningSlots.first
+        : group.afternoonSlots.isNotEmpty
+            ? group.afternoonSlots.first
+            : null;
+    setState(() {
+      _selectedDate = group.date;
+      _selectedSlotId = slot?.slotId;
+      _selectedSlotLabel = slot == null ? null : '${slot.startTime ?? ''} - ${slot.endTime ?? ''}'.trim();
+    });
+  }
+
+  void _selectSlot(VaccinationSlotItem item) {
+    setState(() {
+      _selectedSlotId = item.slotId;
+      _selectedSlotLabel = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+    });
+  }
+
+  String _displayDate(String raw) {
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    final day = parsed.day.toString().padLeft(2, '0');
+    final month = parsed.month.toString().padLeft(2, '0');
+    final weekday = ['CN', 'Th 2', 'Th 3', 'Th 4', 'Th 5', 'Th 6', 'Th 7'][parsed.weekday % 7];
+    return '$day/$month\n$weekday';
   }
 
   @override
   Widget build(BuildContext context) {
-    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final detail = _detail;
+    final facility = detail?.facility ?? VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final selectedGroup = _selectedGroup();
+    final safeDetail = detail;
 
     return VaccinationPageScaffold(
       title: 'Chọn thông tin khám',
       onBack: () => context.pop(),
-      bottom: PrimaryActionBar(
-        label: 'TIẾP TỤC',
-        onTap: () {
-          context.push(
-            '/vaccination-booking/profile',
-            extra: widget.draft.copyWith(
-              facilityId: facility.id,
-              facilityName: facility.name,
-              facilityAddress: facility.address,
-              serviceName: _selectedService,
-              dateLabel: _selectedDate.replaceAll('\n', ' '),
-              slotLabel: _selectedSlot,
+      bottom: _loading || _error != null || detail == null
+          ? null
+          : PrimaryActionBar(
+              label: 'TIẾP TỤC',
+              onTap: () {
+                if (_selectedSlotId == null || selectedGroup == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Vui lòng chọn ngày và giờ khám.')),
+                  );
+                  return;
+                }
+
+                context.push(
+                  '/vaccination-booking/profile',
+                  extra: widget.draft.copyWith(
+                    facilityId: facility.id,
+                    facilityName: facility.name,
+                    facilityAddress: facility.address,
+                    serviceId: detail.serviceId,
+                    serviceName: detail.serviceName,
+                    servicePriceLabel: detail.servicePriceLabel,
+                    servicePriceValue: detail.servicePriceValue,
+                    dateLabel: _displayDate(selectedGroup.date).replaceAll('\n', ' '),
+                    slotLabel: _selectedSlotLabel ?? '',
+                    slotId: _selectedSlotId,
+                    appointmentDate: selectedGroup.date,
+                    appointmentTime: _selectedSlotLabel,
+                  ),
+                );
+              },
             ),
-          );
-        },
-      ),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        children: [
-          const StepHeader(currentStep: 1),
-          const SizedBox(height: 18),
-          SummaryCard(
-            title: facility.name,
-            subtitle: facility.address,
-          ),
-          const SizedBox(height: 16),
-          const SectionTitle('Chuyên khoa'),
-          const SizedBox(height: 8),
-          const _OutlinedSelectTile(
-            icon: Icons.medical_services_outlined,
-            title: 'TIÊM NGỪA',
-            subtitle: null,
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Dịch vụ'),
-          const SizedBox(height: 8),
-          _OutlinedSelectTile(
-            icon: Icons.vaccines_outlined,
-            title: _selectedService,
-            subtitle: widget.draft.servicePriceLabel,
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Ngày khám'),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _dates.map((item) {
-              return ChoiceChipPill(
-                label: item,
-                selected: _selectedDate == item,
-                onTap: () => setState(() => _selectedDate = item),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Buổi sáng'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _slotsMorning.map((item) {
-              return ChoiceChipPill(
-                label: item,
-                selected: _selectedSlot == item,
-                onTap: () => setState(() => _selectedSlot = item),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Buổi chiều'),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: _slotsAfternoon.map((item) {
-              return ChoiceChipPill(
-                label: item,
-                selected: _selectedSlot == item,
-                onTap: () => setState(() => _selectedSlot = item),
-              );
-            }).toList(),
-          ),
-        ],
-      ),
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(
+                          onPressed: _loadDetail,
+                          child: const Text('Thử lại'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                  children: [
+                    const StepHeader(currentStep: 1),
+                    const SizedBox(height: 18),
+                    SummaryCard(
+                      title: facility.name,
+                      subtitle: facility.address,
+                    ),
+                    const SizedBox(height: 16),
+                    const SectionTitle('Chuyên khoa'),
+                    const SizedBox(height: 8),
+                    const _OutlinedSelectTile(
+                      icon: Icons.medical_services_outlined,
+                      title: 'TIÊM NGỪA',
+                      subtitle: null,
+                    ),
+                    const SizedBox(height: 14),
+                    const SectionTitle('Dịch vụ'),
+                    const SizedBox(height: 8),
+                    _OutlinedSelectTile(
+                      icon: Icons.vaccines_outlined,
+                      title: safeDetail!.serviceName,
+                      subtitle: safeDetail.servicePriceLabel,
+                    ),
+                    const SizedBox(height: 14),
+                    const SectionTitle('Ngày khám'),
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: safeDetail.slots.map((item) {
+                        return ChoiceChipPill(
+                          label: _displayDate(item.date),
+                          selected: _selectedDate == item.date,
+                          onTap: () => _selectGroup(item),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    const SectionTitle('Buổi sáng'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: (selectedGroup?.morningSlots ?? const <VaccinationSlotItem>[]).map((item) {
+                        final label = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+                        return ChoiceChipPill(
+                          label: label,
+                          selected: _selectedSlotId == item.slotId,
+                          onTap: () => _selectSlot(item),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 14),
+                    const SectionTitle('Buổi chiều'),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: (selectedGroup?.afternoonSlots ?? const <VaccinationSlotItem>[]).map((item) {
+                        final label = '${item.startTime ?? ''} - ${item.endTime ?? ''}'.trim();
+                        return ChoiceChipPill(
+                          label: label,
+                          selected: _selectedSlotId == item.slotId,
+                          onTap: () => _selectSlot(item),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ),
     );
   }
-}
-
-class VaccinationProfileScreen extends StatelessWidget {
+}class VaccinationProfileScreen extends StatefulWidget {
   const VaccinationProfileScreen({
     super.key,
     required this.draft,
@@ -279,26 +427,187 @@ class VaccinationProfileScreen extends StatelessWidget {
   final VaccinationBookingDraft draft;
 
   @override
+  State<VaccinationProfileScreen> createState() => _VaccinationProfileScreenState();
+}
+
+class _VaccinationProfileScreenState extends State<VaccinationProfileScreen> {
+  VaccinationPatientProfile? _selectedProfile;
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfiles();
+  }
+
+  Future<void> _loadProfiles() async {
+    await VaccinationBookingCatalog.loadPatientProfiles();
+    if (!mounted) return;
+    final profiles = VaccinationBookingCatalog.patientProfiles;
+    VaccinationPatientProfile? selected;
+    if (profiles.isNotEmpty) {
+      for (final profile in profiles) {
+        if (profile.isPrimary) {
+          selected = profile;
+          break;
+        }
+      }
+      selected ??= profiles.first;
+    }
+
+    setState(() {
+      _selectedProfile = selected;
+      _loading = false;
+    });
+  }
+
+  String _profileLabel(VaccinationPatientProfile? profile) {
+    if (profile == null) return 'CHƯA TỪNG KHÁM ĐĂNG KÝ MỚI';
+    final parts = <String>[];
+    if (profile.gender != null && profile.gender!.isNotEmpty) parts.add(profile.gender!);
+    if (profile.birthDate != null && profile.birthDate!.isNotEmpty) parts.add(profile.birthDate!);
+    return parts.isEmpty ? profile.fullName : '${profile.fullName} • ${parts.join(' • ')}';
+  }
+
+  VaccinationBookingDraft _buildDraftFromProfile(VaccinationPatientProfile profile) {
+    return widget.draft.copyWith(
+      patientProfileId: profile.id,
+      profileLabel: _profileLabel(profile),
+      patientName: profile.fullName,
+      phone: profile.phoneNumber ?? widget.draft.phone,
+      fullName: profile.fullName,
+      birthDate: profile.birthDate ?? widget.draft.birthDate,
+      gender: profile.gender ?? widget.draft.gender,
+      identityNumber: profile.citizenId ?? widget.draft.identityNumber,
+      insuranceNumber: profile.insuranceNumber ?? widget.draft.insuranceNumber,
+      email: profile.email ?? widget.draft.email,
+      occupation: profile.occupation ?? widget.draft.occupation,
+      country: profile.nationality ?? widget.draft.country,
+      ethnicity: profile.ethnicity ?? widget.draft.ethnicity,
+      city: profile.province ?? widget.draft.city,
+      district: profile.district ?? widget.draft.district,
+      ward: profile.ward ?? widget.draft.ward,
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final profiles = VaccinationBookingCatalog.patientProfiles;
+    final hasProfiles = profiles.isNotEmpty;
+    final selectedProfile = _selectedProfile;
+    final selectedDraft = selectedProfile == null
+        ? widget.draft
+        : _buildDraftFromProfile(selectedProfile);
+
     return VaccinationPageScaffold(
       title: 'Chọn hồ sơ',
       onBack: () => context.pop(),
-      bottom: PrimaryActionBar(
-        label: draft.profileLabel,
-        onTap: () => context.push('/vaccination-booking/confirm', extra: draft),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        children: const [
-          StepHeader(currentStep: 2),
-          SizedBox(height: 34),
-          _EmptyProfileCard(),
-        ],
-      ),
+      bottom: selectedProfile == null
+          ? null
+          : PrimaryActionBar(
+              label: 'TIẾP TỤC',
+              onTap: () {
+                context.push('/vaccination-booking/confirm', extra: selectedDraft);
+              },
+            ),
+      child: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+              children: [
+                const StepHeader(currentStep: 2),
+                const SizedBox(height: 18),
+                if (!hasProfiles) ...[
+                  Container(
+                    height: 340,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(22),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const CircleAvatar(
+                          radius: 38,
+                          backgroundColor: Color(0xFFE5E8EE),
+                          child: Icon(Icons.description_outlined, size: 34, color: Color(0xFF8A98AA)),
+                        ),
+                        const SizedBox(height: 18),
+                        TextButton(
+                          onPressed: () => context.push('/vaccination-booking/confirm', extra: widget.draft),
+                          child: const Text('CHƯA TỪNG KHÁM ĐĂNG KÝ MỚI'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ] else ...[
+                  ...profiles.map((profile) {
+                    final selected = _selectedProfile?.id == profile.id;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: () => setState(() => _selectedProfile = profile),
+                        borderRadius: BorderRadius.circular(18),
+                        child: Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: selected ? const Color(0xFFE9F8FF) : Colors.white,
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(
+                              color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.line,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                                color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.subtext,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      profile.fullName,
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      _profileLabel(profile),
+                                      style: const TextStyle(fontSize: 12, color: VaccinationBookingColors.subtext),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                profile.isPrimary ? 'Chính' : 'Phụ',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: selected ? VaccinationBookingColors.blue : VaccinationBookingColors.subtext,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () => context.push('/vaccination-booking/confirm', extra: widget.draft),
+                    icon: const Icon(Icons.add_circle_outline_rounded),
+                    label: const Text('CHƯA TỪNG KHÁM ĐĂNG KÝ MỚI'),
+                  ),
+                ],
+              ],
+            ),
     );
   }
-}
-class VaccinationConfirmScreen extends StatefulWidget {
+}class VaccinationConfirmScreen extends StatefulWidget {
   const VaccinationConfirmScreen({
     super.key,
     required this.draft,
@@ -311,6 +620,7 @@ class VaccinationConfirmScreen extends StatefulWidget {
 }
 
 class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late final TextEditingController _phoneController;
   late final TextEditingController _fullNameController;
   late final TextEditingController _birthController;
@@ -324,10 +634,72 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
   late final TextEditingController _districtController;
   late final TextEditingController _wardController;
   String _gender = 'Nam';
+  bool _submitted = false;
+  bool _addressLoading = true;
+
+  List<String> get _provinceOptions {
+    final provinces = VietnamAddressCatalog.provinces()
+        .map(VietnamAddressCatalog.displayName)
+        .where((value) => value.isNotEmpty)
+        .toList();
+    return <String>[VietnamAddressCatalog.provincePlaceholder, ...provinces];
+  }
+
+  List<String> get _districtOptions {
+    if (_cityController.text.trim().isEmpty) {
+      return const [VietnamAddressCatalog.districtPlaceholder];
+    }
+    final districts = VietnamAddressCatalog.districtsByProvinceName(_cityController.text)
+        .map(VietnamAddressCatalog.displayName)
+        .where((value) => value.isNotEmpty)
+        .toList();
+    return <String>[VietnamAddressCatalog.districtPlaceholder, ...districts];
+  }
+
+  List<String> get _wardOptions {
+    if (_cityController.text.trim().isEmpty || _districtController.text.trim().isEmpty) {
+      return const [VietnamAddressCatalog.wardPlaceholder];
+    }
+    final wards = VietnamAddressCatalog.wardsBySelection(_cityController.text, _districtController.text)
+        .map(VietnamAddressCatalog.displayName)
+        .where((value) => value.isNotEmpty)
+        .toList();
+    return <String>[VietnamAddressCatalog.wardPlaceholder, ...wards];
+  }
+
+  String _normalizeProvince(String value) {
+    final normalized = VietnamAddressCatalog.displayName(VietnamAddressCatalog.provinceByName(value));
+    return normalized.isEmpty ? value : normalized;
+  }
+
+  String _normalizeDistrict(String province, String district) {
+    final normalized = VietnamAddressCatalog.displayName(VietnamAddressCatalog.districtByName(province, district));
+    return normalized.isEmpty ? district : normalized;
+  }
+
+  String _normalizeWard(String province, String district, String ward) {
+    final selectedProvince = _normalizeProvince(province);
+    final selectedDistrict = _normalizeDistrict(province, district);
+    if (selectedProvince.trim().isEmpty || selectedDistrict.trim().isEmpty || ward.trim().isEmpty) {
+      return ward;
+    }
+    final wards = VietnamAddressCatalog.wardsBySelection(selectedProvince, selectedDistrict);
+    for (final item in wards) {
+      final itemName = VietnamAddressCatalog.displayName(item);
+      if (itemName.toLowerCase() == ward.trim().toLowerCase()) return itemName;
+    }
+    return ward;
+  }
 
   @override
   void initState() {
     super.initState();
+    VietnamAddressCatalog.ensureInitialized().then((_) {
+      if (!mounted) return;
+      setState(() {
+        _addressLoading = false;
+      });
+    });
     _phoneController = TextEditingController(text: widget.draft.phone);
     _fullNameController = TextEditingController(text: widget.draft.fullName);
     _birthController = TextEditingController(text: widget.draft.birthDate);
@@ -337,9 +709,9 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
     _occupationController = TextEditingController(text: widget.draft.occupation);
     _countryController = TextEditingController(text: widget.draft.country);
     _ethnicityController = TextEditingController(text: widget.draft.ethnicity);
-    _cityController = TextEditingController(text: widget.draft.city);
-    _districtController = TextEditingController(text: widget.draft.district);
-    _wardController = TextEditingController(text: widget.draft.ward);
+    _cityController = TextEditingController(text: _normalizeProvince(widget.draft.city));
+    _districtController = TextEditingController(text: _normalizeDistrict(widget.draft.city, widget.draft.district));
+    _wardController = TextEditingController(text: _normalizeWard(widget.draft.city, widget.draft.district, widget.draft.ward));
     _gender = widget.draft.gender;
   }
 
@@ -370,6 +742,10 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
       bottom: PrimaryActionBar(
         label: 'TIẾP TỤC',
         onTap: () {
+          setState(() => _submitted = true);
+          final isValid = _formKey.currentState?.validate() ?? false;
+          if (!isValid) return;
+
           context.push(
             '/vaccination-booking/payment',
             extra: widget.draft.copyWith(
@@ -389,6 +765,7 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
               city: _cityController.text.trim(),
               district: _districtController.text.trim(),
               ward: _wardController.text.trim(),
+              patientProfileId: widget.draft.patientProfileId,
               patientName: _fullNameController.text.trim().isEmpty
                   ? widget.draft.patientName
                   : _fullNameController.text.trim(),
@@ -396,104 +773,164 @@ class _VaccinationConfirmScreenState extends State<VaccinationConfirmScreen> {
           );
         },
       ),
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        children: [
-          const StepHeader(currentStep: 3),
-          const SizedBox(height: 18),
-          SummaryCard(
-            title: facility.name,
-            subtitle: facility.address,
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Thông tin đặt khám'),
-          const SizedBox(height: 8),
-          _InfoPanel(
-            children: [
-              _SummaryLine(icon: Icons.medical_services_outlined, text: widget.draft.specialty),
-              _SummaryLine(icon: Icons.vaccines_outlined, text: widget.draft.serviceName),
-              _SummaryLine(
-                icon: Icons.calendar_month_outlined,
-                text: '${widget.draft.dateLabel} (${widget.draft.slotLabel})',
+      child: Form(
+        key: _formKey,
+        autovalidateMode: _submitted ? AutovalidateMode.onUserInteraction : AutovalidateMode.disabled,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+          children: [
+            const StepHeader(currentStep: 3),
+            const SizedBox(height: 18),
+            SummaryCard(
+              title: facility.name,
+              subtitle: facility.address,
+            ),
+            const SizedBox(height: 14),
+            const SectionTitle('Thông tin đặt khám'),
+            const SizedBox(height: 8),
+            _InfoPanel(
+              children: [
+                _SummaryLine(icon: Icons.medical_services_outlined, text: widget.draft.specialty),
+                _SummaryLine(icon: Icons.vaccines_outlined, text: widget.draft.serviceName),
+                _SummaryLine(
+                  icon: Icons.calendar_month_outlined,
+                  text: '${widget.draft.dateLabel} (${widget.draft.slotLabel})',
+                ),
+                _SummaryLine(
+                  icon: Icons.payments_outlined,
+                  text: widget.draft.servicePriceLabel,
+                  emphasize: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            const SectionTitle('Thông tin người khám'),
+            const SizedBox(height: 8),
+            _FormField(
+              label: 'Số điện thoại',
+              controller: _phoneController,
+              requiredField: true,
+            ),
+            _FormField(
+              label: 'Họ và tên',
+              controller: _fullNameController,
+              requiredField: true,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: _FormField(
+                    label: 'Ngày sinh',
+                    controller: _birthController,
+                    suffix: const Icon(Icons.calendar_month_outlined, size: 18),
+                    requiredField: true,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _DropField(
+                    label: 'Giới tính',
+                    value: _gender,
+                    values: const ['Chọn giới tính', 'Nam', 'Nữ'],
+                    requiredField: true,
+                    onChanged: (value) => setState(() => _gender = value),
+                  ),
+                ),
+              ],
+            ),
+            _FormField(
+              label: 'Mã định danh/CCCD',
+              controller: _identityController,
+              requiredField: true,
+              keyboardType: TextInputType.number,
+            ),
+            _FormField(
+              label: 'Mã bảo hiểm y tế',
+              controller: _insuranceController,
+              requiredField: true,
+              keyboardType: TextInputType.text,
+            ),
+            _FormField(
+              label: 'Email',
+              controller: _emailController,
+              requiredField: true,
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Vui lòng nhập đầy đủ thông tin';
+                }
+                final email = value.trim();
+                final emailPattern = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                if (!emailPattern.hasMatch(email)) {
+                  return 'Email không hợp lệ';
+                }
+                return null;
+              },
+            ),
+            _DropField(
+              label: 'Nghề nghiệp',
+              value: _occupationController.text.isEmpty ? 'Chọn nghề nghiệp' : _occupationController.text,
+              values: const ['Chọn nghề nghiệp', 'Nhân viên văn phòng', 'Sinh viên'],
+              requiredField: true,
+              onChanged: (value) => setState(() => _occupationController.text = value == 'Chọn nghề nghiệp' ? '' : value),
+            ),
+            _DropField(
+              label: 'Quốc gia',
+              value: _countryController.text.isEmpty ? 'Chọn quốc gia' : _countryController.text,
+              values: const ['Chọn quốc gia', 'Việt Nam'],
+              requiredField: true,
+              onChanged: (value) => setState(() => _countryController.text = value == 'Chọn quốc gia' ? '' : value),
+            ),
+            _DropField(
+              label: 'Dân tộc',
+              value: _ethnicityController.text.isEmpty ? 'Chọn dân tộc' : _ethnicityController.text,
+              values: const ['Chọn dân tộc', 'Kinh', 'Hoa'],
+              requiredField: true,
+              onChanged: (value) => setState(() => _ethnicityController.text = value == 'Chọn dân tộc' ? '' : value),
+            ),
+            if (_addressLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+              )
+            else ...[
+              _DropField(
+                label: 'Tỉnh/Thành phố',
+                value: _cityController.text.isEmpty ? 'Chọn Tỉnh/Thành phố' : _cityController.text,
+                values: _provinceOptions,
+                requiredField: true,
+                onChanged: (value) => setState(() {
+                  _cityController.text = value == VietnamAddressCatalog.provincePlaceholder ? '' : value;
+                  _districtController.text = '';
+                  _wardController.text = '';
+                }),
               ),
-              _SummaryLine(
-                icon: Icons.payments_outlined,
-                text: widget.draft.servicePriceLabel,
-                emphasize: true,
+              _DropField(
+                label: 'Quận/Huyện',
+                value: _districtController.text.isEmpty ? 'Chọn Quận/Huyện' : _districtController.text,
+                values: _districtOptions,
+                requiredField: true,
+                onChanged: (value) => setState(() {
+                  _districtController.text = value == VietnamAddressCatalog.districtPlaceholder ? '' : value;
+                  _wardController.text = '';
+                }),
+              ),
+              _DropField(
+                label: 'Phường/Xã',
+                value: _wardController.text.isEmpty ? 'Chọn Phường/Xã' : _wardController.text,
+                values: _wardOptions,
+                requiredField: true,
+                onChanged: (value) => setState(() => _wardController.text = value == VietnamAddressCatalog.wardPlaceholder ? '' : value),
               ),
             ],
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Thông tin người khám'),
-          const SizedBox(height: 8),
-          _FormField(label: 'Số điện thoại', controller: _phoneController),
-          _FormField(label: 'Họ và tên', controller: _fullNameController),
-          Row(
-            children: [
-              Expanded(
-                child: _FormField(
-                  label: 'Ngày sinh',
-                  controller: _birthController,
-                  suffix: const Icon(Icons.calendar_month_outlined, size: 18),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _DropField(
-                  label: 'Giới tính',
-                  value: _gender,
-                  values: const ['Nam', 'Nữ'],
-                  onChanged: (value) => setState(() => _gender = value),
-                ),
-              ),
-            ],
-          ),
-          _FormField(label: 'Mã định danh/CCCD', controller: _identityController),
-          _FormField(label: 'Mã bảo hiểm y tế', controller: _insuranceController),
-          _FormField(label: 'Email', controller: _emailController),
-          _DropField(
-            label: 'Nghề nghiệp',
-            value: _occupationController.text.isEmpty ? 'Chọn nghề nghiệp' : _occupationController.text,
-            values: const ['Chọn nghề nghiệp', 'Nhân viên văn phòng', 'Sinh viên'],
-            onChanged: (value) => setState(() => _occupationController.text = value == 'Chọn nghề nghiệp' ? '' : value),
-          ),
-          _DropField(
-            label: 'Quốc gia',
-            value: _countryController.text.isEmpty ? 'Chọn quốc gia' : _countryController.text,
-            values: const ['Chọn quốc gia', 'Việt Nam'],
-            onChanged: (value) => setState(() => _countryController.text = value == 'Chọn quốc gia' ? '' : value),
-          ),
-          _DropField(
-            label: 'Dân tộc',
-            value: _ethnicityController.text.isEmpty ? 'Chọn dân tộc' : _ethnicityController.text,
-            values: const ['Chọn dân tộc', 'Kinh', 'Hoa'],
-            onChanged: (value) => setState(() => _ethnicityController.text = value == 'Chọn dân tộc' ? '' : value),
-          ),
-          _DropField(
-            label: 'Tỉnh/Thành phố',
-            value: _cityController.text.isEmpty ? 'Chọn Tỉnh/Thành phố' : _cityController.text,
-            values: const ['Chọn Tỉnh/Thành phố', 'Cần Thơ', 'Hà Nội', 'TP.HCM'],
-            onChanged: (value) => setState(() => _cityController.text = value == 'Chọn Tỉnh/Thành phố' ? '' : value),
-          ),
-          _DropField(
-            label: 'Quận/Huyện',
-            value: _districtController.text.isEmpty ? 'Chọn Quận/Huyện' : _districtController.text,
-            values: const ['Chọn Quận/Huyện', 'Ninh Kiều', 'Hai Bà Trưng', 'Quận 1'],
-            onChanged: (value) => setState(() => _districtController.text = value == 'Chọn Quận/Huyện' ? '' : value),
-          ),
-          _DropField(
-            label: 'Phường/Xã',
-            value: _wardController.text.isEmpty ? 'Chọn Phường/Xã' : _wardController.text,
-            values: const ['Chọn Phường/Xã', 'Cái Khế', 'Phạm Đình Hổ', 'Bến Nghé'],
-            onChanged: (value) => setState(() => _wardController.text = value == 'Chọn Phường/Xã' ? '' : value),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class VaccinationPaymentScreen extends StatelessWidget {
+class VaccinationPaymentScreen extends StatefulWidget {
   const VaccinationPaymentScreen({
     super.key,
     required this.draft,
@@ -502,11 +939,19 @@ class VaccinationPaymentScreen extends StatelessWidget {
   final VaccinationBookingDraft draft;
 
   @override
+  State<VaccinationPaymentScreen> createState() => _VaccinationPaymentScreenState();
+}
+
+class _VaccinationPaymentScreenState extends State<VaccinationPaymentScreen> {
+  String _paymentMethodId = 'vietqr';
+  bool _isSubmitting = false;
+
+  @override
   Widget build(BuildContext context) {
-    final facility = VaccinationBookingCatalog.facilityById(draft.facilityId);
-    final paymentMethod = VaccinationBookingCatalog.paymentMethodById(draft.paymentMethodId);
+    final facility = VaccinationBookingCatalog.facilityById(widget.draft.facilityId);
+    final paymentMethod = VaccinationBookingCatalog.paymentMethodById(_paymentMethodId);
     const extraFee = 11000;
-    final total = draft.servicePriceValue + extraFee;
+    final total = widget.draft.servicePriceValue + extraFee;
     final totalLabel = total.toString().replaceAllMapped(
       RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
       (match) => '${match[1]}.',
@@ -516,7 +961,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
       title: 'Chọn hồ sơ',
       onBack: () => context.pop(),
       bottom: PrimaryActionBar(
-        label: 'THANH TOÁN',
+        label: _isSubmitting ? 'ĐANG XỬ LÝ...' : 'THANH TOÁN',
         leadingText: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -531,12 +976,15 @@ class VaccinationPaymentScreen extends StatelessWidget {
             ),
             const SizedBox(height: 2),
             const Text(
-              '(Đã bao gồm thuế với phí)',
+              '(Đã bao gồm thuế và phí)',
               style: TextStyle(fontSize: 12, color: VaccinationBookingColors.subtext),
             ),
           ],
         ),
-        onTap: () => _showPaymentMethodDialog(context),
+        onTap: () {
+          if (_isSubmitting) return;
+          _submitBooking();
+        },
       ),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
@@ -550,15 +998,15 @@ class VaccinationPaymentScreen extends StatelessWidget {
           const SizedBox(height: 14),
           SummaryCard(
             title: 'Thông tin bệnh nhân',
-            subtitle: draft.patientName.isEmpty ? 'Nguyễn Văn A' : draft.patientName,
+            subtitle: widget.draft.patientName.isEmpty ? 'Nguyễn Văn A' : widget.draft.patientName,
           ),
           const SizedBox(height: 14),
           _InfoPanel(
             children: [
-              _SummaryLine(icon: Icons.medical_services_outlined, text: draft.specialty),
-              _SummaryLine(icon: Icons.vaccines_outlined, text: draft.serviceName),
-              _SummaryLine(icon: Icons.calendar_month_outlined, text: '${draft.dateLabel} (${draft.slotLabel})'),
-              _SummaryLine(icon: Icons.payments_outlined, text: draft.servicePriceLabel, emphasize: true),
+              _SummaryLine(icon: Icons.medical_services_outlined, text: widget.draft.specialty),
+              _SummaryLine(icon: Icons.vaccines_outlined, text: widget.draft.serviceName),
+              _SummaryLine(icon: Icons.calendar_month_outlined, text: '${widget.draft.dateLabel} (${widget.draft.slotLabel})'),
+              _SummaryLine(icon: Icons.payments_outlined, text: widget.draft.servicePriceLabel, emphasize: true),
             ],
           ),
           const SizedBox(height: 14),
@@ -568,62 +1016,150 @@ class VaccinationPaymentScreen extends StatelessWidget {
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               boxShadow: const [
-                BoxShadow(
-                  color: Color(0x10084B6B),
-                  blurRadius: 18,
-                  offset: Offset(0, 8),
-                ),
+                BoxShadow(color: Color(0x10084B6B), blurRadius: 18, offset: Offset(0, 8)),
               ],
             ),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _PriceRow(label: 'Phi kham benh', value: draft.servicePriceLabel),
-                const SizedBox(height: 10),
-                const Divider(color: VaccinationBookingColors.line),
-                const SizedBox(height: 10),
-                const _PriceRow(label: 'Phi dat lich (Theo quy dinh)', value: '11.000 VND'),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-          const SectionTitle('Chọn phương thức thanh toán'),
-          const SizedBox(height: 8),
-          InkWell(
-            onTap: () => _showPaymentMethodDialog(context),
-            borderRadius: BorderRadius.circular(14),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: const Color(0xFF9FCCFF)),
-              ),
-              child: Row(
-                children: [
-                  CircleAvatar(
-                    radius: 16,
-                    backgroundColor: paymentMethod.color.withOpacity(0.14),
-                    child: Icon(Icons.account_balance_wallet_rounded, color: paymentMethod.color, size: 18),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      paymentMethod.shortLabel,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: VaccinationBookingColors.blue,
-                      ),
+                const Text(
+                  'Chọn phương thức thanh toán',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 12),
+                InkWell(
+                  onTap: () => _showPaymentMethodDialog(context),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFF9FCCFF)),
+                    ),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 16,
+                          backgroundColor: paymentMethod.color.withOpacity(0.14),
+                          child: Icon(Icons.account_balance_wallet_rounded, color: paymentMethod.color, size: 18),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            paymentMethod.label,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: VaccinationBookingColors.text),
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: VaccinationBookingColors.blue),
+                      ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: VaccinationBookingColors.blue),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _submitBooking() async {
+    if (_isSubmitting) return;
+
+    final serviceId = widget.draft.serviceId;
+    final slotId = widget.draft.slotId;
+    final facilityId = widget.draft.facilityId;
+    if (serviceId == null || slotId == null || facilityId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Thiếu thông tin lịch tiêm.')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      var patientId = widget.draft.patientProfileId;
+      if (patientId == null) {
+        final createdProfile = await VaccinationBookingCatalog.createPatientProfile(
+          fullName: widget.draft.fullName.isNotEmpty ? widget.draft.fullName : widget.draft.patientName,
+          phoneNumber: widget.draft.phone,
+          citizenId: widget.draft.identityNumber.trim(),
+          insuranceNumber: widget.draft.insuranceNumber.trim(),
+          email: widget.draft.email.trim(),
+          gender: widget.draft.gender,
+          dateOfBirth: widget.draft.birthDate,
+          occupation: widget.draft.occupation,
+          nationality: widget.draft.country,
+          ethnicity: widget.draft.ethnicity,
+          province: widget.draft.city,
+          district: widget.draft.district,
+          ward: widget.draft.ward,
+          addressDetail: [widget.draft.city, widget.draft.district, widget.draft.ward].where((value) => value.trim().isNotEmpty).join(', '),
+          emergencyContact: widget.draft.phone,
+          relationshipToUser: 'Bản thân',
+        );
+        patientId = createdProfile?.id;
+      }
+
+      if (patientId == null) {
+        throw Exception('Không tạo được hồ sơ bệnh nhân.');
+      }
+
+      final appointment = await VaccinationBookingCatalog.createAppointment(
+        patientId: patientId.toString(),
+        facilityId: facilityId.toString(),
+        serviceId: serviceId.toString(),
+        slotId: slotId.toString(),
+        appointmentDate: widget.draft.appointmentDate ?? widget.draft.dateLabel,
+        appointmentTime: widget.draft.appointmentTime ?? widget.draft.slotLabel,
+        note: 'Đặt lịch tiêm chủng',
+        symptomsNote: 'Đăng ký tiêm chủng',
+      );
+
+      final appointmentId = appointment?['id']?.toString();
+      if (appointmentId == null || appointmentId.isEmpty) {
+        throw Exception('Không tạo được lịch hẹn.');
+      }
+
+      await VaccinationBookingCatalog.createPayment(
+        appointmentId: appointmentId,
+        paymentMethod: _paymentMethodId,
+      );
+
+      if (!mounted) return;
+      await showDialog<void>(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: const Text('Đặt lịch thành công'),
+            content: const Text('Lịch tiêm chủng của bạn đã được tạo và thanh toán đã được ghi nhận.'),
+            actions: [
+              TextButton(
+                onPressed: () => context.pop(),
+                child: const Text('Đóng'),
+              ),
+            ],
+          );
+        },
+      );
+      if (!mounted) return;
+      context.go('/');
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể hoàn tất đặt lịch: $e')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   Future<void> _showPaymentMethodDialog(BuildContext context) async {
@@ -642,11 +1178,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
                     const Expanded(
                       child: Text(
                         'Chọn phương thức thanh toán',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          color: VaccinationBookingColors.text,
-                        ),
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: VaccinationBookingColors.text),
                       ),
                     ),
                     IconButton(
@@ -657,38 +1189,40 @@ class VaccinationPaymentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 ...VaccinationBookingCatalog.paymentMethods.map(
-                  (method) => Container(
-                    margin: const EdgeInsets.only(top: 10),
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: VaccinationBookingColors.line),
-                    ),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 18,
-                          backgroundColor: method.color.withOpacity(0.14),
-                          child: Text(
-                            method.shortLabel.substring(0, method.shortLabel.length > 4 ? 4 : method.shortLabel.length),
-                            style: TextStyle(
-                              color: method.color,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 11,
+                  (method) => InkWell(
+                    onTap: () {
+                      setState(() => _paymentMethodId = method.id);
+                      context.pop();
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 10),
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: VaccinationBookingColors.line),
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 18,
+                            backgroundColor: method.color.withOpacity(0.14),
+                            child: Text(
+                              method.shortLabel.substring(0, method.shortLabel.length > 4 ? 4 : method.shortLabel.length),
+                              style: TextStyle(
+                                color: method.color,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 11,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          method.label,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: VaccinationBookingColors.text,
+                          const SizedBox(width: 12),
+                          Text(
+                            method.label,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: VaccinationBookingColors.text),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -699,9 +1233,7 @@ class VaccinationPaymentScreen extends StatelessWidget {
       },
     );
   }
-}
-
-class VaccinationFilterScreen extends StatefulWidget {
+}class VaccinationFilterScreen extends StatefulWidget {
   const VaccinationFilterScreen({super.key});
 
   @override
@@ -713,6 +1245,46 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
   String _service = 'Tất cả';
   String _city = 'Thành phố Cần Thơ';
   String _facility = 'Bệnh viện Phụ sản Thành Phố Cần Thơ';
+  List<String> _serviceOptions = const ['Tất cả'];
+  List<String> _cityOptions = const ['Tất cả'];
+  List<String> _facilityOptions = const ['Tất cả'];
+
+  @override
+  void initState() {
+    super.initState();
+    VaccinationBookingCatalog.loadRemote().then((_) {
+      final serviceOptions = <String>{
+        'Tất cả',
+        ...VaccinationBookingCatalog.packages
+            .map((item) => item.badge.isNotEmpty ? item.badge : item.title)
+            .where((value) => value.trim().isNotEmpty),
+      }.toList();
+      final cityOptions = <String>{
+        'Tất cả',
+        ...VaccinationBookingCatalog.facilities.map((facility) => _cityLabelFromAddress(facility.address)),
+      }.toList();
+      final facilityOptions = <String>{
+        'Tất cả',
+        ...VaccinationBookingCatalog.facilities.map((facility) => facility.name),
+      }.toList();
+
+      if (serviceOptions.isNotEmpty) _serviceOptions = serviceOptions;
+      if (cityOptions.isNotEmpty) _cityOptions = cityOptions;
+      if (facilityOptions.isNotEmpty) _facilityOptions = facilityOptions;
+
+      if (!_cityOptions.contains(_city)) {
+        _city = _cityOptions.length > 1 ? _cityOptions[1] : 'Tất cả';
+      }
+      if (!_facilityOptions.contains(_facility)) {
+        _facility = _facilityOptions.length > 1 ? _facilityOptions[1] : 'Tất cả';
+      }
+      if (!_serviceOptions.contains(_service)) {
+        _service = _serviceOptions.length > 1 ? _serviceOptions[1] : 'Tất cả';
+      }
+
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
@@ -722,6 +1294,7 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final hasBackendData = VaccinationBookingCatalog.facilities.isNotEmpty || VaccinationBookingCatalog.packages.isNotEmpty;
     return VaccinationPageScaffold(
       title: 'Chọn lọc theo',
       onBack: () => context.pop(),
@@ -733,7 +1306,7 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
           const SectionTitle('Loại dịch vụ'),
           const SizedBox(height: 10),
           SwitchChips(
-            values: const ['Tất cả', 'Khám bệnh', 'Vaccine'],
+            values: _serviceOptions,
             selected: _service,
             onSelect: (value) => setState(() => _service = value),
           ),
@@ -741,7 +1314,7 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
           const SectionTitle('Tỉnh thành'),
           const SizedBox(height: 10),
           SwitchChips(
-            values: const ['Thành phố Hà Nội', 'Thành phố Hồ Chí Minh', 'Thành phố Cần Thơ'],
+            values: _cityOptions,
             selected: _city,
             onSelect: (value) => setState(() => _city = value),
           ),
@@ -749,16 +1322,34 @@ class _VaccinationFilterScreenState extends State<VaccinationFilterScreen> {
           const SectionTitle('Cơ sở y tế'),
           const SizedBox(height: 10),
           SwitchChips(
-            values: const [
-              'Bệnh viện Phụ sản Quốc tế Sài Gòn',
-              'Bệnh viện Phụ sản Thành Phố Cần Thơ',
-            ],
+            values: _facilityOptions,
             selected: _facility,
             onSelect: (value) => setState(() => _facility = value),
           ),
+          if (hasBackendData) ...[
+            const SizedBox(height: 22),
+            Text(
+              'Dữ liệu đang lấy từ backend thật',
+              style: TextStyle(
+                fontSize: 12,
+                color: VaccinationBookingColors.subtext,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ],
       ),
     );
+  }
+
+  String _cityLabelFromAddress(String address) {
+    final lower = address.toLowerCase();
+    if (lower.contains('cần thơ')) return 'Thành phố Cần Thơ';
+    if (lower.contains('hà nội')) return 'Thành phố Hà Nội';
+    if (lower.contains('hcm') || lower.contains('hồ chí minh') || lower.contains('sài gòn')) {
+      return 'Thành phố Hồ Chí Minh';
+    }
+    return 'Khác';
   }
 }
 class _VaccinationPackageCard extends StatelessWidget {
@@ -1129,21 +1720,36 @@ class _FormField extends StatelessWidget {
   const _FormField({
     required this.label,
     required this.controller,
+    this.requiredField = false,
+    this.validator,
+    this.keyboardType,
     this.suffix,
   });
 
   final String label;
   final TextEditingController controller;
+  final bool requiredField;
+  final FormFieldValidator<String>? validator;
+  final TextInputType? keyboardType;
   final Widget? suffix;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
+      child: TextFormField(
         controller: controller,
+        keyboardType: keyboardType,
+        validator: validator ??
+            (value) {
+              if (!requiredField) return null;
+              if (value == null || value.trim().isEmpty) {
+                return 'Vui lòng nhập đầy đủ thông tin';
+              }
+              return null;
+            },
         decoration: InputDecoration(
-          labelText: label,
+          labelText: requiredField ? '$label *' : label,
           suffixIcon: suffix,
           labelStyle: const TextStyle(fontSize: 12, color: VaccinationBookingColors.subtext),
           enabledBorder: OutlineInputBorder(
@@ -1153,6 +1759,14 @@ class _FormField extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: VaccinationBookingColors.blue),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE53935)),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE53935)),
           ),
         ),
       ),
@@ -1166,12 +1780,14 @@ class _DropField extends StatelessWidget {
     required this.value,
     required this.values,
     required this.onChanged,
+    this.requiredField = false,
   });
 
   final String label;
   final String value;
   final List<String> values;
   final ValueChanged<String> onChanged;
+  final bool requiredField;
 
   @override
   Widget build(BuildContext context) {
@@ -1179,6 +1795,13 @@ class _DropField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: DropdownButtonFormField<String>(
         value: values.contains(value) ? value : values.first,
+        validator: (selected) {
+          if (!requiredField) return null;
+          if (selected == null || selected == values.first) {
+            return 'Vui lòng chọn đầy đủ thông tin';
+          }
+          return null;
+        },
         items: values
             .map(
               (item) => DropdownMenuItem<String>(
@@ -1191,7 +1814,7 @@ class _DropField extends StatelessWidget {
           if (value != null) onChanged(value);
         },
         decoration: InputDecoration(
-          labelText: label,
+          labelText: requiredField ? '$label *' : label,
           labelStyle: const TextStyle(fontSize: 12, color: VaccinationBookingColors.subtext),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -1200,6 +1823,14 @@ class _DropField extends StatelessWidget {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: VaccinationBookingColors.blue),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE53935)),
+          ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFFE53935)),
           ),
         ),
       ),
@@ -1247,3 +1878,10 @@ class _PriceRow extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+

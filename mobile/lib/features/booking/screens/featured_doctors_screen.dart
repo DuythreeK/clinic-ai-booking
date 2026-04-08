@@ -29,6 +29,7 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController(text: widget.initialKeyword ?? '');
+    _catalog.loadRemote();
   }
 
   @override
@@ -43,38 +44,55 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
       animation: _catalog,
       builder: (context, _) {
         final doctors = _filteredDoctors();
+        final loading = _catalog.isLoading && doctors.isEmpty;
+        final error = _catalog.featuredError;
         return DoctorScaffold(
           title: 'Bác sĩ nổi bật',
-          child: ListView(
-            padding: const EdgeInsets.only(bottom: 12),
-            children: [
-              const SizedBox(height: 8),
-              DoctorSearchBar(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-              ),
-              const SizedBox(height: 16),
-              DoctorCategoryTabs(
-                categories: _categories,
-                selectedCategory: _selectedCategory,
-                onSelect: (value) => setState(() => _selectedCategory = value),
-              ),
-              const SizedBox(height: 14),
-              DoctorSortOptions(
-                selectedSort: _selectedSort,
-                onSelect: (value) => setState(() => _selectedSort = value),
-              ),
-              const SizedBox(height: 10),
-              ...doctors.map(
-                (doctor) => DoctorCard(
-                  doctor: doctor,
-                  isFavorite: _catalog.isFavorite(doctor.id),
-                  onFavorite: () => _catalog.toggleFavorite(doctor.id),
-                  onTap: () => widget.onOpenDoctor(doctor),
+          onBack: () => Navigator.of(context).maybePop(),
+          child: loading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  children: [
+                    const SizedBox(height: 8),
+                    DoctorSearchBar(
+                      controller: _searchController,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 16),
+                    DoctorCategoryTabs(
+                      categories: _categories,
+                      selectedCategory: _selectedCategory,
+                      onSelect: (value) => setState(() => _selectedCategory = value),
+                    ),
+                    const SizedBox(height: 14),
+                    DoctorSortOptions(
+                      selectedSort: _selectedSort,
+                      onSelect: (value) => setState(() => _selectedSort = value),
+                    ),
+                    const SizedBox(height: 10),
+                    if (error != null && doctors.isEmpty)
+                      StatusCard(
+                        title: error,
+                        subtitle: 'Kiểm tra backend, seed dữ liệu hoặc kết nối API.',
+                        onRetry: () => _catalog.loadRemote(force: true),
+                      )
+                    else if (doctors.isEmpty)
+                      const StatusCard(
+                        title: 'Chưa có bác sĩ nổi bật',
+                        subtitle: 'Backend hiện chưa trả dữ liệu phù hợp cho bộ lọc này.',
+                      )
+                    else
+                      ...doctors.map(
+                        (doctor) => DoctorCard(
+                          doctor: doctor,
+                          isFavorite: _catalog.isFavorite(doctor.id),
+                          onFavorite: () => _catalog.toggleFavorite(doctor),
+                          onTap: () => widget.onOpenDoctor(doctor),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -111,3 +129,6 @@ class _FeaturedDoctorsScreenState extends State<FeaturedDoctorsScreen> {
     return doctors;
   }
 }
+
+
+

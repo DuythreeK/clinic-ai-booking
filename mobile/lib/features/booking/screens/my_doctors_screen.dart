@@ -19,6 +19,12 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
   final DoctorCatalog _catalog = DoctorCatalog.instance;
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'Tất cả';
+
+  @override
+  void initState() {
+    super.initState();
+    _catalog.loadRemote();
+  }
   String _selectedSort = DoctorSortOptions.options.first;
 
   static const _categories = ['Tất cả', 'Nha sĩ', 'Tim mạch', 'Thần kinh', 'Chỉnh hình'];
@@ -35,9 +41,10 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
       animation: _catalog,
       builder: (context, _) {
         final doctors = _filteredDoctors();
+        final loading = _catalog.isLoading && doctors.isEmpty;
         return DoctorScaffold(
           title: 'Bác sĩ của tôi',
-          child: ListView(
+          child: loading ? const Center(child: CircularProgressIndicator()) : ListView(
             padding: const EdgeInsets.only(bottom: 12),
             children: [
               const SizedBox(height: 8),
@@ -58,23 +65,20 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
               ),
               const SizedBox(height: 10),
               if (doctors.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 32),
-                  child: Text(
-                    'Bạn chưa tim bác sĩ nào. Hãy bấm tim ở trang Bác sĩ nổi bật để lưu lại.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, height: 1.6, color: Color(0xFF6E829C)),
+                const StatusCard(
+                  title: 'Chưa có bác sĩ đã tim',
+                  subtitle: 'Bấm tim ở bác sĩ nổi bật hoặc trong chi tiết bác sĩ để thêm vào đây.',
+                )
+              else
+                ...doctors.map(
+                  (doctor) => DoctorCard(
+                    doctor: doctor,
+                    isFavorite: _catalog.isFavorite(doctor.id),
+                    onFavorite: () => _catalog.toggleFavorite(doctor),
+                    onTap: () => widget.onOpenDoctor(doctor),
+                    showBookingHint: false,
                   ),
                 ),
-              ...doctors.map(
-                (doctor) => DoctorCard(
-                  doctor: doctor,
-                  isFavorite: _catalog.isFavorite(doctor.id),
-                  onFavorite: () => _catalog.toggleFavorite(doctor.id),
-                  onTap: () => widget.onOpenDoctor(doctor),
-                  showBookingHint: false,
-                ),
-              ),
             ],
           ),
         );
@@ -113,3 +117,11 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
     return doctors;
   }
 }
+
+
+
+
+
+
+
+

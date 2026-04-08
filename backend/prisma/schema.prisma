@@ -87,12 +87,15 @@ enum PasswordResetStatus {
 // --- 2. HỒ SƠ BỆNH NHÂN & Y TẾ ---
 
 model PatientProfile {
-  patient_id          BigInt   @id @default(autoincrement())
-  user_id             BigInt
-  full_name           String   @db.VarChar(150)
-  phone_number        String?  @unique @db.VarChar(20)
-  gender              Gender?
-  date_of_birth       DateTime? @db.Date
+    patient_id          BigInt   @id @default(autoincrement())
+    user_id             BigInt
+    full_name           String   @db.VarChar(150)
+    phone_number        String?  @unique @db.VarChar(20)
+    citizen_id          String?  @unique @db.VarChar(30)
+    insurance_number    String?  @db.VarChar(50)
+    email               String?  @db.VarChar(150)
+    gender              Gender?
+    date_of_birth       DateTime? @db.Date
   blood_type          String?  @db.VarChar(10)
   occupation          String?  @db.VarChar(100)
   ethnicity           String?  @db.VarChar(100)
