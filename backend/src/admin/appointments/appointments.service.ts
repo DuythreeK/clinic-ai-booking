@@ -182,8 +182,11 @@ export class AppointmentsService {
 
     const allowedTransitions: Record<ApptStatus, ApptStatus[]> = {
       pending: [ApptStatus.confirmed, ApptStatus.cancelled],
-      confirmed: [ApptStatus.completed, ApptStatus.cancelled],
+      confirmed: [ApptStatus.checked_in, ApptStatus.no_show],
+      checked_in: [ApptStatus.in_progress, ApptStatus.cancelled],
+      in_progress: [ApptStatus.completed],
       completed: [],
+      no_show: [],
       cancelled: [],
     };
 
@@ -198,15 +201,27 @@ export class AppointmentsService {
     }
 
     const updated = await this.prisma.$transaction(async (tx) => {
+      const now = new Date();
+
       const item = await tx.appointment.update({
         where: { id },
         data: {
           status: dto.status,
-          completedAt:
-            dto.status === ApptStatus.completed ? new Date() : undefined,
+          checkedInAt: dto.status === ApptStatus.checked_in ? now : undefined,
+          completedAt: dto.status === ApptStatus.completed ? now : undefined,
         },
         include: appointmentInclude,
       });
+
+      if (dto.status === ApptStatus.completed) {
+        await tx.patient.update({
+          where: { id: item.patientId },
+          data: {
+            totalVisits: { increment: 1 },
+            lastVisitDate: item.apptDate,
+          },
+        });
+      }
 
       if (dto.status === ApptStatus.confirmed) {
         await tx.notification.create({
@@ -233,8 +248,13 @@ export class AppointmentsService {
       throw new BadRequestException('Lich hen da bi huy');
     }
 
-    if (appointment.status === ApptStatus.completed) {
-      throw new BadRequestException('Khong the huy lich hen da hoan thanh');
+    if (
+      appointment.status === ApptStatus.completed ||
+      appointment.status === ApptStatus.no_show ||
+      appointment.status === ApptStatus.in_progress ||
+      appointment.status === ApptStatus.confirmed
+    ) {
+      throw new BadRequestException(`Khong the huy lich hen dang o trang thai ${appointment.status}`);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -247,13 +267,15 @@ export class AppointmentsService {
         include: appointmentInclude,
       });
 
-      await tx.schedule.update({
-        where: { id: appointment.scheduleId },
-        data: {
-          bookedSlots: { decrement: 1 },
-          isAvailable: true,
-        },
-      });
+      if (appointment.status === ApptStatus.pending) {
+        await tx.schedule.update({
+          where: { id: appointment.scheduleId },
+          data: {
+            bookedSlots: { decrement: 1 },
+            isAvailable: true,
+          },
+        });
+      }
 
       await tx.notification.create({
         data: {

@@ -1,9 +1,13 @@
 class AdminAppointment {
   const AdminAppointment({
     required this.id,
+    required this.patientId,
     required this.refCode,
     required this.status,
     required this.patientName,
+    required this.patientPhone,
+    required this.patientGender,
+    this.patientDob,
     required this.doctorName,
     required this.specialtyName,
     required this.apptDate,
@@ -12,9 +16,13 @@ class AdminAppointment {
   });
 
   final String id;
+  final String patientId;
   final String refCode;
   final String status;
   final String patientName;
+  final String patientPhone;
+  final String patientGender;
+  final DateTime? patientDob;
   final String doctorName;
   final String specialtyName;
   final DateTime? apptDate;
@@ -32,7 +40,10 @@ class AdminAppointment {
 
   bool get isPending => status == 'pending';
   bool get isConfirmed => status == 'confirmed';
+  bool get isCheckedIn => status == 'checked_in';
+  bool get isInProgress => status == 'in_progress';
   bool get isCompleted => status == 'completed';
+  bool get isNoShow => status == 'no_show';
   bool get isCancelled => status == 'cancelled';
 
   String get statusLabel {
@@ -41,8 +52,14 @@ class AdminAppointment {
         return 'Chờ duyệt';
       case 'confirmed':
         return 'Đã xác nhận';
+      case 'checked_in':
+        return 'Đã Check-in';
+      case 'in_progress':
+        return 'Đang khám';
       case 'completed':
         return 'Hoàn thành';
+      case 'no_show':
+        return 'Không đến';
       case 'cancelled':
         return 'Đã hủy';
       default:
@@ -103,9 +120,13 @@ class AdminAppointment {
 
     return AdminAppointment(
       id: json['id']?.toString() ?? '',
+      patientId: patient['id']?.toString() ?? '',
       refCode: json['refCode']?.toString() ?? '',
       status: json['status']?.toString() ?? 'pending',
       patientName: patient['fullName']?.toString() ?? 'Chưa rõ bệnh nhân',
+      patientPhone: patient['phone']?.toString() ?? '',
+      patientGender: patient['gender']?.toString() ?? 'Chưa cập nhật',
+      patientDob: _tryParseDate(patient['dob']),
       doctorName: doctorUser['fullName']?.toString() ?? '',
       specialtyName: specialty['name']?.toString() ?? 'Chưa rõ chuyên khoa',
       apptDate: _tryParseDate(json['apptDate']),
@@ -153,6 +174,17 @@ class AdminAppointment {
     final day = value.day.toString().padLeft(2, '0');
     final month = value.month.toString().padLeft(2, '0');
     return '$day/$month';
+  }
+
+  String get patientDobLabel {
+    if (patientDob == null) return 'Chưa có năm sinh';
+    return _formatDate(patientDob);
+  }
+
+  String get patientGenderLabel {
+    if (patientGender == 'male') return 'Nam';
+    if (patientGender == 'female') return 'Nữ';
+    return 'Khác';
   }
 
   static String _formatTime(DateTime? value) {

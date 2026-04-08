@@ -28,6 +28,8 @@ class AdminPatientsRootShell extends StatefulWidget {
 
 class _AdminPatientsRootShellState extends State<AdminPatientsRootShell> {
   late int _selectedIndex;
+  String _appointmentFilter = 'all';
+  Key _appointmentKey = UniqueKey();
 
   static const _navItems = [
     AdminBottomNavigationItem(
@@ -66,8 +68,22 @@ class _AdminPatientsRootShellState extends State<AdminPatientsRootShell> {
   @override
   Widget build(BuildContext context) {
     final pages = [
-      AdminDashboardLiveScreen(greetingName: widget.currentUser.fullName),
-      const AdminAppointmentsScreen(),
+      AdminDashboardLiveScreen(
+        greetingName: widget.currentUser.fullName,
+        onNavigateTab: (index, {String? filter}) {
+          setState(() {
+            _selectedIndex = index;
+            if (index == 1 && filter != null) {
+              _appointmentFilter = filter;
+              _appointmentKey = UniqueKey(); // Force recreate to apply filter
+            }
+          });
+        },
+      ),
+      AdminAppointmentsScreen(
+        key: _appointmentKey,
+        initialFilter: _appointmentFilter,
+      ),
       const AdminDoctorsScreen(),
       const AdminPatientsScreen(),
       const AdminSpecialtiesScreen(),

@@ -41,6 +41,10 @@ export class CreateRoomDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }
 
 export class UpdateRoomDto {
@@ -66,4 +70,8 @@ export class UpdateRoomDto {
   @Type(() => Boolean)
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 }

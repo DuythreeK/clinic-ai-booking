@@ -183,7 +183,7 @@ async function main() {
   }
 
   console.log('Seeding Appointments...');
-  for (let i = 0; i < 30; i++) {
+  for (let i = 0; i < 80; i++) {
     const sch = schedules[Math.floor(Math.random() * schedules.length)];
     const pat = patients[Math.floor(Math.random() * patients.length)];
 
@@ -191,7 +191,15 @@ async function main() {
     const check = await prisma.appointment.findFirst({ where: { scheduleId: sch.id, patientId: pat.id }});
     if (check) continue;
 
-    const statuses = [ApptStatus.pending, ApptStatus.confirmed, ApptStatus.completed, ApptStatus.cancelled];
+    const statuses = [
+      ApptStatus.pending,
+      ApptStatus.confirmed,
+      ApptStatus.checked_in,
+      ApptStatus.in_progress,
+      ApptStatus.completed,
+      ApptStatus.no_show,
+      ApptStatus.cancelled,
+    ];
     const status = statuses[Math.floor(Math.random() * statuses.length)];
 
     const apptDate = sch.workDate;
@@ -227,6 +235,14 @@ async function main() {
           treatmentPlan: 'Uống thuốc theo toa, tái khám sau 1 tháng nếu không đỡ.',
           isLocked: true,
         }
+      });
+      
+      await prisma.patient.update({
+        where: { id: pat.id },
+        data: {
+          totalVisits: { increment: 1 },
+          lastVisitDate: apptDate,
+        },
       });
       
       if (Math.random() > 0.5) {

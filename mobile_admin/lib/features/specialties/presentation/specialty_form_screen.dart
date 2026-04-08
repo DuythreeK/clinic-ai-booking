@@ -233,6 +233,70 @@ class _SpecialtyFormScreenState extends State<SpecialtyFormScreen> {
                       ),
                     ],
                   ),
+                  if (widget.isEditing) ...[
+                    const SizedBox(height: 24),
+                    Text(
+                      'Bác sĩ đang tiếp nhận (${widget.specialty?.doctors.length ?? 0})',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    if (widget.specialty?.doctors.isEmpty ?? true)
+                      const Text(
+                        'Chưa có bác sĩ nào thuộc chuyên khoa này.',
+                        style: TextStyle(
+                            color: AdminAppTheme.textSecondary,
+                            fontStyle: FontStyle.italic),
+                      ),
+                    if (widget.specialty?.doctors.isNotEmpty ?? false)
+                      ListView.builder(
+                        shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: widget.specialty!.doctors.length,
+                      itemBuilder: (context, index) {
+                        final doc = widget.specialty!.doctors[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 20,
+                                backgroundColor: AdminAppTheme.primary.withValues(alpha: 0.1),
+                                child: Text(
+                                  doc.initials,
+                                  style: const TextStyle(
+                                    color: AdminAppTheme.primary,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      doc.fullName,
+                                      style: const TextStyle(fontWeight: FontWeight.w600),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      doc.phone,
+                                      style: Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                   if (_errorText != null) ...[
                     const SizedBox(height: 10),
                     Text(

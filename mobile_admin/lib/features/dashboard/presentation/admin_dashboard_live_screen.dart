@@ -9,10 +9,12 @@ class AdminDashboardLiveScreen extends StatefulWidget {
   const AdminDashboardLiveScreen({
     super.key,
     this.greetingName = 'Admin',
+    this.onNavigateTab,
     AdminDashboardService? service,
   }) : _service = service;
 
   final String greetingName;
+  final void Function(int, {String? filter})? onNavigateTab;
   final AdminDashboardService? _service;
 
   @override
@@ -126,7 +128,7 @@ class _AdminDashboardLiveScreenState extends State<AdminDashboardLiveScreen> {
                             crossAxisCount: 2,
                             mainAxisSpacing: 12,
                             crossAxisSpacing: 12,
-                            childAspectRatio: 1.06,
+                            childAspectRatio: 1.16,
                             children: [
                               _MetricCard(
                                 icon: Icons.calendar_month_rounded,
@@ -136,6 +138,7 @@ class _AdminDashboardLiveScreenState extends State<AdminDashboardLiveScreen> {
                                   overview.metrics.totalAppointments,
                                 ),
                                 label: 'Tổng lịch hẹn',
+                                onTap: () => widget.onNavigateTab?.call(1, filter: 'all'),
                               ),
                               _MetricCard(
                                 icon: Icons.access_time_rounded,
@@ -145,6 +148,7 @@ class _AdminDashboardLiveScreenState extends State<AdminDashboardLiveScreen> {
                                   overview.metrics.pendingAppointments,
                                 ),
                                 label: 'Chờ duyệt',
+                                onTap: () => widget.onNavigateTab?.call(1, filter: 'pending'),
                               ),
                               _MetricCard(
                                 icon: Icons.health_and_safety_rounded,
@@ -154,6 +158,7 @@ class _AdminDashboardLiveScreenState extends State<AdminDashboardLiveScreen> {
                                   overview.metrics.activeDoctors,
                                 ),
                                 label: 'Bác sĩ',
+                                onTap: () => widget.onNavigateTab?.call(2),
                               ),
                               _MetricCard(
                                 icon: Icons.groups_2_rounded,
@@ -163,6 +168,7 @@ class _AdminDashboardLiveScreenState extends State<AdminDashboardLiveScreen> {
                                   overview.metrics.totalPatients,
                                 ),
                                 label: 'Bệnh nhân',
+                                onTap: () => widget.onNavigateTab?.call(3),
                               ),
                             ],
                           ),
@@ -200,6 +206,7 @@ class _MetricCard extends StatelessWidget {
     required this.iconBackground,
     required this.value,
     required this.label,
+    this.onTap,
   });
 
   final IconData icon;
@@ -207,34 +214,46 @@ class _MetricCard extends StatelessWidget {
   final Color iconBackground;
   final String value;
   final String label;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: iconBackground,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconBackground,
+              ),
+              child: Icon(icon, color: iconTint, size: 24),
             ),
-            child: Icon(icon, color: iconTint, size: 18),
-          ),
-          const Spacer(),
-          Text(
-            value,
-            style: Theme.of(
-              context,
-            ).textTheme.headlineMedium?.copyWith(fontSize: 22, height: 1.0),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: Theme.of(context).textTheme.bodyMedium),
-        ],
+            const Spacer(),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w700,
+                    height: 1.1,
+                  ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyMedium
+                  ?.copyWith(color: const Color(0xFF7A8395)),
+            ),
+          ],
+        ),
       ),
     );
   }

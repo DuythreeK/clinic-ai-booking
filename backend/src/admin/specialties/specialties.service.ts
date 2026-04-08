@@ -34,6 +34,9 @@ export class SpecialtiesService {
         skip,
         take,
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        include: {
+          doctors: { include: { user: true } },
+        },
       }),
       this.prisma.specialty.count({ where }),
     ]);
@@ -92,8 +95,13 @@ export class SpecialtiesService {
     });
   }
 
-  private async getById(id: string): Promise<Specialty> {
-    const specialty = await this.prisma.specialty.findUnique({ where: { id } });
+  private async getById(id: string) {
+    const specialty = await this.prisma.specialty.findUnique({
+      where: { id },
+      include: {
+        doctors: { include: { user: true } },
+      },
+    });
     if (!specialty) {
       throw new NotFoundException('Khong tim thay chuyen khoa');
     }

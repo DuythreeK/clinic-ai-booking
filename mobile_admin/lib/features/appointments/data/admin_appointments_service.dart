@@ -45,13 +45,13 @@ class AdminAppointmentsService {
     );
   }
 
-  Future<void> confirmAppointment(String appointmentId) async {
+  Future<void> updateAppointmentStatus(String appointmentId, String status) async {
     _ensureConfigured();
 
     final response = await _client.patch(
       AdminApiConfig.adminUri('/admin/appointments/$appointmentId/status'),
       headers: _headers(),
-      body: jsonEncode(const {'status': 'confirmed'}),
+      body: jsonEncode({'status': status}),
     );
 
     _decodeResponse(response);

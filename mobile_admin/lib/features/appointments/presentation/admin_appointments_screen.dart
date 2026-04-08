@@ -8,11 +8,15 @@ import '../../../theme/admin_app_theme.dart';
 import '../data/admin_appointments_service.dart';
 import '../domain/admin_appointment.dart';
 import 'widgets/appointment_action_dialogs.dart';
-
+import '../../patients/presentation/patient_detail_screen.dart';
 class AdminAppointmentsScreen extends StatefulWidget {
-  const AdminAppointmentsScreen({super.key, AdminAppointmentsService? service})
-    : _service = service;
+  const AdminAppointmentsScreen({
+    super.key,
+    this.initialFilter,
+    AdminAppointmentsService? service,
+  }) : _service = service;
 
+  final String? initialFilter;
   final AdminAppointmentsService? _service;
 
   @override
@@ -25,8 +29,11 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
     _AppointmentFilter(key: 'all', label: 'Tất cả'),
     _AppointmentFilter(key: 'pending', label: 'Chờ duyệt'),
     _AppointmentFilter(key: 'confirmed', label: 'Đã xác nhận'),
-    _AppointmentFilter(key: 'cancelled', label: 'Đã hủy'),
+    _AppointmentFilter(key: 'checked_in', label: 'Check-in'),
+    _AppointmentFilter(key: 'in_progress', label: 'Đang khám'),
     _AppointmentFilter(key: 'completed', label: 'Hoàn thành'),
+    _AppointmentFilter(key: 'no_show', label: 'Vắng mặt'),
+    _AppointmentFilter(key: 'cancelled', label: 'Đã hủy'),
   ];
 
   late final AdminAppointmentsService _service;
@@ -36,12 +43,13 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
   List<AdminAppointment> _appointments = const [];
   bool _isLoading = true;
   String? _errorMessage;
-  String _selectedFilter = 'all';
+  late String _selectedFilter;
   String? _workingAppointmentId;
 
   @override
   void initState() {
     super.initState();
+    _selectedFilter = widget.initialFilter ?? 'all';
     _service = widget._service ?? AdminAppointmentsService();
     _searchController.addListener(_handleSearchChanged);
     _loadAppointments();
@@ -98,13 +106,33 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
     }
   }
 
-  Future<void> _confirmAppointment(AdminAppointment appointment) async {
+  Future<void> _updateAppointmentStatus(
+    AdminAppointment appointment,
+    String targetStatus, {
+    required String title,
+    required String message,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBackgroundColor,
+    required String confirmLabel,
+    Color? confirmColor,
+    bool showPatientDetails = false,
+  }) async {
     final approved =
         await showDialog<bool>(
           context: context,
           barrierColor: const Color(0x8A1E2533),
-          builder: (context) =>
-              ConfirmAppointmentDialog(appointment: appointment),
+          builder: (context) => UpdateAppointmentStatusDialog(
+            appointment: appointment,
+            title: title,
+            message: message,
+            icon: icon,
+            iconColor: iconColor,
+            iconBackgroundColor: iconBackgroundColor,
+            confirmLabel: confirmLabel,
+            confirmColor: confirmColor,
+            showPatientDetails: showPatientDetails,
+          ),
         ) ??
         false;
 
@@ -117,7 +145,7 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
     });
 
     try {
-      await _service.confirmAppointment(appointment.id);
+      await _service.updateAppointmentStatus(appointment.id, targetStatus);
       await _loadAppointments();
 
       if (!mounted) {
@@ -126,7 +154,7 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
 
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('Đã xác nhận lịch hẹn.')));
+      ).showSnackBar(const SnackBar(content: Text('Cập nhật trạng thái thành công.')));
     } catch (error) {
       if (!mounted) {
         return;
@@ -142,6 +170,77 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
         });
       }
     }
+  }
+
+  void _handleUpdateStatus(AdminAppointment appointment, String targetStatus) {
+    String title = '';
+    String message = '';
+    IconData icon = Icons.info_rounded;
+    Color iconColor = AdminAppTheme.primary;
+    Color iconBackground = AdminAppTheme.primary.withValues(alpha: 0.1);
+    String confirmLabel = 'Xác nhận';
+    Color? confirmColor;
+
+    switch (targetStatus) {
+      case 'confirmed':
+        title = 'Xác nhận lịch hẹn?';
+        message =
+            'Bạn có chắc muốn xác nhận lịch hẹn của ${appointment.patientName} với bác sĩ ${appointment.doctorName}?';
+        icon = Icons.verified_rounded;
+        iconColor = const Color(0xFF19BA73);
+        iconBackground = const Color(0xFFE9FFF3);
+        confirmLabel = 'Xác nhận';
+        break;
+      case 'checked_in':
+        title = 'Bệnh nhân Check-in?';
+        message =
+            'Ghi nhận ${appointment.patientName} đã có mặt tại phòng chờ?';
+        icon = Icons.how_to_reg_rounded;
+        iconColor = const Color(0xFF19BA73);
+        iconBackground = const Color(0xFFE9FFF3);
+        confirmLabel = 'Check-in';
+        break;
+      case 'no_show':
+        title = 'Đánh dấu Vắng mặt?';
+        message =
+            'Bệnh nhân ${appointment.patientName} không đến khám? Thao tác này sẽ không thể hoàn tác.';
+        icon = Icons.person_off_rounded;
+        iconColor = const Color(0xFFF9A000);
+        iconBackground = const Color(0xFFFFF4DC);
+        confirmLabel = 'Xác nhận Vắng mặt';
+        confirmColor = const Color(0xFFF9A000);
+        break;
+      case 'in_progress':
+        title = 'Bắt đầu khám?';
+        message =
+            'Chuyển trạng thái sang Đang khám cho ${appointment.patientName}?';
+        icon = Icons.medical_services_rounded;
+        iconColor = AdminAppTheme.primary;
+        iconBackground = AdminAppTheme.primary.withValues(alpha: 0.1);
+        confirmLabel = 'Bắt đầu';
+        break;
+      case 'completed':
+        title = 'Hoàn thành ca khám?';
+        message = 'Xác nhận ca khám của ${appointment.patientName} đã hoàn tất?';
+        icon = Icons.done_all_rounded;
+        iconColor = const Color(0xFF19BA73);
+        iconBackground = const Color(0xFFE9FFF3);
+        confirmLabel = 'Hoàn thành';
+        break;
+    }
+
+    _updateAppointmentStatus(
+      appointment,
+      targetStatus,
+      title: title,
+      message: message,
+      icon: icon,
+      iconColor: iconColor,
+      iconBackgroundColor: iconBackground,
+      confirmLabel: confirmLabel,
+      confirmColor: confirmColor,
+      showPatientDetails: targetStatus == 'checked_in',
+    );
   }
 
   Future<void> _cancelAppointment(AdminAppointment appointment) async {
@@ -215,61 +314,47 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
                         const SizedBox(height: 14),
                         _AppointmentsSearchField(controller: _searchController),
                         const SizedBox(height: 12),
-                        SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            children: _filters.map((filter) {
-                              final selected = filter.key == _selectedFilter;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: ChoiceChip(
-                                  label: Text(filter.label),
-                                  selected: selected,
-                                  onSelected: (_) {
-                                    setState(() {
-                                      _selectedFilter = filter.key;
-                                    });
-                                    _loadAppointments();
-                                  },
-                                  showCheckmark: false,
-                                  backgroundColor: Colors.white,
-                                  selectedColor: AdminAppTheme.primary
-                                      .withOpacity(0.14),
-                                  labelStyle: Theme.of(context)
-                                      .textTheme
-                                      .labelMedium
-                                      ?.copyWith(
-                                        color: selected
-                                            ? AdminAppTheme.primary
-                                            : AdminAppTheme.textSecondary,
-                                      ),
-                                  side: BorderSide(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: _filters.map((filter) {
+                            final selected = filter.key == _selectedFilter;
+                            return ChoiceChip(
+                              label: Text(filter.label),
+                              selected: selected,
+                              onSelected: (_) {
+                                setState(() {
+                                  _selectedFilter = filter.key;
+                                });
+                                _loadAppointments();
+                              },
+                              showCheckmark: false,
+                              backgroundColor: Colors.white,
+                              selectedColor: AdminAppTheme.primary
+                                  .withOpacity(0.14),
+                              labelStyle: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(
                                     color: selected
-                                        ? Colors.transparent
-                                        : AdminAppTheme.border,
+                                        ? AdminAppTheme.primary
+                                        : AdminAppTheme.textSecondary,
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(18),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 2,
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                          ),
+                              side: BorderSide(
+                                color: selected
+                                    ? Colors.transparent
+                                    : AdminAppTheme.border,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 2,
+                              ),
+                            );
+                          }).toList(),
                         ),
-                        if (AdminApiConfig.hasAccessToken)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 10),
-                            child: Text(
-                              'Nguồn dữ liệu: ${AdminApiConfig.baseUrl}/admin/appointments',
-                              style: Theme.of(
-                                context,
-                              ).textTheme.labelMedium?.copyWith(fontSize: 11),
-                            ),
-                          ),
                       ],
                     ),
                   ),
@@ -308,11 +393,9 @@ class _AdminAppointmentsScreenState extends State<AdminAppointmentsScreen> {
                           child: _AppointmentCard(
                             appointment: appointment,
                             isWorking: isWorking,
-                            onConfirm: appointment.isPending
-                                ? () => _confirmAppointment(appointment)
-                                : null,
+                            onUpdateStatus: (status) => _handleUpdateStatus(appointment, status),
                             onCancel:
-                                appointment.isPending || appointment.isConfirmed
+                                appointment.isPending
                                 ? () => _cancelAppointment(appointment)
                                 : null,
                           ),
@@ -413,13 +496,13 @@ class _AppointmentCard extends StatelessWidget {
   const _AppointmentCard({
     required this.appointment,
     required this.isWorking,
-    required this.onConfirm,
+    required this.onUpdateStatus,
     required this.onCancel,
   });
 
   final AdminAppointment appointment;
   final bool isWorking;
-  final VoidCallback? onConfirm;
+  final void Function(String status)? onUpdateStatus;
   final VoidCallback? onCancel;
 
   @override
@@ -450,11 +533,40 @@ class _AppointmentCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      appointment.patientName,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleMedium?.copyWith(fontSize: 16),
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          appointment.patientName,
+                          style: Theme.of(
+                            context,
+                          ).textTheme.titleMedium?.copyWith(fontSize: 16),
+                        ),
+                        if (appointment.isPending && appointment.patientPhone.isNotEmpty) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AdminAppTheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.phone_rounded, size: 12, color: AdminAppTheme.primary),
+                                const SizedBox(width: 4),
+                                Text(
+                                  appointment.patientPhone,
+                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: AdminAppTheme.primary,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -504,28 +616,83 @@ class _AppointmentCard extends StatelessWidget {
               ),
             ],
           ),
-          if (onConfirm != null || onCancel != null) ...[
+          if (appointment.isPending || appointment.isConfirmed || appointment.isCheckedIn || appointment.isInProgress || appointment.isCompleted) ...[
             const SizedBox(height: 14),
             Row(
               children: [
-                if (onConfirm != null)
+                if (appointment.isPending) ...[
                   Expanded(
                     child: _ActionButton(
-                      label: isWorking ? 'Đang xử lý...' : 'Xác nhận',
+                      label: isWorking ? 'Xin chờ...' : 'Xác nhận',
                       backgroundColor: const Color(0xFF11C17B),
                       icon: Icons.check_rounded,
-                      onPressed: isWorking ? null : onConfirm,
+                      onPressed: isWorking ? null : () => onUpdateStatus?.call('confirmed'),
                     ),
                   ),
-                if (onConfirm != null && onCancel != null)
                   const SizedBox(width: 8),
-                if (onCancel != null)
                   Expanded(
                     child: _ActionButton(
-                      label: isWorking ? 'Đang xử lý...' : 'Hủy',
+                      label: isWorking ? 'Xin chờ...' : 'Hủy',
                       backgroundColor: const Color(0xFFFF5E63),
                       icon: Icons.close_rounded,
                       onPressed: isWorking ? null : onCancel,
+                    ),
+                  ),
+                ],
+                if (appointment.isConfirmed) ...[
+                  Expanded(
+                    child: _ActionButton(
+                      label: isWorking ? 'Xin chờ...' : 'Check-in',
+                      backgroundColor: const Color(0xFF11C17B),
+                      icon: Icons.how_to_reg_rounded,
+                      onPressed: isWorking ? null : () => onUpdateStatus?.call('checked_in'),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _ActionButton(
+                      label: isWorking ? 'Xin chờ...' : 'Vắng',
+                      backgroundColor: const Color(0xFFF9A000),
+                      icon: Icons.person_off_rounded,
+                      onPressed: isWorking ? null : () => onUpdateStatus?.call('no_show'),
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ],
+                if (appointment.isCheckedIn)
+                  Expanded(
+                    child: _ActionButton(
+                      label: isWorking ? 'Xin chờ...' : 'Khám',
+                      backgroundColor: const Color(0xFF4C8CFF),
+                      icon: Icons.medical_services_rounded,
+                      onPressed: isWorking ? null : () => onUpdateStatus?.call('in_progress'),
+                    ),
+                  ),
+                if (appointment.isInProgress)
+                  Expanded(
+                    child: _ActionButton(
+                      label: isWorking ? 'Xin chờ...' : 'Hoàn thành',
+                      backgroundColor: const Color(0xFF16A96C),
+                      icon: Icons.done_all_rounded,
+                      onPressed: isWorking ? null : () => onUpdateStatus?.call('completed'),
+                    ),
+                  ),
+                if (appointment.isCompleted)
+                  Expanded(
+                    child: _ActionButton(
+                      label: isWorking ? 'Xin chờ...' : 'Xem hồ sơ',
+                      backgroundColor: const Color(0xFF4280FF),
+                      icon: Icons.assignment_ind_rounded,
+                      onPressed: isWorking ? null : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => PatientDetailScreen(
+                              patientId: appointment.patientId,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
               ],
@@ -553,6 +720,21 @@ class _AppointmentCard extends StatelessWidget {
           background: Color(0xFFE7F0FF),
           foreground: Color(0xFF4280FF),
         );
+      case 'checked_in':
+        return const _AppointmentStatusVisual(
+          background: Color(0xFFE0F7FA),
+          foreground: Color(0xFF00ACC1),
+        );
+      case 'in_progress':
+        return const _AppointmentStatusVisual(
+          background: Color(0xFFF3E5F5),
+          foreground: Color(0xFF8E24AA),
+        );
+      case 'no_show':
+        return const _AppointmentStatusVisual(
+          background: Color(0xFFFFF3E0),
+          foreground: Color(0xFFFB8C00),
+        );
       case 'cancelled':
         return const _AppointmentStatusVisual(
           background: Color(0xFFFFE8EA),
@@ -573,19 +755,21 @@ class _ActionButton extends StatelessWidget {
     required this.backgroundColor,
     required this.icon,
     required this.onPressed,
+    this.padding = const EdgeInsets.symmetric(vertical: 14),
   });
 
   final String label;
   final Color backgroundColor;
   final IconData icon;
   final VoidCallback? onPressed;
+  final EdgeInsetsGeometry padding;
 
   @override
   Widget build(BuildContext context) {
     return ElevatedButton.icon(
       onPressed: onPressed,
-      icon: Icon(icon, size: 18),
-      label: Text(label),
+      icon: Icon(icon, size: 16),
+      label: Text(label, overflow: TextOverflow.ellipsis),
       style: ElevatedButton.styleFrom(
         elevation: 0,
         backgroundColor: backgroundColor,
@@ -593,8 +777,9 @@ class _ActionButton extends StatelessWidget {
         disabledBackgroundColor: backgroundColor.withOpacity(0.45),
         disabledForegroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        padding: padding,
+        textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+        iconColor: Colors.white,
       ),
     );
   }

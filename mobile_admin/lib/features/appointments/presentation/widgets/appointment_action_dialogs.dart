@@ -253,6 +253,148 @@ class _CancelAppointmentDialogState extends State<CancelAppointmentDialog> {
   }
 }
 
+class UpdateAppointmentStatusDialog extends StatelessWidget {
+  const UpdateAppointmentStatusDialog({
+    super.key,
+    required this.appointment,
+    required this.title,
+    required this.message,
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackgroundColor,
+    required this.confirmLabel,
+    this.confirmColor,
+    this.showPatientDetails = false,
+  });
+
+  final AdminAppointment appointment;
+  final String title;
+  final String message;
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackgroundColor;
+  final String confirmLabel;
+  final Color? confirmColor;
+  final bool showPatientDetails;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(28),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 54,
+              height: 54,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: iconBackgroundColor,
+              ),
+              child: Icon(icon, color: iconColor, size: 26),
+            ),
+            const SizedBox(height: 16),
+            Text(title, style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7FAFF),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AdminAppTheme.border),
+              ),
+              child: Column(
+                children: [
+                  _DialogInfoRow(
+                    label: 'Bệnh nhân',
+                    value: appointment.patientName,
+                  ),
+                  _DialogInfoRow(
+                    label: 'Bác sĩ',
+                    value: appointment.doctorDisplayName,
+                  ),
+                  _DialogInfoRow(
+                    label: 'Chuyên khoa',
+                    value: appointment.specialtyName,
+                  ),
+                  _DialogInfoRow(
+                    label: 'Thời gian',
+                    value: appointment.dialogTimeLabel,
+                    isLast: !showPatientDetails,
+                  ),
+                  if (showPatientDetails) ...[
+                    const Divider(height: 24, thickness: 0.5),
+                    _DialogInfoRow(
+                      label: 'Điện thoại',
+                      value: appointment.patientPhone.isEmpty ? 'Chưa cập nhật' : appointment.patientPhone,
+                    ),
+                    _DialogInfoRow(
+                      label: 'Giới tính',
+                      value: appointment.patientGenderLabel,
+                    ),
+                    _DialogInfoRow(
+                      label: 'Ngày sinh',
+                      value: appointment.patientDobLabel,
+                      isLast: true,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide.none,
+                      backgroundColor: const Color(0xFFF0F3F8),
+                      foregroundColor: AdminAppTheme.textSecondary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Hủy bỏ'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: confirmColor ?? AdminAppTheme.primary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: Text(confirmLabel),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _DialogInfoRow extends StatelessWidget {
   const _DialogInfoRow({
     required this.label,

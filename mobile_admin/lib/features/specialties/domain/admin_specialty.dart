@@ -1,3 +1,5 @@
+import '../../doctors/domain/admin_doctor.dart';
+
 class AdminSpecialty {
   const AdminSpecialty({
     required this.id,
@@ -6,6 +8,7 @@ class AdminSpecialty {
     required this.description,
     required this.sortOrder,
     required this.isActive,
+    this.doctors = const [],
   });
 
   final String id;
@@ -14,8 +17,16 @@ class AdminSpecialty {
   final String? description;
   final int sortOrder;
   final bool isActive;
+  final List<AdminDoctor> doctors;
 
   factory AdminSpecialty.fromJson(Map<String, dynamic> json) {
+    final docsRaw = json['doctors'] as List?;
+    final docs = docsRaw?.map((d) {
+      final docMap = Map<String, dynamic>.from(d as Map);
+      docMap['specialty'] = json;
+      return AdminDoctor.fromJson(docMap);
+    }).toList() ?? [];
+
     return AdminSpecialty(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
@@ -23,6 +34,7 @@ class AdminSpecialty {
       description: json['description']?.toString(),
       sortOrder: _toInt(json['sortOrder']),
       isActive: json['isActive'] == true,
+      doctors: docs,
     );
   }
 
