@@ -2,6 +2,16 @@
 
 import '../../../core/api/dio_client.dart';
 
+String? _normalizeProfileDate(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final raw = value.trim();
+  final parsed = DateTime.tryParse(raw);
+  if (parsed != null) {
+    return parsed.toIso8601String().split('T').first;
+  }
+  return raw.contains('T') ? raw.split('T').first : raw;
+}
+
 class VaccinationFacility {
   const VaccinationFacility({
     required this.id,
@@ -184,6 +194,8 @@ class VaccinationPatientProfile {
     required this.district,
     required this.ward,
     required this.addressDetail,
+    required this.medicalConditions,
+    required this.allergies,
     required this.emergencyContact,
     required this.relationshipToUser,
     required this.isPrimary,
@@ -204,6 +216,8 @@ class VaccinationPatientProfile {
   final String? district;
   final String? ward;
   final String? addressDetail;
+  final String? medicalConditions;
+  final String? allergies;
   final String? emergencyContact;
   final String? relationshipToUser;
   final bool isPrimary;
@@ -226,7 +240,7 @@ class VaccinationPatientProfile {
                   : rawGender == 'other'
                       ? 'Khác'
                       : rawGender,
-      birthDate: json['birthDate']?.toString(),
+      birthDate: _normalizeProfileDate(json['birthDate']?.toString() ?? json['dateOfBirth']?.toString()),
       occupation: json['occupation']?.toString(),
       ethnicity: json['ethnicity']?.toString(),
       nationality: json['nationality']?.toString(),
@@ -234,6 +248,8 @@ class VaccinationPatientProfile {
       district: json['district']?.toString(),
       ward: json['ward']?.toString(),
       addressDetail: json['addressDetail']?.toString(),
+      medicalConditions: json['medicalConditions']?.toString(),
+      allergies: json['allergies']?.toString(),
       emergencyContact: json['emergencyContact']?.toString(),
       relationshipToUser: json['relationshipToUser']?.toString(),
       isPrimary: json['isPrimary'] == true,
@@ -262,7 +278,7 @@ class VaccinationBookingDraft {
     this.facilityAddress,
     this.serviceId,
     this.specialty = 'TIÊM NGỪA',
-    this.serviceName = 'Tiêm ngừa',
+    this.serviceName = 'Tiêm ngừa cúm mùa',
     this.servicePriceLabel = '160.000 VND (Thanh toán tại BV)',
     this.servicePriceValue = 160000,
     this.dateLabel = '05/03/2026',
@@ -437,14 +453,14 @@ class VaccinationBookingCatalog {
       facilityId: 'ha-noi-general',
       facilityName: 'Bệnh viện đa khoa Hà Nội',
       facilityAddress: 'Số 29 Hàn Thuyên, Hai Bà Trưng, Hà Nội',
-      priceLabel: 'Giá 0đ',
-      priceValue: 0,
+      priceLabel: 'Giá 150.000 VND',
+      priceValue: 150000,
       note: 'Ghi thanh toán tại cơ sở',
       badge: 'Viêm gan',
     ),
     const VaccinationPackage(
       id: 'vac-tiem-ngua',
-      title: 'Tiêm ngừa',
+      title: 'Tiêm ngừa cúm mùa',
       facilityId: 'phu-san-can-tho',
       facilityName: 'Bệnh viện Phụ sản Thành Phố Cần Thơ',
       facilityAddress: '106 Cách Mạng Tháng Tám, Phường Cái Khế, TP. Cần Thơ',
@@ -531,11 +547,9 @@ class VaccinationBookingCatalog {
           .whereType<Map<String, dynamic>>()
           .map(VaccinationPatientProfile.fromApi)
           .toList();
-      if (profiles.isNotEmpty) {
-        _patientProfiles
-          ..clear()
-          ..addAll(profiles);
-      }
+      _patientProfiles
+        ..clear()
+        ..addAll(profiles);
     } catch (_) {
       // keep empty if backend is unavailable
     }
@@ -571,48 +585,133 @@ class VaccinationBookingCatalog {
     required String occupation,
     required String nationality,
     required String ethnicity,
+    String? medicalConditions,
+    String? allergies,
     required String province,
     required String district,
     required String ward,
     required String addressDetail,
     String? emergencyContact,
     String? relationshipToUser,
+    bool? isPrimary,
   }) async {
     final isoDateOfBirth = _normalizeDateString(dateOfBirth);
+    final payload = <String, dynamic>{
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'citizenId': citizenId,
+      'insuranceNumber': insuranceNumber,
+      'email': email,
+      'gender': gender == 'Nam'
+          ? 'male'
+          : gender == 'Nữ'
+              ? 'female'
+              : 'other',
+      'dateOfBirth': isoDateOfBirth,
+      'occupation': occupation,
+      'nationality': nationality,
+      'ethnicity': ethnicity,
+      'medicalConditions': medicalConditions,
+      'allergies': allergies,
+      'province': province,
+      'district': district,
+      'ward': ward,
+      'addressDetail': addressDetail,
+      'emergencyContact': emergencyContact,
+      'relationshipToUser': relationshipToUser,
+      'isPrimary': isPrimary ?? true,
+    };
     final response = await _dioClient.post(
       '/patient-profiles',
-      data: {
-        'fullName': fullName,
-        'phoneNumber': phoneNumber,
-        'citizenId': citizenId,
-        'insuranceNumber': insuranceNumber,
-        'email': email,
-        'gender': gender == 'Nam'
-            ? 'male'
-            : gender == 'Nữ'
-                ? 'female'
-                : 'other',
-        'dateOfBirth': isoDateOfBirth,
-        'occupation': occupation,
-        'nationality': nationality,
-        'ethnicity': ethnicity,
-        'province': province,
-        'district': district,
-        'ward': ward,
-        'addressDetail': addressDetail,
-        'emergencyContact': emergencyContact,
-        'relationshipToUser': relationshipToUser,
-        'isPrimary': true,
-      },
+      data: payload,
     );
 
-    final data = _unwrapData(response.data);
-    if (data is Map<String, dynamic>) {
-      final profile = VaccinationPatientProfile.fromApi(data);
+    final responseData = _unwrapData(response.data);
+    if (responseData is Map<String, dynamic>) {
+      final profile = VaccinationPatientProfile.fromApi(responseData);
       _patientProfiles.insert(0, profile);
       return profile;
     }
     return null;
+  }
+
+  static Future<VaccinationPatientProfile?> updatePatientProfile({
+    required int patientId,
+    required String fullName,
+    required String phoneNumber,
+    required String citizenId,
+    required String insuranceNumber,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+    required String occupation,
+    required String nationality,
+    required String ethnicity,
+    String? medicalConditions,
+    String? allergies,
+    required String province,
+    required String district,
+    required String ward,
+    required String addressDetail,
+    String? emergencyContact,
+    String? relationshipToUser,
+    bool? isPrimary,
+  }) async {
+    final isoDateOfBirth = _normalizeDateString(dateOfBirth);
+    final payload = <String, dynamic>{
+      'fullName': fullName,
+      'phoneNumber': phoneNumber,
+      'citizenId': citizenId,
+      'insuranceNumber': insuranceNumber,
+      'email': email,
+      'gender': gender == 'Nam'
+          ? 'male'
+          : gender == 'Nữ'
+              ? 'female'
+              : 'other',
+      'dateOfBirth': isoDateOfBirth,
+      'occupation': occupation,
+      'nationality': nationality,
+      'ethnicity': ethnicity,
+      'medicalConditions': medicalConditions,
+      'allergies': allergies,
+      'province': province,
+      'district': district,
+      'ward': ward,
+      'addressDetail': addressDetail,
+      'emergencyContact': emergencyContact,
+      'relationshipToUser': relationshipToUser,
+    };
+    if (isPrimary != null) {
+      payload['isPrimary'] = isPrimary;
+    }
+    final response = await _dioClient.patch(
+      '/patient-profiles/$patientId',
+      data: payload,
+    );
+
+    final responseData = _unwrapData(response.data);
+    if (responseData is Map<String, dynamic>) {
+      final profile = VaccinationPatientProfile.fromApi(responseData);
+      final index = _patientProfiles.indexWhere((item) => item.id == profile.id);
+      if (index >= 0) {
+        _patientProfiles[index] = profile;
+      }
+      return profile;
+    }
+    return null;
+  }
+
+  static Future<bool> deletePatientProfile({
+    required int patientId,
+  }) async {
+    final response = await _dioClient.delete('/patient-profiles/$patientId');
+    final data = _unwrapData(response.data);
+    if (data is Map<String, dynamic>) {
+      _patientProfiles.removeWhere((item) => item.id == patientId);
+      return true;
+    }
+    return false;
   }
 
   static Future<Map<String, dynamic>?> createAppointment({
@@ -772,5 +871,6 @@ class VaccinationBookingCatalog {
     }
   }
 }
+
 
 

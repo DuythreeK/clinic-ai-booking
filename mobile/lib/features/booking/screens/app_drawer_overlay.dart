@@ -18,6 +18,7 @@ class AppDrawerOverlay extends StatefulWidget {
 class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
   String _userName = 'Nguyễn Văn A';
   String _userPhone = '081892319321';
+  bool _isAdmin = false;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
 
   Future<void> _loadUser() async {
     final user = await widget.authService.getCurrentUser();
+    final role = await widget.authService.getCurrentUserRole();
     if (user != null && mounted) {
       setState(() {
         if (user['full_name'] != null && user['full_name'].toString().isNotEmpty) {
@@ -35,6 +37,11 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
         if (user['phone'] != null && user['phone'].toString().isNotEmpty) {
           _userPhone = user['phone'].toString();
         }
+        _isAdmin = role == 'admin';
+      });
+    } else if (mounted) {
+      setState(() {
+        _isAdmin = role == 'admin';
       });
     }
   }
@@ -124,30 +131,45 @@ class _AppDrawerOverlayState extends State<AppDrawerOverlay> {
                     ),
                   ),
 
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 20),
 
-                  // Menu Items
-                  _buildMenuItem(Icons.home, 'Trang chủ', onTap: () {
-                    Navigator.of(context).pop();
-                    context.go('/home');
-                  }),
-                  _buildMenuItem(Icons.person, 'Thông tin cá nhân', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/profile');
-                  }),
-                  _buildMenuItem(Icons.calendar_month_outlined, 'Lịch hẹn', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/appointments');
-                  }),
-                  _buildMenuItem(Icons.assignment_outlined, 'Lịch sử phiếu khám', onTap: () {
-                    Navigator.of(context).pop();
-                    context.push('/history');
-                  }),
-                  _buildMenuItem(Icons.verified_user_outlined, 'Chính sách &\nBảo mật', onTap: () {}),
-                  _buildMenuItem(Icons.help_outline, 'Trung tâm trợ\ngiúp', onTap: () {}),
-                  _buildMenuItem(Icons.settings, 'Cài đặt', onTap: () {}),
-
-                  const Spacer(),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // Menu Items
+                          _buildMenuItem(Icons.home, 'Trang chủ', onTap: () {
+                            Navigator.of(context).pop();
+                            context.go('/home');
+                          }),
+                          _buildMenuItem(Icons.person, 'Thông tin cá nhân', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/profile');
+                          }),
+                          _buildMenuItem(Icons.folder_shared_outlined, 'Hồ sơ khám', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/medical-profiles');
+                          }),
+                          _buildMenuItem(Icons.calendar_month_outlined, 'Lịch hẹn', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/appointments');
+                          }),
+                          _buildMenuItem(Icons.assignment_outlined, 'Lịch sử phiếu khám', onTap: () {
+                            Navigator.of(context).pop();
+                            context.push('/history');
+                          }),
+                          _buildMenuItem(Icons.verified_user_outlined, 'Chính sách &\nBảo mật', onTap: () {}),
+                          _buildMenuItem(Icons.help_outline, 'Trung tâm trợ\ngiúp', onTap: () {}),
+                          _buildMenuItem(Icons.settings, 'Cài đặt', onTap: () {}),
+                          if (_isAdmin)
+                            _buildMenuItem(Icons.tune_rounded, 'Điều chỉnh chỗ cho lịch tiêm (Admin)', onTap: () {
+                              Navigator.of(context).pop();
+                              context.push('/admin/slots-capacity');
+                            }),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   // Logout Button
                   Padding(

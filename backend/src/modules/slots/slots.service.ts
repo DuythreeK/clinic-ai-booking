@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
-import { CreateSlotDto, UpdateSlotDto, CreateBulkSlotsDto } from './dto/slot.dto';
+import {
+  CreateSlotDto,
+  UpdateSlotDto,
+  CreateBulkSlotsDto,
+  UpdateSlotCapacityDto,
+} from './dto/slot.dto';
+import { AppointmentStatus } from '@prisma/client';
+import { okResponse } from '@/common/utils/api-response';
 
 @Injectable()
 export class SlotsService {
@@ -55,19 +62,54 @@ export class SlotsService {
       if (toDate) where.slot_date.lte = new Date(toDate);
     }
 
-    return this.prisma.slot.findMany({
+    const slots = await this.prisma.slot.findMany({
       where,
       orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
+      include: {
+        appointments: {
+          select: {
+            status: true,
+          },
+        },
+      },
+    });
+
+    return slots.map((slot) => {
+      const bookedCount = slot.appointments.filter(
+        (appointment) => appointment.status !== AppointmentStatus.cancelled,
+      ).length;
+
+      const { appointments, ...rest } = slot;
+      return {
+        ...rest,
+        booked_count: bookedCount,
+        total_capacity: Number(slot.available_count) + bookedCount,
+      };
     });
   }
 
   async getSlotById(id: string) {
     const slot = await this.prisma.slot.findUnique({
       where: { slot_id: this.toBigIntId(id) },
+      include: {
+        appointments: {
+          select: {
+            status: true,
+          },
+        },
+      },
     });
 
     if (!slot) throw new NotFoundException('Slot not found');
-    return slot;
+    const bookedCount = slot.appointments.filter(
+      (appointment) => appointment.status !== AppointmentStatus.cancelled,
+    ).length;
+    const { appointments, ...rest } = slot;
+    return {
+      ...rest,
+      booked_count: bookedCount,
+      total_capacity: Number(slot.available_count) + bookedCount,
+    };
   }
 
   async updateSlot(id: string, dto: UpdateSlotDto) {
@@ -85,6 +127,123 @@ export class SlotsService {
   async deleteSlot(id: string) {
     return this.prisma.slot.delete({
       where: { slot_id: this.toBigIntId(id) },
+    });
+  }
+
+  async getSlotCapacityLogs(id: string, limit = 50) {
+    const slotId = this.toBigIntId(id);
+    const safeLimit = Math.min(Math.max(limit, 1), 200);
+
+    const slot = await this.prisma.slot.findUnique({
+      where: { slot_id: slotId },
+      select: { slot_id: true },
+    });
+    if (!slot) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    const logs = await this.prisma.slotCapacityLog.findMany({
+      where: { slot_id: slotId },
+      orderBy: { created_at: 'desc' },
+      take: safeLimit,
+      include: {
+        user: {
+          select: {
+            user_id: true,
+            full_name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    return okResponse('Get slot capacity logs successfully', logs.map((log) => ({
+      id: Number(log.id),
+      slotId: Number(log.slot_id),
+      updatedBy: Number(log.updated_by),
+      updatedByName: log.user?.full_name ?? null,
+      updatedByEmail: log.user?.email ?? null,
+      oldCapacity: log.old_available_count,
+      newCapacity: log.new_available_count,
+      reason: log.reason,
+      createdAt: log.created_at,
+    })));
+  }
+
+  async updateSlotCapacity(userId: string, id: string, dto: UpdateSlotCapacityDto) {
+    const slotId = this.toBigIntId(id);
+    const adminUserId = this.toBigIntId(userId);
+    const requestedCapacity = Number(dto.newCapacity);
+
+    if (!Number.isFinite(requestedCapacity) || requestedCapacity < 0) {
+      throw new BadRequestException('newCapacity must be a non-negative number');
+    }
+    if (!Number.isInteger(requestedCapacity)) {
+      throw new BadRequestException('newCapacity must be an integer');
+    }
+
+    const slot = await this.prisma.slot.findUnique({
+      where: { slot_id: slotId },
+      select: {
+        slot_id: true,
+        facility_id: true,
+        doctor_id: true,
+        available_count: true,
+        status: true,
+        is_active: true,
+      },
+    });
+
+    if (!slot || slot.is_active !== 1) {
+      throw new NotFoundException('Slot not found');
+    }
+
+    const bookedCount = await this.prisma.appointment.count({
+      where: {
+        slot_id: slotId,
+        status: {
+          not: AppointmentStatus.cancelled,
+        },
+      },
+    });
+
+    if (requestedCapacity < bookedCount) {
+      throw new BadRequestException(
+        `newCapacity cannot be less than booked count (${bookedCount})`,
+      );
+    }
+
+    const oldCapacity = Number(slot.available_count) + bookedCount;
+    const newAvailableCount = requestedCapacity - bookedCount;
+    const nextStatus = newAvailableCount > 0 ? 'AVAILABLE' : 'FULL';
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.slot.update({
+        where: { slot_id: slotId },
+        data: {
+          available_count: newAvailableCount,
+          status: nextStatus,
+        },
+      });
+
+      await tx.slotCapacityLog.create({
+        data: {
+          slot_id: slotId,
+          updated_by: adminUserId,
+          old_available_count: oldCapacity,
+          new_available_count: requestedCapacity,
+          reason: dto.reason?.trim(),
+        },
+      });
+    });
+
+    return okResponse('Update slot capacity successfully', {
+      slotId: Number(slot.slot_id),
+      oldCapacity,
+      newCapacity: requestedCapacity,
+      bookedCount,
+      availableCount: newAvailableCount,
+      status: nextStatus,
     });
   }
 

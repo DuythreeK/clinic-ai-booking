@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
 
@@ -84,6 +86,9 @@ class AuthService {
         await authStorage.saveUser({
           'user_id': responseData['user_id'],
           'email': email,
+          'role': _extractRoleFromJwt(
+            responseData['access_token']?.toString(),
+          ),
         });
 
         logger.i('✅ Login successful');
@@ -116,5 +121,43 @@ class AuthService {
 
   Future<Map<String, dynamic>?> getCurrentUser() async {
     return await authStorage.getUser();
+  }
+
+  Future<String?> getCurrentUserRole() async {
+    final user = await authStorage.getUser();
+    final existingRole = user?['role']?.toString();
+    if (existingRole != null && existingRole.isNotEmpty) {
+      return existingRole;
+    }
+
+    final token = await authStorage.getAccessToken();
+    final role = _extractRoleFromJwt(token);
+    if (role != null) {
+      await authStorage.saveUser({
+        ...(user ?? <String, dynamic>{}),
+        'role': role,
+      });
+    }
+    return role;
+  }
+
+  String? _extractRoleFromJwt(String? token) {
+    if (token == null || token.trim().isEmpty) return null;
+    final parts = token.split('.');
+    if (parts.length != 3) return null;
+
+    try {
+      final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+      final map = jsonDecode(payload);
+      if (map is Map<String, dynamic>) {
+        final role = map['role']?.toString();
+        if (role != null && role.isNotEmpty) {
+          return role;
+        }
+      }
+    } catch (_) {
+      return null;
+    }
+    return null;
   }
 }
