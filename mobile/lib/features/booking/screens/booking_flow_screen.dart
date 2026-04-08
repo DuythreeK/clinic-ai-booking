@@ -203,6 +203,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
     final selectedDoctor = BookingDoctorItem(
       id: (doctorData['id'] as num?)?.toInt() ?? 0,
       fullName: doctorData['fullName']?.toString() ?? '',
+      avatarUrl: doctorData['avatarUrl']?.toString(),
       specialtyName: doctorData['specialtyName']?.toString(),
       facilityId: (doctorData['facilityId'] as num?)?.toInt(),
       consultationFee: (doctorData['consultationFee'] as num?)?.toDouble(),
@@ -567,31 +568,43 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                                     ),
                                   ),
                                   const SizedBox(height: 8),
-                                  Row(
+                                  Wrap(
+                                    alignment: WrapAlignment.spaceBetween,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    runSpacing: 4,
                                     children: [
-                                      const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
-                                      const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
-                                      const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
-                                      const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
-                                      const Icon(Icons.star_half, color: Color(0xFFFFC107), size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '4.0',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.grey.shade800,
-                                        ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                                          const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                                          const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                                          const Icon(Icons.star, color: Color(0xFFFFC107), size: 14),
+                                          const Icon(Icons.star_half, color: Color(0xFFFFC107), size: 14),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '4.0',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey.shade800,
+                                            ),
+                                          ),
+                                        ],
                                       ),
-                                      const Spacer(),
-                                      const Icon(Icons.attach_money, color: Color(0xFF14CBA8), size: 16),
-                                      Text(
-                                        '${_money(_selectedDoctor?.consultationFee ?? _selectedService?.price ?? 0)}/10p',
-                                        style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.bold,
-                                          color: Color(0xFF333333),
-                                        ),
+                                      Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(Icons.attach_money, color: Color(0xFF14CBA8), size: 16),
+                                          Text(
+                                            '${_money(_selectedDoctor?.consultationFee ?? _selectedService?.price ?? 0)}/10p',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF333333),
+                                            ),
+                                          ),
+                                        ],
                                       ),
                                     ],
                                   ),
@@ -617,132 +630,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A4A4A)),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Khám cho', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Bản thân', style: TextStyle(fontWeight: FontWeight.w600)),
-                                      Icon(Icons.keyboard_arrow_down, color: Colors.grey, size: 20),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Tài liệu bệnh án', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(
-                                          color: Color(0xFFFFEBEE),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(Icons.picture_as_pdf, color: Colors.red, size: 14),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      const Expanded(
-                                        child: Text(
-                                          'CĐ_Ruột_thừa.pdf',
-                                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500),
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildMockInput(text: _selectedPatient?.fullName ?? 'Nguyễn Trần Anh Khoa'),
-                      const SizedBox(height: 12),
-                      _buildMockInput(text: '0333222111'),
-                      const SizedBox(height: 12),
-                      _buildMockInput(text: 'anhkhoa@gmail.com'),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Ngày sinh', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('14/07/2004', style: TextStyle(fontSize: 13)),
-                                      Icon(Icons.calendar_today, size: 16, color: Colors.grey),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('Giới tính', style: TextStyle(fontSize: 12, color: Colors.grey)),
-                                const SizedBox(height: 4),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.grey.shade200),
-                                  ),
-                                  child: const Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Nam', style: TextStyle(fontSize: 13)),
-                                      Icon(Icons.keyboard_arrow_down, size: 18, color: Colors.blue),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      _buildMockInput(text: _selectedPatient?.fullName ?? 'Bệnh nhân chưa xác định'),
                       const SizedBox(height: 16),
                       const Text(
                         'Mô tả triệu chứng(*)',
@@ -1054,24 +942,25 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         border: Border.all(color: Colors.grey.shade200),
       ),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
           IconButton(
             onPressed: onTap,
@@ -1139,6 +1028,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           const SizedBox(height: 16),
           DropdownButtonFormField<BookingPatientItem>(
             value: _selectedPatient,
+            isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Người khám',
               border: OutlineInputBorder(),
@@ -1149,6 +1039,8 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                     value: e,
                     child: Text(
                       '${e.fullName}${e.isPrimary ? ' (Mặc định)' : ''}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                 )
@@ -1162,6 +1054,7 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
           const SizedBox(height: 12),
           DropdownButtonFormField<BookingServiceItem>(
             value: _selectedService,
+            isExpanded: true,
             decoration: const InputDecoration(
               labelText: 'Dịch vụ',
               border: OutlineInputBorder(),
@@ -1170,7 +1063,11 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
                 .map(
                   (e) => DropdownMenuItem<BookingServiceItem>(
                     value: e,
-                    child: Text(e.name),
+                    child: Text(
+                      e.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 )
                 .toList(),
@@ -1313,6 +1210,7 @@ class _BookingFlowApi {
           return BookingDoctorItem(
             id: _toInt(item['id']) ?? 0,
             fullName: (item['fullName'] ?? '').toString(),
+            avatarUrl: item['avatarUrl']?.toString(),
             specialtyName: specialty is Map<String, dynamic>
                 ? specialty['name']?.toString()
                 : null,

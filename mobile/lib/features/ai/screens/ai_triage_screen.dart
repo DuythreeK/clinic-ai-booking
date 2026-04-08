@@ -44,69 +44,69 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
   final Set<String> _selectedWarningSigns = <String>{};
 
   static const List<String> _quickSymptoms = [
-    'Fever',
-    'Cough',
-    'Sore throat',
-    'Headache',
-    'Stomach pain',
-    'Nausea',
-    'Chest pain',
-    'Shortness of breath',
-    'Dizziness',
-    'Joint pain',
-    'Fatigue',
-    'Skin rash',
+    'Sốt',
+    'Ho',
+    'Đau họng',
+    'Đau đầu',
+    'Đau bụng',
+    'Buồn nôn',
+    'Đau ngực',
+    'Khó thở',
+    'Chóng mặt',
+    'Đau khớp',
+    'Mệt mỏi',
+    'Phát ban',
   ];
 
   static const List<String> _warningSigns = [
-    'Trouble breathing',
-    'Severe chest pain',
-    'Fainting',
-    'High fever > 39C',
-    'Vomiting blood',
-    'Severe dehydration',
+    'Khó thở trầm trọng',
+    'Đau ngực dữ dội',
+    'Ngất xỉu',
+    'Sốt cao > 39°C',
+    'Nôn ra máu',
+    'Mất nước nghiêm trọng',
   ];
 
   static const List<String> _bodyAreas = [
-    'Head',
-    'ENT',
-    'Chest',
-    'Abdomen',
-    'Back',
-    'Skin',
-    'Urinary',
-    'General',
+    'Đầu',
+    'Tai Mũi Họng',
+    'Ngực',
+    'Bụng',
+    'Lưng',
+    'Da',
+    'Tiết niệu',
+    'Toàn thân',
   ];
 
   static const List<String> _durations = [
-    'Today',
-    '1-2 days',
-    '3-7 days',
-    '1-4 weeks',
-    '> 1 month',
+    'Hôm nay',
+    '1-2 ngày',
+    '3-7 ngày',
+    '1-4 tuần',
+    '> 1 tháng',
   ];
 
   static const List<_FunctionalSeverity> _severityOptions = [
     _FunctionalSeverity(
-      level: 'Mild',
+      level: 'Nhẹ',
       range: '1-3',
-      description: 'Kho chiu nhe, van sinh hoat va lam viec binh thuong.',
+      description: 'Khó chịu nhẹ, vẫn sinh hoạt và làm việc bình thường.',
       color: Colors.green,
     ),
     _FunctionalSeverity(
-      level: 'Moderate',
+      level: 'Vừa',
       range: '4-6',
       description: 'Đau khó chịu rõ rệt, bắt đầu ảnh hưởng đến sự tập trung.',
       color: Colors.amber,
     ),
     _FunctionalSeverity(
-      level: 'Severe',
+      level: 'Nặng',
       range: '7-8',
       description: 'Rất đau, mệt, không thể làm việc, cần nằm nghỉ hoàn toàn.',
       color: Colors.orange,
     ),
     _FunctionalSeverity(
-      level: 'Emergency',
+      level: 'Khẩn cấp',
       range: '9-10',
       description: 'Đau dữ dội, không thể chịu đựng, cần hỗ trợ y tế ngay.',
       color: Colors.red,
@@ -137,27 +137,27 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
     final sections = <String>[];
 
     if (_selectedSymptoms.isNotEmpty) {
-      sections.add('Main symptoms: ${_selectedSymptoms.join(', ')}');
+      sections.add('Triệu chứng chính: ${_selectedSymptoms.join(', ')}');
     }
 
     if (_selectedBodyArea != null) {
-      sections.add('Affected area: $_selectedBodyArea');
+      sections.add('Vị trí ảnh hưởng: $_selectedBodyArea');
     }
 
     sections.add(
-      'Muc do: ${_selectedSeverity.level} (${_selectedSeverity.description})',
+      'Mức độ: ${_selectedSeverity.level} (${_selectedSeverity.description})',
     );
 
     if (_selectedDuration != null) {
-      sections.add('Duration: $_selectedDuration');
+      sections.add('Thời gian kéo dài: $_selectedDuration');
     }
 
     if (_selectedWarningSigns.isNotEmpty) {
-      sections.add('Warning signs: ${_selectedWarningSigns.join(', ')}');
+      sections.add('Dấu hiệu cảnh báo: ${_selectedWarningSigns.join(', ')}');
     }
 
     if (notes.isNotEmpty) {
-      sections.add('Patient details: $notes');
+      sections.add('Chi tiết khác: $notes');
     }
 
     return sections.join('. ');
@@ -170,7 +170,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
 
     if (!hasMeaningfulInput) {
       setState(() {
-        _error = 'Please choose at least one symptom or add more details.';
+        _error = 'Vui lòng chọn ít nhất một triệu chứng hoặc nhập thêm chi tiết.';
       });
       return;
     }
@@ -206,17 +206,17 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Smart Triage')),
+      appBar: AppBar(title: const Text('Trợ lý Y tế AI')),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Tell us your symptoms with guided inputs for a faster and more accurate triage.',
+            'Cung cấp các triệu chứng của bạn để AI phân tích và đưa ra tư vấn y tế nhanh chóng.',
             style: TextStyle(fontSize: 16),
           ),
           const SizedBox(height: 12),
           const Text(
-            '1) Select main symptoms',
+            '1) Chọn triệu chứng chính',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -235,7 +235,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            '2) Affected area',
+            '2) Vị trí ảnh hưởng',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -243,7 +243,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
             value: _selectedBodyArea,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
-              hintText: 'Choose body area',
+              hintText: 'Chọn vị trí',
             ),
             items: _bodyAreas
                 .map((area) => DropdownMenuItem<String>(value: area, child: Text(area)))
@@ -256,7 +256,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            '3) Functional severity scale',
+            '3) Mức độ đau/khó chịu',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -311,7 +311,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
           ),
           const SizedBox(height: 8),
           const Text(
-            '4) Duration',
+            '4) Thời gian kéo dài',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -334,7 +334,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
           ),
           const SizedBox(height: 16),
           const Text(
-            '5) Emergency warning signs',
+            '5) Dấu hiệu cảnh báo nguy hiểm',
             style: TextStyle(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 8),
@@ -358,8 +358,8 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
             maxLines: 5,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
-              labelText: 'Additional details',
-              hintText: 'Example: fever mostly at night, worse when swallowing, no allergies',
+              labelText: 'Chi tiết bổ sung',
+              hintText: 'Ví dụ: Sốt cao về đêm, nuốt đau, không bị dị ứng...',
             ),
           ),
           const SizedBox(height: 12),
@@ -372,7 +372,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
                 : const Icon(Icons.auto_awesome),
-            label: Text(_isLoading ? 'Analyzing...' : 'Analyze Symptoms'),
+            label: Text(_isLoading ? 'Đang phân tích...' : 'Phân tích chẩn đoán'),
           ),
           if (_error != null) ...[
             const SizedBox(height: 12),
@@ -389,9 +389,9 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Urgency: ${_result!.urgency}'),
+                    Text('Mức độ khẩn cấp: ${_result!.urgency}'),
                     const SizedBox(height: 6),
-                    Text('Suggested Specialty: ${_result!.specialty}'),
+                    Text('Chuyên khoa đề xuất: ${_result!.specialty}'),
                     const SizedBox(height: 8),
                     Text(_result!.reasoning),
                   ],
@@ -404,7 +404,7 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
                 final specialty = Uri.encodeQueryComponent(_result!.specialty);
                 context.go('/?tab=0&specialty=$specialty');
               },
-              child: const Text('Find Doctors'),
+              child: const Text('Tìm Bác sĩ ngay'),
             ),
           ],
         ],
@@ -412,3 +412,4 @@ class _AiTriageScreenState extends State<AiTriageScreen> {
     );
   }
 }
+

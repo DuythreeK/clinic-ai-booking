@@ -72,6 +72,7 @@ GoRouter createAppRouter({
 
           return DoctorDetailScreen(
             doctor: doctor,
+            authService: authService,
           );
         },
       ),

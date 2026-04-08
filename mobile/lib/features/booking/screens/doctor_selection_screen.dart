@@ -75,6 +75,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
             return BookingDoctorItem(
               id: _toInt(item['id']) ?? 0,
               fullName: (item['fullName'] ?? '').toString(),
+              avatarUrl: item['avatarUrl']?.toString(),
               specialtyName: specialty is Map<String, dynamic>
                   ? specialty['name']?.toString()
                   : null,
@@ -142,6 +143,7 @@ class _DoctorSelectionScreenState extends State<DoctorSelectionScreen> {
     Navigator.of(context).pop({
       'id': doctor.id,
       'fullName': doctor.fullName,
+      'avatarUrl': doctor.avatarUrl,
       'specialtyName': doctor.specialtyName,
       'facilityId': doctor.facilityId,
       'consultationFee': doctor.consultationFee,
@@ -461,7 +463,22 @@ class _DoctorCard extends StatelessWidget {
                     color: const Color(0xFFF0F5FA),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.person, color: Color(0xFF9098B1), size: 40),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: (doctor.avatarUrl != null && doctor.avatarUrl!.isNotEmpty)
+                        ? Image.network(
+                            doctor.avatarUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) {
+                              return const Icon(
+                                Icons.person,
+                                color: Color(0xFF9098B1),
+                                size: 40,
+                              );
+                            },
+                          )
+                        : const Icon(Icons.person, color: Color(0xFF9098B1), size: 40),
+                  ),
                 ),
                 const SizedBox(width: 12),
                 
@@ -497,92 +514,43 @@ class _DoctorCard extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        '9 Kinh nghiệm trong ngành', // Mock
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Action Bottom
+            Padding(
+              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  InkWell(
+                    onTap: onTap,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF3A8DFF), Color(0xFF14CBA8)], // Approximate blue to teal
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text(
+                        'Đặt ngay',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade600,
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF14CBA8),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '69 người đã đặt hôm nay', // Mock
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Action Bottom
-          Padding(
-            padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Lịch khả dụng',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF14CBA8),
-                      ),
-                    ),
-                    Text(
-                      '10:00 AM ngày mai', // Mock
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-                InkWell(
-                  onTap: onTap,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF3A8DFF), Color(0xFF14CBA8)], // Approximate blue to teal
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Text(
-                      'Đặt ngay',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
         ),
       ),
     );

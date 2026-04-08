@@ -99,12 +99,27 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFFE2F5FF),
                           borderRadius: BorderRadius.circular(12),
-                          image: const DecorationImage(
-                            image: NetworkImage('https://via.placeholder.com/150'), // Placeholder image
-                            fit: BoxFit.cover,
-                          ),
                         ),
-                        child: const Icon(Icons.person, color: Color(0xFF9098B1), size: 50),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: (doctor.avatarUrl != null && doctor.avatarUrl!.isNotEmpty)
+                              ? Image.network(
+                                  doctor.avatarUrl!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, __, ___) {
+                                    return const Icon(
+                                      Icons.person,
+                                      color: Color(0xFF9098B1),
+                                      size: 50,
+                                    );
+                                  },
+                                )
+                              : const Icon(
+                                  Icons.person,
+                                  color: Color(0xFF9098B1),
+                                  size: 50,
+                                ),
+                        ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -139,31 +154,43 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 12),
-                            Row(
+                            Wrap(
+                              alignment: WrapAlignment.spaceBetween,
+                              crossAxisAlignment: WrapCrossAlignment.center,
+                              runSpacing: 4,
                               children: [
-                                const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
-                                const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
-                                const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
-                                const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
-                                const Icon(Icons.star_border, color: Colors.grey, size: 16),
-                                const SizedBox(width: 6),
-                                const Text(
-                                  '4.0',
-                                  style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
+                                    const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
+                                    const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
+                                    const Icon(Icons.star, color: Color(0xFFFFC107), size: 16),
+                                    const Icon(Icons.star_border, color: Colors.grey, size: 16),
+                                    const SizedBox(width: 6),
+                                    const Text(
+                                      '4.0',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const Spacer(),
-                                const Icon(Icons.attach_money, color: Color(0xFF14CBA8), size: 16),
-                                Text(
-                                  '${_formatMoney(doctor.consultationFee ?? 0)}/10p',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.attach_money, color: Color(0xFF14CBA8), size: 16),
+                                    Text(
+                                      '${_formatMoney(doctor.consultationFee ?? 0)}/10p',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -203,12 +230,8 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Male', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
-                            const Text('Specialist Urology', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
-                            const Text('11/01/1960', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
-                            const Text('paulliston@gmail.com', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
-                            const Text('0937.444.333', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
-                            const Text('7409 N FM 620, Austin, Texas, US', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
+                            Text('Chuyên khoa: ${doctor.specialtyName ?? "Chưa cập nhật"}', style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
+                            const Text('Bác sĩ chuyên khoa I', style: TextStyle(fontSize: 13, color: Colors.black87, height: 1.8)),
                           ],
                         ),
                       ),
@@ -249,7 +272,7 @@ class BookingDoctorDetailScreen extends StatelessWidget {
 
                   // Experience
                   const Text(
-                    '25+ years of experience',
+                    'Hơn 10 năm kinh nghiệm',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -258,7 +281,7 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 6),
                   const Text(
-                    'Certified For Proficiency In\nClinical Medicine',
+                    'Bác sĩ có chuyên môn cao và tận tâm với bệnh nhân.',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
@@ -286,7 +309,7 @@ class BookingDoctorDetailScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'MBBS (Lady Hardinge Medical College, Delhi)\nMD (Obstetrics & Gynaecology, Delhi)\nMRCOG (London, UK)\nDFSRH (UK)\nFellowship in ART and Reproductive medicine (London)',
+                              'Đại học Y Dược\nChứng chỉ hành nghề khám chữa bệnh\nĐào tạo chuyên môn liên tục (CME)',
                               style: TextStyle(
                                 fontSize: 13,
                                 color: Colors.black87,

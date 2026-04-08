@@ -77,6 +77,7 @@ export class DoctorsService {
     const items = doctors.map((doctor) => ({
       id: Number(doctor.doctor_id),
       fullName: doctor.full_name,
+      avatarUrl: doctor.avatar_url,
       title: doctor.title,
       experienceYears: doctor.experience_years,
       consultationFee: doctor.consultation_fee ? Number(doctor.consultation_fee) : null,
