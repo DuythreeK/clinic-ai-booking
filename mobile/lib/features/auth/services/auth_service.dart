@@ -17,11 +17,17 @@ class AuthService {
   final DioClient dioClient;
   final AuthStorage authStorage;
   final Logger logger = Logger();
-
+  Map<String, dynamic>? _currentUser;
+  Map<String, dynamic>? get currentUser => _currentUser;
   AuthService({
     required this.dioClient,
     required this.authStorage,
-  });
+  }) {
+    _initUser();
+  }
+  Future<void> _initUser() async {
+    _currentUser = await authStorage.getUser();
+  }
 
   Future<Map<String, dynamic>> register({
     required String email,
@@ -81,10 +87,13 @@ class AuthService {
           accessToken: responseData['access_token'] as String,
           refreshToken: responseData['refresh_token'] as String,
         );
-        await authStorage.saveUser({
+        final userMap = {
           'user_id': responseData['user_id'],
           'email': email,
-        });
+          'full_name': responseData['full_name'] ?? responseData['user']?['full_name'],
+        };
+        await authStorage.saveUser(userMap);
+        _currentUser = userMap;
 
         logger.i('✅ Login successful');
         return data;

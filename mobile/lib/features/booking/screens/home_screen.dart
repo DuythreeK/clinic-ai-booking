@@ -5,7 +5,9 @@ import '../../auth/services/auth_service.dart';
 import 'doctor_hub_models.dart';
 import 'my_doctors_screen.dart';
 import 'app_drawer_overlay.dart';
-
+import '../../booking/screens/booking_flow_screen.dart';
+import '../../vaccination_booking/screens/vaccination_booking_screen.dart';
+import '../../ai/screens/ai_triage_screen.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -23,6 +25,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  String get _displayName => widget.authService.currentUser?['full_name'] ?? 'Khách';
   final DoctorCatalog _catalog = DoctorCatalog.instance;
   final SpecialtyCatalog _specialtyCatalog = SpecialtyCatalog.instance;
   late int _currentIndex;
@@ -32,6 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _currentIndex = 0; // Mặc định vào Tab Trang chủ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _catalog.loadRemote(); // Load bác sĩ
+      _specialtyCatalog.loadRemote(); // <--- PHẢI CÓ DÒNG NÀY ĐỂ LOAD CHUYÊN KHOA
+      FacilityCatalog.instance.loadRemote();
+    });
   }
 
   @override
@@ -55,41 +63,29 @@ class _HomeScreenState extends State<HomeScreen> {
         authService: widget.authService,
       ),
       MyDoctorsScreen(onOpenDoctor: _openDoctor),
-      const _ComingSoonPage(
-        icon: Icons.calendar_month_rounded,
-        title: 'Lịch hẹn',
-        subtitle: 'Khu vực này sẽ hiển thị lịch hẹn và lịch tái khám của bạn.',
-      ),
+      BookingFlowScreen(authService: widget.authService),
+      // Index 3: Đặt lịch tiêm chủng (Vaccine)
+      const VaccinationBookingScreen(),
+      // Index 4: Tin nhắn
       const _ComingSoonPage(
         icon: Icons.chat_bubble_rounded,
-        title: 'Tin nhan',
-        subtitle: 'Thong bao tu van va trao doi voi phong kham se hien thi o day.',
+        title: 'Tin nhắn',
+        subtitle: 'Thông báo tư vấn và trao đổi với phòng kham sẽ hiển thị ở đây.',
       ),
+      // Index 5: AI Triage (Ngôi sao lấp lánh)
+      AiTriageScreen(authService: widget.authService),
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4FAFF),
       body: IndexedStack(index: _currentIndex, children: pages),
       bottomNavigationBar: _MainBottomNav(
-        currentIndex: _navIndex,
+        currentIndex: _currentIndex,
         onTap: (index) {
-          if (index == 2) {
-            context.push('/booking'); // Gọi sang luồng đặt lịch
-            return; // Dừng lại, không chạy setState bên dưới
-          }
 
-          if (index == 3) {
-            context.push('/vaccination-booking');
-            return;
-          }
-
-          if (index == 5) {
-            context.push('/ai-triage');
-            return;
-          }
 
           setState(() {
-            _currentIndex = index > 3 ? index - 1 : index;
+            _currentIndex = index;
           });
         },
       ),
@@ -294,45 +290,84 @@ class _HomeFeedPageState extends State<_HomeFeedPage> {
                         )
                       else if (mine.isEmpty)
                         Container(
-                          height: 64,
-                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          height: 252,
+                          width: double.infinity,
+
                           decoration: BoxDecoration(
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(18),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFD9EAF6)),
                           ),
-                          child: const Row(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.favorite_border_rounded, color: Color(0xFF94A3B8)),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Chưa có bác sĩ đã tim',
-                                  style: TextStyle(
-                                    color: Color(0xFF334155),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                              Icon(Icons.favorite_border_rounded, size: 48, color: Colors.grey.shade300),
+                              const SizedBox(height: 12),
+                              const Text(
+                                'Chưa có bác sĩ yêu thích',
+                                style: TextStyle(color: Color(0xFF94A3B8), fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
                         )
                       else
                         SizedBox(
-                          height: 64,
+                          height: 252,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: mine.length,
-                            separatorBuilder: (_, __) => const SizedBox(width: 8),
+                            separatorBuilder: (_, __) => const SizedBox(width: 10),
                             itemBuilder: (context, index) {
                               final doctor = mine[index];
-                              return _MiniDoctorChip(
+                              return _FeaturedDoctorCard(
                                   doctor: doctor,
-                                  onTap: () => widget.onOpenDoctor(doctor));
+                                  isFavorite: widget.catalog.isFavorite(doctor.id),
+                                  onFavorite: () => widget.catalog.toggleFavorite(doctor),
+                                  onTap: () => widget.onOpenDoctor(doctor),
+
+                              );
                             },
                           ),
                         ),
+                      const SizedBox(height: 18),
+                      _SectionTitle(
+                        title: 'Cơ sở y tế liên kết',
+                        actionLabel: 'Xem tất cả',
+                        onActionTap: () => context.push('/facilities'),
+                      ),
+                      const SizedBox(height: 10),
+                      AnimatedBuilder(
+                        animation: FacilityCatalog.instance,
+                        builder: (context, _) {
+                          final list = FacilityCatalog.instance.facilities;
+                          final facLoading = FacilityCatalog.instance.isLoading;
+
+                          if (facLoading && list.isEmpty) {
+                            return const SizedBox(
+                              height: 190,
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+
+                          if (list.isEmpty) return const SizedBox.shrink();
+
+                          return SizedBox(
+                            height: 190,
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: list.length,
+                              separatorBuilder: (_, __) => const SizedBox(width: 12),
+                              itemBuilder: (context, index) => _FacilityCard(facility: list[index]),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(height: 32), // Khoảng trống cuối cùng để cuộn cho thoải mái
+                      // =========================================================
+                      // KẾT THÚC ĐOẠN MỚI THÊM
+                      // =========================================================
                     ],
+
                   ),
                 ),
               ],
@@ -351,6 +386,7 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final String userName = authService.currentUser?['full_name'] ?? 'Khách';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       decoration: const BoxDecoration(
@@ -385,14 +421,17 @@ class _HomeHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hi Nguyen Van AI',
+                  'Hi $userName',
                   style: TextStyle(fontSize: 14, color: Colors.white70),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
+                /*
                 SizedBox(height: 2),
                 Text(
                   'Tim bac si cua ban',
@@ -403,6 +442,8 @@ class _HomeHeader extends StatelessWidget {
                     color: Colors.white,
                   ),
                 ),
+
+                 */
               ],
             ),
           ),
@@ -452,7 +493,7 @@ class _SearchCard extends StatelessWidget {
       child: const TextField(
         decoration: InputDecoration(
           border: InputBorder.none,
-          hintText: 'Tim kiem.....',
+          hintText: 'Tìm kiếm.....',
           prefixIcon: Icon(Icons.search, color: Color(0xFF9AA9B8)),
           suffixIcon: Icon(Icons.close, color: Color(0xFF9AA9B8)),
         ),
@@ -537,6 +578,72 @@ class _SpecialtyCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _FacilityCard extends StatelessWidget {
+  const _FacilityCard({required this.facility});
+  final FacilityInfo facility;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 200, // To hơn card bác sĩ một chút vì là phòng khám
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: Color(0x120B4764), blurRadius: 14, offset: Offset(0, 6)),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
+            child: Container(
+              height: 100,
+              color: const Color(0xFFE2F5FF),
+              child: const Center(child: Icon(Icons.local_hospital, size: 40, color: Color(0xFF2A8BFF))),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  facility.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  facility.type.toUpperCase(),
+                  style: const TextStyle(color: Color(0xFF1FB8AF), fontSize: 11, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    const Icon(Icons.location_on, size: 14, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        facility.address,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

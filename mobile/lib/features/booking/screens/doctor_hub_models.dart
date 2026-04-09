@@ -398,5 +398,43 @@ class SpecialtyCatalog extends ChangeNotifier {
   }
 }
 
+class FacilityCatalog extends ChangeNotifier {
+  FacilityCatalog._();
+  static final FacilityCatalog instance = FacilityCatalog._();
+
+  final DioClient _dioClient = DioClient();
+  List<FacilityInfo> _facilities = [];
+  bool _loading = false;
+
+  List<FacilityInfo> get facilities => _facilities;
+  bool get isLoading => _loading;
+
+  Future<void> loadRemote() async {
+    if (_loading) return;
+    _loading = true;
+    notifyListeners();
+
+    try {
+      final response = await _dioClient.get('/facilities');
+      // Tận dụng hàm unwrap logic giống DoctorCatalog
+      final items = _unwrapItems(response.data);
+      _facilities = items.map((json) => FacilityInfo.fromApi(json)).toList();
+    } catch (e) {
+      debugPrint('Lỗi load phòng khám: $e');
+    } finally {
+      _loading = false;
+      notifyListeners();
+    }
+  }
+
+  List<dynamic> _unwrapItems(dynamic data) {
+    if (data is Map<String, dynamic> && data['data'] != null) {
+      final wrapped = data['data'];
+      return wrapped is List ? wrapped : (wrapped['items'] ?? []);
+    }
+    return data is List ? data : [];
+  }
+}
+
 
 

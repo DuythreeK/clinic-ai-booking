@@ -121,6 +121,7 @@ export class AuthService {
       success: true,
       data: {
         user_id: user.user_id.toString(),
+        full_name: user.full_name,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_type: 'Bearer',

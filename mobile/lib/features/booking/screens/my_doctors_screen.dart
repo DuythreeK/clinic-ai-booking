@@ -23,7 +23,12 @@ class _MyDoctorsScreenState extends State<MyDoctorsScreen> {
   @override
   void initState() {
     super.initState();
-    _catalog.loadRemote();
+
+    // Đợi Flutter dựng xong khung hình (frame) đầu tiên
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Sau khi vẽ xong UI, lúc này load dữ liệu là an toàn nhất
+      _catalog.loadRemote();
+    });
   }
   String _selectedSort = DoctorSortOptions.options.first;
 

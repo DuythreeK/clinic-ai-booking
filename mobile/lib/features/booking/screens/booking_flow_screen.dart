@@ -94,14 +94,17 @@ class _BookingFlowScreenState extends State<BookingFlowScreen> {
         });
       }
     }
-
+    /*
     if (mounted && _selectedFacility == null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _selectedFacility == null) {
+        final ModalRoute? route = ModalRoute.of(context);
+        if (mounted && _selectedFacility == null && (route?.isCurrent ?? false)) {
           _showFacilitySelection();
         }
       });
     }
+
+     */
   }
 
   Future<void> _showFacilitySelection() async {
