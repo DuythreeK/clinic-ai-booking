@@ -1,13 +1,15 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   UseGuards,
 } from '@nestjs/common';
 import { PatientsService } from './patients.service';
-import { CreatePatientProfileDto } from './dto/patient.dto';
+import { CreatePatientProfileDto, UpdatePatientProfileDto } from './dto/patient.dto';
 import { JwtGuard } from '@/common/guards/jwt.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
@@ -22,6 +24,23 @@ export class PatientsController {
     @Body() dto: CreatePatientProfileDto,
   ) {
     return this.patientsService.createPatientProfile(user_id, dto);
+  }
+
+  @Patch(':id')
+  async updatePatientProfile(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdatePatientProfileDto,
+  ) {
+    return this.patientsService.updatePatientProfile(userId, id, dto);
+  }
+
+  @Delete(':id')
+  async deletePatientProfile(
+    @CurrentUser('sub') userId: string,
+    @Param('id') id: string,
+  ) {
+    return this.patientsService.deletePatientProfile(userId, id);
   }
 
   @Get()

@@ -320,7 +320,7 @@ class _AppointmentHistoryScreenState extends State<AppointmentHistoryScreen> {
                 child: Row(
                   children: [
                     InkWell(
-                      onTap: () => context.pop(),
+                      onTap: () => context.go('/home'),
                       borderRadius: BorderRadius.circular(20),
                       child: Container(
                         width: 40,

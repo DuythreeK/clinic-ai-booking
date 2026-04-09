@@ -35,8 +35,26 @@ model User {
   reviewed_forms        PreVisitForm[]         @relation("ReviewedByUser")
   notifications         Notification[]
   ai_triage_sessions    AiTriageSession[]
+  admin_notif_settings  AdminNotificationSetting?
+  slot_capacity_logs    SlotCapacityLog[]
 
   @@map("tblUser")
+}
+
+model AdminNotificationSetting {
+  id                  BigInt   @id @default(autoincrement())
+  user_id             BigInt   @unique
+  push_enabled        Int      @default(1) @db.TinyInt
+  sound_enabled       Int      @default(1) @db.TinyInt
+  appointment_reminder Int     @default(0) @db.TinyInt
+  status_updates      Int      @default(1) @db.TinyInt
+  reminder_lead_minutes Int    @default(30)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("tblAdminNotificationSettings")
 }
 
 enum UserRole {
@@ -134,8 +152,26 @@ model Specialty {
   is_active    Int     @default(1) @db.TinyInt
 
   doctors Doctor[]
+  rooms   Room[]
 
   @@map("tblSpecialty")
+}
+
+model Room {
+  room_id      BigInt     @id @default(autoincrement())
+  specialty_id  BigInt?
+  name          String     @db.VarChar(100)
+  code          String     @unique @db.VarChar(20)
+  floor         Int?       @db.SmallInt
+  description   String?    @db.Text
+  is_active     Int        @default(1) @db.TinyInt
+  created_at    DateTime   @default(now())
+  updated_at    DateTime   @updatedAt
+
+  specialty Specialty? @relation(fields: [specialty_id], references: [specialty_id])
+  schedules Schedule[]
+
+  @@map("tblRoom")
 }
 
 model Facility {
@@ -191,10 +227,30 @@ model Doctor {
 
   appointments    Appointment[]
   slots           Slot[]
+  schedules       Schedule[]
   medical_records MedicalRecord[]
   reviews         DoctorReview[]
 
   @@map("tblDoctor")
+}
+
+model Schedule {
+  schedule_id   BigInt   @id @default(autoincrement())
+  doctor_id     BigInt
+  room_id       BigInt?
+  work_date     DateTime @db.Date
+  start_time    DateTime @db.Time
+  end_time      DateTime @db.Time
+  slot_duration Int      @default(30)
+  max_slots     Int
+  is_available  Int      @default(1) @db.TinyInt
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  doctor Doctor @relation(fields: [doctor_id], references: [doctor_id])
+  room   Room?  @relation(fields: [room_id], references: [room_id])
+
+  @@map("tblSchedule")
 }
 
 model Service {
@@ -257,9 +313,27 @@ model Slot {
 
   facility Facility @relation(fields: [facility_id], references: [facility_id])
   doctor   Doctor   @relation(fields: [doctor_id], references: [doctor_id])
-  appointment Appointment?
+  appointments Appointment[]
+  capacity_logs SlotCapacityLog[]
 
   @@map("tblSlots")
+}
+
+model SlotCapacityLog {
+  id                  BigInt   @id @default(autoincrement())
+  slot_id             BigInt
+  updated_by          BigInt
+  old_available_count Int
+  new_available_count Int
+  reason              String?  @db.VarChar(255)
+  created_at          DateTime @default(now())
+
+  slot Slot @relation(fields: [slot_id], references: [slot_id], onDelete: Cascade)
+  user User @relation(fields: [updated_by], references: [user_id], onDelete: Cascade)
+
+  @@index([slot_id, created_at])
+  @@index([updated_by, created_at])
+  @@map("tblSlotCapacityLogs")
 }
 
 enum SlotStatus {
@@ -276,7 +350,7 @@ model Appointment {
   patient_id       BigInt
   facility_id      BigInt
   doctor_id        BigInt?
-  slot_id          BigInt          @unique
+  slot_id          BigInt
   service_id       BigInt?
   pre_visit_form_id BigInt?        @unique
   appointment_type AppointmentType
@@ -313,6 +387,7 @@ model Appointment {
   ai_triage_session       AiTriageSession?
 
   @@map("tblAppointment")
+  @@index([slot_id])
 }
 
 enum AppointmentType {
@@ -323,6 +398,8 @@ enum AppointmentType {
 enum AppointmentStatus {
   pending
   confirmed
+  checked_in
+  in_progress
   completed
   cancelled
   no_show

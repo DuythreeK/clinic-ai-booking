@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/navigation/app_route_observer.dart';
+import 'features/admin/screens/admin_slot_capacity_by_package_screen.dart';
 import 'features/ai/screens/ai_triage_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
@@ -17,6 +19,7 @@ import 'features/booking/screens/featured_doctors_screen.dart';
 import 'features/medical_history/screens/medical_history_detail_screen.dart';
 import 'features/medical_history/screens/medical_history_models.dart';
 import 'features/medical_history/screens/medical_history_screen.dart';
+import 'features/profile/screens/medical_profiles_screen.dart';
 import 'features/profile/screens/personal_info_screen.dart';
 import 'features/vaccination_booking/screens/vaccination_booking_models.dart';
 import 'features/vaccination_booking/screens/vaccination_booking_screen.dart';
@@ -25,6 +28,7 @@ GoRouter createAppRouter({
   required AuthService authService,
 }) {
   return GoRouter(
+    observers: [appRouteObserver],
     initialLocation: '/login',
     routes: [
       GoRoute(
@@ -219,6 +223,21 @@ GoRouter createAppRouter({
         builder: (context, state) => const PersonalInfoScreen(),
       ),
       GoRoute(
+        path: '/medical-profiles',
+        name: 'medical-profiles',
+        builder: (context, state) => const MedicalProfilesScreen(),
+      ),
+      GoRoute(
+        path: '/medical-profiles/editor',
+        name: 'medical-profiles-editor',
+        builder: (context, state) {
+          final args = state.extra is MedicalProfileEditorArgs
+              ? state.extra as MedicalProfileEditorArgs
+              : const MedicalProfileEditorArgs();
+          return MedicalProfileEditorScreen(args: args);
+        },
+      ),
+      GoRoute(
         path: '/profile/edit',
         name: 'profile-edit',
         builder: (context, state) => const EditPersonalInfoScreen(),
@@ -234,6 +253,11 @@ GoRouter createAppRouter({
         builder: (context, state) => AppointmentHistoryScreen(
           dioClient: authService.dioClient,
         ),
+      ),
+      GoRoute(
+        path: '/admin/slots-capacity',
+        name: 'admin-slots-capacity',
+        builder: (context, state) => const AdminSlotCapacityByPackageScreen(),
       ),
     ],
     errorBuilder: (context, state) => Scaffold(
