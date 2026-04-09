@@ -2,6 +2,16 @@
 
 import '../../../core/api/dio_client.dart';
 
+String? _normalizeProfileDate(String? value) {
+  if (value == null || value.trim().isEmpty) return null;
+  final raw = value.trim();
+  final parsed = DateTime.tryParse(raw);
+  if (parsed != null) {
+    return parsed.toIso8601String().split('T').first;
+  }
+  return raw.contains('T') ? raw.split('T').first : raw;
+}
+
 class VaccinationFacility {
   const VaccinationFacility({
     required this.id,
@@ -38,7 +48,7 @@ class VaccinationPackage {
   const VaccinationPackage({
     required this.id,
     required this.title,
-    required this.facility_id,
+    required this.facilityId,
     required this.facilityName,
     required this.facilityAddress,
     required this.priceLabel,
@@ -49,7 +59,7 @@ class VaccinationPackage {
 
   final String id;
   final String title;
-  final String facility_id;
+  final String facilityId;
   final String facilityName;
   final String facilityAddress;
   final String priceLabel;
@@ -62,7 +72,7 @@ class VaccinationPackage {
     return VaccinationPackage(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
-      facility_id: json['facility_id']?.toString() ?? '',
+      facilityId: json['facilityId']?.toString() ?? '',
       facilityName: json['facilityName']?.toString() ?? '',
       facilityAddress: json['facilityAddress']?.toString() ?? '',
       priceLabel: json['priceLabel']?.toString() ?? '${priceValue.toString()} VND',
@@ -75,22 +85,22 @@ class VaccinationPackage {
 
 class VaccinationSlotItem {
   const VaccinationSlotItem({
-    required this.slot_id,
-    required this.start_time,
-    required this.end_time,
+    required this.slotId,
+    required this.startTime,
+    required this.endTime,
     required this.availableCount,
   });
 
-  final int slot_id;
-  final String? start_time;
-  final String? end_time;
+  final int slotId;
+  final String? startTime;
+  final String? endTime;
   final int availableCount;
 
   factory VaccinationSlotItem.fromApi(Map<String, dynamic> json) {
     return VaccinationSlotItem(
-      slot_id: (json['slot_id'] as num?)?.toInt() ?? 0,
-      start_time: json['start_time']?.toString(),
-      end_time: json['end_time']?.toString(),
+      slotId: (json['slotId'] as num?)?.toInt() ?? 0,
+      startTime: json['startTime']?.toString(),
+      endTime: json['endTime']?.toString(),
       availableCount: (json['availableCount'] as num?)?.toInt() ?? 0,
     );
   }
@@ -129,7 +139,7 @@ class VaccinationSlotGroup {
 
 class VaccinationBookingDetail {
   const VaccinationBookingDetail({
-    required this.service_id,
+    required this.serviceId,
     required this.serviceName,
     required this.specialty,
     required this.servicePriceValue,
@@ -139,7 +149,7 @@ class VaccinationBookingDetail {
     required this.slots,
   });
 
-  final int service_id;
+  final int serviceId;
   final String serviceName;
   final String specialty;
   final int servicePriceValue;
@@ -151,7 +161,7 @@ class VaccinationBookingDetail {
   factory VaccinationBookingDetail.fromApi(Map<String, dynamic> json) {
     final facilityJson = json['facility'] as Map<String, dynamic>?;
     return VaccinationBookingDetail(
-      service_id: (json['service_id'] as num?)?.toInt() ?? 0,
+      serviceId: (json['serviceId'] as num?)?.toInt() ?? 0,
       serviceName: json['serviceName']?.toString() ?? '',
       specialty: json['specialty']?.toString() ?? 'TIÊM NGỪA',
       servicePriceValue: (json['servicePriceValue'] as num?)?.toInt() ?? 0,
@@ -159,9 +169,9 @@ class VaccinationBookingDetail {
       note: json['note']?.toString() ?? '',
       facility: VaccinationFacility.fromApi(facilityJson ?? <String, dynamic>{}),
       slots: (json['slots'] as List?)
-              ?.whereType<Map<String, dynamic>>()
-              .map(VaccinationSlotGroup.fromApi)
-              .toList() ??
+          ?.whereType<Map<String, dynamic>>()
+          .map(VaccinationSlotGroup.fromApi)
+          .toList() ??
           const <VaccinationSlotGroup>[],
     );
   }
@@ -184,6 +194,8 @@ class VaccinationPatientProfile {
     required this.district,
     required this.ward,
     required this.addressDetail,
+    required this.medical_conditions,
+    required this.allergies,
     required this.emergencyContact,
     required this.relationshipToUser,
     required this.isPrimary,
@@ -204,6 +216,8 @@ class VaccinationPatientProfile {
   final String? district;
   final String? ward;
   final String? addressDetail;
+  final String? medical_conditions;
+  final String? allergies;
   final String? emergencyContact;
   final String? relationshipToUser;
   final bool isPrimary;
@@ -220,13 +234,13 @@ class VaccinationPatientProfile {
       gender: rawGender == null
           ? null
           : rawGender == 'male'
-              ? 'Nam'
-              : rawGender == 'female'
-                  ? 'Nữ'
-                  : rawGender == 'other'
-                      ? 'Khác'
-                      : rawGender,
-      birthDate: json['birthDate']?.toString(),
+          ? 'Nam'
+          : rawGender == 'female'
+          ? 'Nữ'
+          : rawGender == 'other'
+          ? 'Khác'
+          : rawGender,
+      birthDate: _normalizeProfileDate(json['birthDate']?.toString() ?? json['dateOfBirth']?.toString()),
       occupation: json['occupation']?.toString(),
       ethnicity: json['ethnicity']?.toString(),
       nationality: json['nationality']?.toString(),
@@ -234,6 +248,8 @@ class VaccinationPatientProfile {
       district: json['district']?.toString(),
       ward: json['ward']?.toString(),
       addressDetail: json['addressDetail']?.toString(),
+      medical_conditions: json['medical_conditions']?.toString(),
+      allergies: json['allergies']?.toString(),
       emergencyContact: json['emergencyContact']?.toString(),
       relationshipToUser: json['relationshipToUser']?.toString(),
       isPrimary: json['isPrimary'] == true,
@@ -257,19 +273,19 @@ class PaymentMethodOption {
 
 class VaccinationBookingDraft {
   const VaccinationBookingDraft({
-    this.facility_id,
+    this.facilityId,
     this.facilityName,
     this.facilityAddress,
-    this.service_id,
+    this.serviceId,
     this.specialty = 'TIÊM NGỪA',
-    this.serviceName = 'Tiêm ngừa',
+    this.serviceName = 'Tiêm ngừa cúm mùa',
     this.servicePriceLabel = '160.000 VND (Thanh toán tại BV)',
     this.servicePriceValue = 160000,
     this.dateLabel = '05/03/2026',
     this.slotLabel = '07:00 - 08:00',
-    this.slot_id,
-    this.appointment_date,
-    this.appointment_time,
+    this.slotId,
+    this.appointmentDate,
+    this.appointmentTime,
     this.patientProfileId,
     this.profileLabel = 'CHƯA TỪNG KHÁM ĐĂNG KÝ MỚI',
     this.patientName = 'Nguyễn Văn A',
@@ -289,19 +305,19 @@ class VaccinationBookingDraft {
     this.paymentMethodId = 'vietqr',
   });
 
-  final String? facility_id;
+  final String? facilityId;
   final String? facilityName;
   final String? facilityAddress;
-  final int? service_id;
+  final int? serviceId;
   final String specialty;
   final String serviceName;
   final String servicePriceLabel;
   final int servicePriceValue;
   final String dateLabel;
   final String slotLabel;
-  final int? slot_id;
-  final String? appointment_date;
-  final String? appointment_time;
+  final int? slotId;
+  final String? appointmentDate;
+  final String? appointmentTime;
   final int? patientProfileId;
   final String profileLabel;
   final String patientName;
@@ -321,19 +337,19 @@ class VaccinationBookingDraft {
   final String paymentMethodId;
 
   VaccinationBookingDraft copyWith({
-    String? facility_id,
+    String? facilityId,
     String? facilityName,
     String? facilityAddress,
-    int? service_id,
+    int? serviceId,
     String? specialty,
     String? serviceName,
     String? servicePriceLabel,
     int? servicePriceValue,
     String? dateLabel,
     String? slotLabel,
-    int? slot_id,
-    String? appointment_date,
-    String? appointment_time,
+    int? slotId,
+    String? appointmentDate,
+    String? appointmentTime,
     int? patientProfileId,
     String? profileLabel,
     String? patientName,
@@ -353,19 +369,19 @@ class VaccinationBookingDraft {
     String? paymentMethodId,
   }) {
     return VaccinationBookingDraft(
-      facility_id: facility_id ?? this.facility_id,
+      facilityId: facilityId ?? this.facilityId,
       facilityName: facilityName ?? this.facilityName,
       facilityAddress: facilityAddress ?? this.facilityAddress,
-      service_id: service_id ?? this.service_id,
+      serviceId: serviceId ?? this.serviceId,
       specialty: specialty ?? this.specialty,
       serviceName: serviceName ?? this.serviceName,
       servicePriceLabel: servicePriceLabel ?? this.servicePriceLabel,
       servicePriceValue: servicePriceValue ?? this.servicePriceValue,
       dateLabel: dateLabel ?? this.dateLabel,
       slotLabel: slotLabel ?? this.slotLabel,
-      slot_id: slot_id ?? this.slot_id,
-      appointment_date: appointment_date ?? this.appointment_date,
-      appointment_time: appointment_time ?? this.appointment_time,
+      slotId: slotId ?? this.slotId,
+      appointmentDate: appointmentDate ?? this.appointmentDate,
+      appointmentTime: appointmentTime ?? this.appointmentTime,
       patientProfileId: patientProfileId ?? this.patientProfileId,
       profileLabel: profileLabel ?? this.profileLabel,
       patientName: patientName ?? this.patientName,
@@ -434,18 +450,18 @@ class VaccinationBookingCatalog {
     const VaccinationPackage(
       id: 'vac-viem-gan-b',
       title: 'Tiêm chủng Viêm gan siêu vi B người lớn',
-      facility_id: 'ha-noi-general',
+      facilityId: 'ha-noi-general',
       facilityName: 'Bệnh viện đa khoa Hà Nội',
       facilityAddress: 'Số 29 Hàn Thuyên, Hai Bà Trưng, Hà Nội',
-      priceLabel: 'Giá 0đ',
-      priceValue: 0,
+      priceLabel: 'Giá 150.000 VND',
+      priceValue: 150000,
       note: 'Ghi thanh toán tại cơ sở',
       badge: 'Viêm gan',
     ),
     const VaccinationPackage(
       id: 'vac-tiem-ngua',
-      title: 'Tiêm ngừa',
-      facility_id: 'phu-san-can-tho',
+      title: 'Tiêm ngừa cúm mùa',
+      facilityId: 'phu-san-can-tho',
       facilityName: 'Bệnh viện Phụ sản Thành Phố Cần Thơ',
       facilityAddress: '106 Cách Mạng Tháng Tám, Phường Cái Khế, TP. Cần Thơ',
       priceLabel: 'Giá 160.000 VND',
@@ -456,7 +472,7 @@ class VaccinationBookingCatalog {
     const VaccinationPackage(
       id: 'vac-hpv',
       title: 'Gói Vaccine HPV (Gói 1)',
-      facility_id: 'phu-san-sai-gon',
+      facilityId: 'phu-san-sai-gon',
       facilityName: 'Bệnh viện Phụ sản Quốc tế Sài Gòn',
       facilityAddress: '63 Bùi Viện, Quận 1, TP.HCM',
       priceLabel: 'Giá 7.300.000 VND',
@@ -531,23 +547,21 @@ class VaccinationBookingCatalog {
           .whereType<Map<String, dynamic>>()
           .map(VaccinationPatientProfile.fromApi)
           .toList();
-      if (profiles.isNotEmpty) {
-        _patientProfiles
-          ..clear()
-          ..addAll(profiles);
-      }
+      _patientProfiles
+        ..clear()
+        ..addAll(profiles);
     } catch (_) {
       // keep empty if backend is unavailable
     }
   }
 
   static Future<VaccinationBookingDetail?> loadDetail({
-    required String service_id,
+    required String serviceId,
     String? date,
   }) async {
     try {
       final response = await _dioClient.get(
-        '/services/$service_id/mobile-vaccination-detail',
+        '/services/$serviceId/mobile-vaccination-detail',
         queryParameters: date == null ? null : {'date': date},
       );
       final data = _unwrapData(response.data);
@@ -571,70 +585,155 @@ class VaccinationBookingCatalog {
     required String occupation,
     required String nationality,
     required String ethnicity,
+    String? medical_conditions,
+    String? allergies,
     required String province,
     required String district,
     required String ward,
     required String addressDetail,
     String? emergencyContact,
     String? relationshipToUser,
+    bool? isPrimary,
   }) async {
     final isoDateOfBirth = _normalizeDateString(dateOfBirth);
+    final payload = <String, dynamic>{
+      'full_name': full_name,
+      'phoneNumber': phoneNumber,
+      'citizenId': citizenId,
+      'insuranceNumber': insuranceNumber,
+      'email': email,
+      'gender': gender == 'Nam'
+          ? 'male'
+          : gender == 'Nữ'
+          ? 'female'
+          : 'other',
+      'dateOfBirth': isoDateOfBirth,
+      'occupation': occupation,
+      'nationality': nationality,
+      'ethnicity': ethnicity,
+      'medical_conditions': medical_conditions,
+      'allergies': allergies,
+      'province': province,
+      'district': district,
+      'ward': ward,
+      'addressDetail': addressDetail,
+      'emergencyContact': emergencyContact,
+      'relationshipToUser': relationshipToUser,
+      'isPrimary': isPrimary ?? true,
+    };
     final response = await _dioClient.post(
       '/patient-profiles',
-      data: {
-        'full_name': full_name,
-        'phoneNumber': phoneNumber,
-        'citizenId': citizenId,
-        'insuranceNumber': insuranceNumber,
-        'email': email,
-        'gender': gender == 'Nam'
-            ? 'male'
-            : gender == 'Nữ'
-                ? 'female'
-                : 'other',
-        'dateOfBirth': isoDateOfBirth,
-        'occupation': occupation,
-        'nationality': nationality,
-        'ethnicity': ethnicity,
-        'province': province,
-        'district': district,
-        'ward': ward,
-        'addressDetail': addressDetail,
-        'emergencyContact': emergencyContact,
-        'relationshipToUser': relationshipToUser,
-        'isPrimary': true,
-      },
+      data: payload,
     );
 
-    final data = _unwrapData(response.data);
-    if (data is Map<String, dynamic>) {
-      final profile = VaccinationPatientProfile.fromApi(data);
+    final responseData = _unwrapData(response.data);
+    if (responseData is Map<String, dynamic>) {
+      final profile = VaccinationPatientProfile.fromApi(responseData);
       _patientProfiles.insert(0, profile);
       return profile;
     }
     return null;
   }
 
+  static Future<VaccinationPatientProfile?> updatePatientProfile({
+    required int patientId,
+    required String full_name,
+    required String phoneNumber,
+    required String citizenId,
+    required String insuranceNumber,
+    required String email,
+    required String gender,
+    required String dateOfBirth,
+    required String occupation,
+    required String nationality,
+    required String ethnicity,
+    String? medical_conditions,
+    String? allergies,
+    required String province,
+    required String district,
+    required String ward,
+    required String addressDetail,
+    String? emergencyContact,
+    String? relationshipToUser,
+    bool? isPrimary,
+  }) async {
+    final isoDateOfBirth = _normalizeDateString(dateOfBirth);
+    final payload = <String, dynamic>{
+      'full_name': full_name,
+      'phoneNumber': phoneNumber,
+      'citizenId': citizenId,
+      'insuranceNumber': insuranceNumber,
+      'email': email,
+      'gender': gender == 'Nam'
+          ? 'male'
+          : gender == 'Nữ'
+          ? 'female'
+          : 'other',
+      'dateOfBirth': isoDateOfBirth,
+      'occupation': occupation,
+      'nationality': nationality,
+      'ethnicity': ethnicity,
+      'medical_conditions': medical_conditions,
+      'allergies': allergies,
+      'province': province,
+      'district': district,
+      'ward': ward,
+      'addressDetail': addressDetail,
+      'emergencyContact': emergencyContact,
+      'relationshipToUser': relationshipToUser,
+    };
+    if (isPrimary != null) {
+      payload['isPrimary'] = isPrimary;
+    }
+    final response = await _dioClient.patch(
+      '/patient-profiles/$patientId',
+      data: payload,
+    );
+
+    final responseData = _unwrapData(response.data);
+    if (responseData is Map<String, dynamic>) {
+      final profile = VaccinationPatientProfile.fromApi(responseData);
+      final index = _patientProfiles.indexWhere((item) => item.id == profile.id);
+      if (index >= 0) {
+        _patientProfiles[index] = profile;
+      }
+      return profile;
+    }
+    return null;
+  }
+
+  static Future<bool> deletePatientProfile({
+    required int patientId,
+  }) async {
+    final response = await _dioClient.delete('/patient-profiles/$patientId');
+    final data = _unwrapData(response.data);
+    if (data is Map<String, dynamic>) {
+      _patientProfiles.removeWhere((item) => item.id == patientId);
+      return true;
+    }
+    return false;
+  }
+
   static Future<Map<String, dynamic>?> createAppointment({
-    required String patient_id,
-    required String facility_id,
-    required String service_id,
-    required String slot_id,
-    required String appointment_date,
-    required String appointment_time,
+    required String patientId,
+    required String facilityId,
+    required String serviceId,
+    required String slotId,
+    required String appointmentDate,
+    required String appointmentTime,
     required String note,
     required String symptomsNote,
   }) async {
     final response = await _dioClient.post(
       '/appointments',
       data: {
-        'patient_id': patient_id,
-        'facility_id': facility_id,
-        'service_id': service_id,
-        'slot_id': slot_id,
+        'patientId': patientId,
+        'facilityId': facilityId,
+        'serviceId': serviceId,
+        'slotId': slotId,
         'appointmentType': 'vaccination',
-        'appointment_date': appointment_date,
-        'appointment_time': appointment_time,
+        'appointmentDate': appointmentDate,
+        'appointmentTime': appointmentTime,
         'note': note,
         'symptomsNote': symptomsNote,
       },
@@ -648,13 +747,13 @@ class VaccinationBookingCatalog {
   }
 
   static Future<Map<String, dynamic>?> createPayment({
-    required String appointment_id,
+    required String appointmentId,
     required String paymentMethod,
   }) async {
     final response = await _dioClient.post(
       '/payments',
       data: {
-        'appointment_id': appointment_id,
+        'appointmentId': appointmentId,
         'paymentMethod': paymentMethod,
       },
     );
@@ -686,24 +785,24 @@ class VaccinationBookingCatalog {
       return _facilities.first;
     }
     return _facilities.firstWhere(
-      (facility) => facility.id == id,
+          (facility) => facility.id == id,
       orElse: () => _facilities.first,
     );
   }
 
   static PaymentMethodOption paymentMethodById(String id) {
     return paymentMethods.firstWhere(
-      (method) => method.id == id,
+          (method) => method.id == id,
       orElse: () => paymentMethods.first,
     );
   }
 
   static VaccinationBookingDraft draftFromPackage(VaccinationPackage package) {
     return VaccinationBookingDraft(
-      facility_id: package.facility_id,
+      facilityId: package.facilityId,
       facilityName: package.facilityName,
       facilityAddress: package.facilityAddress,
-      service_id: int.tryParse(package.id),
+      serviceId: int.tryParse(package.id),
       serviceName: package.title,
       servicePriceLabel: '${package.priceLabel} (${package.note})',
       servicePriceValue: package.priceValue,
@@ -712,7 +811,7 @@ class VaccinationBookingCatalog {
 
   static VaccinationBookingDraft draftFromFacility(VaccinationFacility facility) {
     return VaccinationBookingDraft(
-      facility_id: facility.id,
+      facilityId: facility.id,
       facilityName: facility.name,
       facilityAddress: facility.address,
     );

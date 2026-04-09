@@ -1,3 +1,5 @@
+import { IsInt, Min, IsOptional, IsString, MaxLength } from 'class-validator'; // <-- THÊM DÒNG NÀY
+
 export class CreateSlotDto {
   doctor_id!: string;
   clinicId!: string;
@@ -19,4 +21,14 @@ export class CreateBulkSlotsDto {
   end_time!: string; // HH:mm
   slotDuration!: number; // minutes (30, 60, etc)
   daysOfWeek!: number[]; // 0-6 (0=Sunday)
+}
+export class UpdateSlotCapacityDto {
+  @IsInt()
+  @Min(0)
+  newCapacity!: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  reason?: string;
 }

@@ -96,7 +96,7 @@ class _MedicalProfilesScreenState extends State<MedicalProfilesScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Xóa hồ sơ'),
-          content: Text('Xóa hồ sơ "${profile.fullName}"?'),
+          content: Text('Xóa hồ sơ "${profile.full_name}"?'),
           actions: [
             TextButton(
               onPressed: () => context.pop(false),
@@ -287,7 +287,7 @@ class _ProfileCard extends StatelessWidget {
                   children: [
                     Expanded(
                       child: Text(
-                        profile.fullName,
+                        profile.full_name,
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -378,7 +378,7 @@ class MedicalProfileEditorScreen extends StatefulWidget {
 
 class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _full_nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _citizenController = TextEditingController();
   final _insuranceController = TextEditingController();
@@ -391,7 +391,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
   final _districtController = TextEditingController();
   final _wardController = TextEditingController();
   final _addressController = TextEditingController();
-  final _medicalConditionsController = TextEditingController();
+  final _medical_conditionsController = TextEditingController();
   final _allergiesController = TextEditingController();
   final _emergencyContactController = TextEditingController();
   final _relationshipController = TextEditingController(text: 'Bản thân');
@@ -407,7 +407,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
     super.initState();
     final profile = _profile;
     if (profile != null) {
-      _fullNameController.text = profile.fullName;
+      _full_nameController.text = profile.full_name;
       _phoneController.text = profile.phoneNumber ?? '';
       _citizenController.text = profile.citizenId ?? '';
       _insuranceController.text = profile.insuranceNumber ?? '';
@@ -420,7 +420,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
       _districtController.text = profile.district ?? '';
       _wardController.text = profile.ward ?? '';
       _addressController.text = profile.addressDetail ?? '';
-      _medicalConditionsController.text = profile.medicalConditions ?? '';
+      _medical_conditionsController.text = profile.medical_conditions ?? '';
       _allergiesController.text = profile.allergies ?? '';
       _emergencyContactController.text = profile.emergencyContact ?? '';
       _relationshipController.text = profile.relationshipToUser ?? 'Bản thân';
@@ -431,7 +431,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
 
   @override
   void dispose() {
-    _fullNameController.dispose();
+    _full_nameController.dispose();
     _phoneController.dispose();
     _citizenController.dispose();
     _insuranceController.dispose();
@@ -444,7 +444,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
     _districtController.dispose();
     _wardController.dispose();
     _addressController.dispose();
-    _medicalConditionsController.dispose();
+    _medical_conditionsController.dispose();
     _allergiesController.dispose();
     _emergencyContactController.dispose();
     _relationshipController.dispose();
@@ -465,7 +465,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
 
       if (_profile == null) {
         await VaccinationBookingCatalog.createPatientProfile(
-          fullName: _fullNameController.text.trim(),
+          full_name: _full_nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
           citizenId: _citizenController.text.trim(),
           insuranceNumber: _insuranceController.text.trim(),
@@ -475,7 +475,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
           occupation: _occupationController.text.trim(),
           nationality: _nationalityController.text.trim(),
           ethnicity: _ethnicityController.text.trim(),
-          medicalConditions: _medicalConditionsController.text.trim(),
+          medical_conditions: _medical_conditionsController.text.trim(),
           allergies: _allergiesController.text.trim(),
           province: _provinceController.text.trim(),
           district: _districtController.text.trim(),
@@ -488,7 +488,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
       } else {
         await VaccinationBookingCatalog.updatePatientProfile(
           patientId: _profile!.id,
-          fullName: _fullNameController.text.trim(),
+          full_name: _full_nameController.text.trim(),
           phoneNumber: _phoneController.text.trim(),
           citizenId: _citizenController.text.trim(),
           insuranceNumber: _insuranceController.text.trim(),
@@ -498,7 +498,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
           occupation: _occupationController.text.trim(),
           nationality: _nationalityController.text.trim(),
           ethnicity: _ethnicityController.text.trim(),
-          medicalConditions: _medicalConditionsController.text.trim(),
+          medical_conditions: _medical_conditionsController.text.trim(),
           allergies: _allergiesController.text.trim(),
           province: _provinceController.text.trim(),
           district: _districtController.text.trim(),
@@ -611,7 +611,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
             padding: const EdgeInsets.all(16),
             children: [
               TextFormField(
-                controller: _fullNameController,
+                controller: _full_nameController,
                 decoration: _decoration('Họ và tên *'),
                 validator: (value) => value == null || value.trim().isEmpty
                     ? 'Vui lòng nhập đầy đủ thông tin'
@@ -773,7 +773,7 @@ class _MedicalProfileEditorScreenState extends State<MedicalProfileEditorScreen>
               ),
               const SizedBox(height: 12),
               TextFormField(
-                controller: _medicalConditionsController,
+                controller: _medical_conditionsController,
                 decoration: _decoration('Bệnh lý hiện tại'),
                 maxLines: 2,
               ),

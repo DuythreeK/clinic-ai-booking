@@ -51,7 +51,7 @@ export class AppointmentsService {
       throw new BadRequestException('Slot is not available');
     }
 
-    const existingAppointment = await this.prisma.appointment.findUnique({
+    const existingAppointment = await this.prisma.appointment.findFirst({
       where: { slot_id: slot_id },
     });
 
@@ -67,7 +67,7 @@ export class AppointmentsService {
 
     const appointment = await this.prisma.$transaction(async (tx) => {
       console.log('--- ĐANG TẠO LỊCH HẸN VÀ KHÓA SLOT ---');
-      const check = await tx.appointment.findUnique({
+      const check = await tx.appointment.findFirst({
         where: { slot_id: slot_id },
       });
       if (check) {
