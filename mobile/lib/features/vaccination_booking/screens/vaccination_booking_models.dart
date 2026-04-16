@@ -673,7 +673,7 @@ class VaccinationBookingCatalog {
       'occupation': occupation,
       'nationality': nationality,
       'ethnicity': ethnicity,
-      'medical_conditions': medical_conditions,
+      'medical_conditions': medical_conditions ?? "",
       'allergies': allergies,
       'province': province,
       'district': district,
@@ -682,6 +682,8 @@ class VaccinationBookingCatalog {
       'emergencyContact': emergencyContact,
       'relationshipToUser': relationshipToUser,
     };
+
+    debugPrint('--- Dữ liệu gửi lên PATCH: $payload ---');
     if (isPrimary != null) {
       payload['isPrimary'] = isPrimary;
     }
