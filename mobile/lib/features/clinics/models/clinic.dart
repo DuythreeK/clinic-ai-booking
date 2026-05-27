@@ -1,3 +1,4 @@
+/// Model dữ liệu phòng khám/cơ sở y tế.
 class Clinic {
   final String id;
   final String name;
@@ -11,12 +12,13 @@ class Clinic {
     this.rating = 4.0
   });
 
+  /// Tạo model từ JSON trả về từ backend.
   factory Clinic.fromJson(Map<String, dynamic> json) {
     return Clinic(
       id: json['id'],
       name: json['name'],
       address: json['address'],
-      // Nếu DB chưa có rating, mặc định là 4.0 như trong ảnh
+      // Nếu backend chưa có rating thì dùng giá trị mặc định.
       rating: (json['rating'] ?? 4.0).toDouble(),
     );
   }

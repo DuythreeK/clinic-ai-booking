@@ -1,4 +1,4 @@
-// This is your Prisma schema file
+// Đây là file schema Prisma của hệ thống.
 
 generator client {
   provider = "prisma-client-js"
@@ -9,7 +9,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// --- 1. QUẢN LÝ NGƯỜI DÙNG & BẢO MẬT ---
+// --- 1. QUẢN LÝ NGƯỜI DÙNG VÀ BẢO MẬT ---
 
 model User {
   user_id       BigInt    @id @default(autoincrement())
@@ -23,7 +23,7 @@ model User {
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
 
-  // Quan hệ 1-N [cite: 330-350]
+  // Các quan hệ liên kết với user.
   patient_profiles      PatientProfile[]
   refresh_tokens        RefreshToken[]
   password_reset_tokens PasswordResetToken[]
@@ -102,7 +102,7 @@ enum PasswordResetStatus {
   EXPIRED
 }
 
-// --- 2. HỒ SƠ BỆNH NHÂN & Y TẾ ---
+// --- 2. HỒ SƠ BỆNH NHÂN VÀ Y TẾ ---
 
 model PatientProfile {
     patient_id          BigInt   @id @default(autoincrement())
@@ -143,7 +143,7 @@ enum Gender {
   other
 }
 
-// --- 3. CƠ SỞ VẬT CHẤT & CHUYÊN KHOA ---
+// --- 3. CƠ SỞ VẬT CHẤT VÀ CHUYÊN KHOA ---
 
 model Specialty {
   specialty_id BigInt  @id @default(autoincrement())
@@ -204,7 +204,7 @@ enum FacilityType {
   vaccination_center
 }
 
-// --- 4. BÁC SĨ & DỊCH VỤ ---
+// --- 4. BÁC SĨ VÀ DỊCH VỤ ---
 
 model Doctor {
   doctor_id        BigInt   @id @default(autoincrement())

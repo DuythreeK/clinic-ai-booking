@@ -1,5 +1,7 @@
 import { IsDateString, IsOptional, IsString, MaxLength } from 'class-validator';
 
+// DTOs for mobile profile view/update. MobileProfileDto is a shaped response
+// object (not used for validation), UpdateMobileProfileDto is validated input.
 export class MobileProfileDto {
   user_id!: number;
   profileId!: number | null;

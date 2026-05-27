@@ -156,15 +156,17 @@ class DioClient {
 
   DioClient({FlutterSecureStorage? secureStorage})
       : secureStorage = secureStorage ?? const FlutterSecureStorage() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: '$baseUrl/',
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-        contentType: Headers.jsonContentType,
-        responseType: ResponseType.json,
-      ),
-    );
+        final resolvedBase = kIsWeb ? '${Uri.base.origin}/api/' : '$baseUrl/';
+
+        _dio = Dio(
+          BaseOptions(
+            baseUrl: resolvedBase,
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 30),
+            contentType: Headers.jsonContentType,
+            responseType: ResponseType.json,
+          ),
+        );
 
     // Add interceptors
     _dio.interceptors.add(TokenInterceptor(
@@ -245,10 +247,11 @@ class DioClient {
       onReceiveProgress: onReceiveProgress,
     );
   }
-
-  Future<Response<T>> patch<T>(
-    String path, {
-    dynamic data,
+              // Use a relative path so Dio uses the configured baseUrl (works on web and mobile)
+              final refreshResponse = await dio.post(
+                'auth/refresh',
+                data: {'refresh_token': refreshToken},
+              );
     Map<String, dynamic>? queryParameters,
     Options? options,
     CancelToken? cancelToken,

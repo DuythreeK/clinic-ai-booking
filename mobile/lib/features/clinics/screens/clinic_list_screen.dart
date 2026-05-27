@@ -5,6 +5,7 @@ import '../../../core/api/dio_client.dart';
 import 'clinic_detail_screen.dart';
 
 class ClinicListScreen extends StatefulWidget {
+  /// Màn danh sách cơ sở y tế.
   const ClinicListScreen({super.key});
 
   @override
@@ -12,6 +13,7 @@ class ClinicListScreen extends StatefulWidget {
 }
 
 class _ClinicListScreenState extends State<ClinicListScreen> {
+  /// Controller của ô tìm kiếm.
   final TextEditingController _searchController = TextEditingController();
 
   final Map<String, List<String>> locationData = {
@@ -27,16 +29,17 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
   @override
   void initState() {
     super.initState();
+    // Tải dữ liệu ngay khi màn hình được tạo.
     fetchClinics();
   }
 
-  // Lấy dữ liệu từ Backend và xử lý bóc tách mảng linh hoạt
+  /// Gọi API lấy danh sách cơ sở y tế.
   Future<void> fetchClinics() async {
     try {
       setState(() => isLoading = true);
       final dioClient = DioClient(secureStorage: const FlutterSecureStorage());
 
-      // Sử dụng đường dẫn tuyệt đối bắt đầu bằng '/' để Dio kết hợp đúng với baseUrl
+      // Gọi API ngoài bằng đường dẫn tuyệt đối để Dio ghép đúng baseUrl.
       final response = await dioClient.dio.get('/facilities');
 
       debugPrint("--- CLINIC LIST DEBUG ---");
@@ -45,7 +48,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
       setState(() {
         final resData = response.data;
 
-        // LOGIC BÓC TÁCH KHỚP VỚI BACKEND: { success: true, data: { items: [...] } }
+        // Hỗ trợ nhiều dạng response để tránh phụ thuộc cứng vào một schema.
         if (resData is Map) {
           final dataWrapper = resData['data'];
           if (dataWrapper != null && dataWrapper is Map && dataWrapper['items'] != null) {
@@ -74,14 +77,14 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Logic lọc danh sách
+    // Lọc danh sách theo tab và từ khóa tìm kiếm ngay trên client.
     final filteredClinics = clinics.where((clinic) {
       final name = (clinic['name'] ?? "").toString().toLowerCase();
       final address = (clinic['addressDetail'] ?? clinic['address'] ?? "").toString().toLowerCase();
       final type = (clinic['facilityType'] ?? "").toString().toLowerCase();
       final query = searchQuery.toLowerCase();
 
-      // 1. Lọc theo Tab (Bệnh viện/Phòng khám) dựa trên facilityType từ Backend
+      // Lọc theo tab dựa trên `facilityType` từ backend.
       bool matchesCategory = true;
       if (selectedCategory == "Bệnh viện") {
         matchesCategory = type == 'hospital';
@@ -89,7 +92,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
         matchesCategory = type == 'clinic' || type == 'vaccination_center';
       }
 
-      // 2. Lọc theo nội dung tìm kiếm
+      // Lọc thêm theo tên hoặc địa chỉ.
       bool matchesSearch = name.contains(query) || address.contains(query);
 
       return matchesCategory && matchesSearch;
@@ -98,7 +101,6 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        // SỬA NÚT BACK: Quay lại trang chủ
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
           onPressed: () => context.pop(),
@@ -122,7 +124,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
               child: isLoading
                   ? const Center(child: CircularProgressIndicator(color: Color(0xFF2DC7C4)))
                   : filteredClinics.isEmpty
-                  ? ListView( // Dùng ListView để RefreshIndicator hoạt động khi rỗng
+                  ? ListView(
                 children: [
                   SizedBox(height: MediaQuery.of(context).size.height * 0.2),
                   Center(
@@ -133,7 +135,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
                         const SizedBox(height: 16),
                         Text(
                           clinics.isEmpty
-                              ? "Chưa có dữ liệu. Dũng hãy thêm vào DB bằng Prisma Studio nhé!"
+                              ? "Chưa có dữ liệu. Hãy thêm vào DB bằng Prisma Studio."
                               : "Không tìm thấy kết quả phù hợp",
                           textAlign: TextAlign.center,
                           style: const TextStyle(color: Colors.grey),
@@ -314,7 +316,7 @@ class _ClinicListScreenState extends State<ClinicListScreen> {
               Expanded(
                 child: ElevatedButton(
                   onPressed: () {
-                    // Chuyển sang đặt lịch khám
+                    // Chuyển sang màn đặt lịch khám.
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2DC7C4),

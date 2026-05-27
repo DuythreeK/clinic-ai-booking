@@ -393,7 +393,13 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
               final isSelected = date.year == _selectedDate.year &&
                   date.month == _selectedDate.month &&
                   date.day == _selectedDate.day;
-              final hasSlots = _slotsByDate.containsKey(_dateOnly(date));
+              final daySlots = _slotsByDate[_dateOnly(date)] ?? <_SlotItem>[];
+              final hasAvailableSlots = daySlots.any(
+                (slot) => !slot.hasAppointment && slot.status.toUpperCase() == 'AVAILABLE' && slot.is_active,
+              );
+              final hasBookedSlots = daySlots.any(
+                (slot) => slot.hasAppointment || slot.status.toUpperCase() == 'FULL',
+              );
 
               return GestureDetector(
                 onTap: date.isBefore(now)
@@ -418,9 +424,11 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                     border: Border.all(
                       color: isSelected
                           ? const Color(0xFF1BC47D)
-                          : hasSlots
-                              ? const Color(0xFF1BC47D).withOpacity(0.4)
-                              : Colors.transparent,
+                          : hasBookedSlots
+                              ? Colors.red.shade300
+                              : hasAvailableSlots
+                                  ? const Color(0xFF1BC47D).withOpacity(0.4)
+                                  : Colors.transparent,
                     ),
                   ),
                   alignment: Alignment.center,
@@ -439,13 +447,13 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
                                   : Colors.black,
                         ),
                       ),
-                      if (hasSlots && !isSelected)
+                      if ((hasBookedSlots || hasAvailableSlots) && !isSelected)
                         Container(
                           margin: const EdgeInsets.only(top: 2),
                           width: 4,
                           height: 4,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFF1BC47D),
+                          decoration: BoxDecoration(
+                            color: hasBookedSlots ? Colors.red : const Color(0xFF1BC47D),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -511,53 +519,42 @@ class _SlotSelectionScreenState extends State<SlotSelectionScreen> {
             final time = slot.time;
             final isSelected = _selectedSlot?.id == slot.id;
             final int? remainingSec = _tempLockedSlots[slot.id];
-            final bool isDatabaseInactive = slot.is_active == false;
+            final bool isBooked = slot.hasAppointment || slot.status.toUpperCase() == 'FULL' || slot.status.toUpperCase() == 'BUSY';
+            final bool isTemporarilyLocked = remainingSec != null && remainingSec > 0;
+            final bool isInactive = slot.is_active == false;
+
             Color bgColor;
-            bool isClickable = true;
-            String statusLabel = '';
-            final bool isVang = !slot.is_active;
-            // LOGIC MỚI: Cứ có appointment hoặc status FULL là ĐỎ
-            if (slot.hasAppointment || slot.status.toUpperCase() == 'FULL' || slot.status.toUpperCase() == 'BUSY') {
+            bool isClickable;
+            String statusLabel;
+
+            if (isBooked) {
               bgColor = Colors.red.shade400;
+              isClickable = false;
               statusLabel = 'Đã đặt';
-              isClickable = false;
-            } else if (isVang || (remainingSec != null && remainingSec > 0)) {
-              bgColor = Colors.orange.shade400; // CHẮC CHẮN VÀNG
-              isClickable = false;
-              statusLabel = remainingSec != null ? 'Đếm ngược...' : 'Đang giữ...';
-            } else {
-              bgColor = isSelected ? const Color(0xFF1BC47D) : Colors.grey.shade100;
-              isClickable = true;
-            }if (slot.hasAppointment || slot.status.toUpperCase() == 'FULL') {
-              bgColor = Colors.red.shade400;
-              statusLabel = 'Đã đặt';
-              isClickable = false;
-            }
-            // 2. KIỂM TRA VÀNG (Giữ chỗ)
-            // Ưu tiên đếm ngược local trước, sau đó mới tới trạng thái từ DB
-            else if ((remainingSec != null && remainingSec > 0) || isDatabaseInactive) {
+            } else if (isTemporarilyLocked || isInactive) {
               bgColor = Colors.orange.shade400;
               isClickable = false;
-
-              if (remainingSec != null && remainingSec > 0) {
+              if (isTemporarilyLocked) {
                 final m = (remainingSec / 60).floor();
                 final s = remainingSec % 60;
                 statusLabel = '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
               } else {
                 statusLabel = 'Đang giữ...';
               }
-            }
-            // 3. TRẠNG THÁI TRỐNG
-            else {
+            } else {
               bgColor = isSelected ? const Color(0xFF1BC47D) : Colors.grey.shade100;
               isClickable = true;
               statusLabel = '';
             }
 
             return GestureDetector(
-              onTap: isClickable ? () {
-                setState(() { _selectedSlot = slot; });
-              } : null,
+              onTap: isClickable
+                  ? () {
+                      setState(() {
+                        _selectedSlot = slot;
+                      });
+                    }
+                  : null,
               child: Container(
                 decoration: BoxDecoration(
                   color: bgColor,

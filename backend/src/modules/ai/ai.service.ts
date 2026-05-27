@@ -82,9 +82,15 @@ export class AiService {
         reasoning,
       };
     } catch (error) {
-      this.logger.error(`Lỗi hệ thống trong quá trình phân tích AI: ${error.message}`);
+      // Xử lý an toàn kiểu unknown của error bằng toán tử ba ngôi và instanceof
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Lỗi hệ thống trong quá trình phân tích AI: ${errorMessage}`);
+      
       throw new InternalServerErrorException('Dịch vụ phân tích AI đang gặp sự cố tạm thời. Vui lòng thử lại sau ít phút.');
     }
+
+    // Điểm chặn cuối cùng để TypeScript compiler hiểu rằng hàm luôn luôn bẻ luồng bằng Exception nếu không thể return
+    throw new InternalServerErrorException('Lỗi luồng xử lý phân tích AI không xác định.');
   }
 
   async generatePrevisitSummary(

@@ -16,6 +16,7 @@ import 'features/booking/screens/doctor_hub_models.dart';
 import 'features/booking/screens/home_screen.dart';
 import 'features/booking/screens/my_doctors_screen.dart';
 import 'features/booking/screens/featured_doctors_screen.dart';
+import 'features/clinics/screens/clinic_detail_screen.dart';
 import 'features/medical_history/screens/medical_history_detail_screen.dart';
 import 'features/medical_history/screens/medical_history_models.dart';
 import 'features/medical_history/screens/medical_history_screen.dart';
@@ -24,6 +25,7 @@ import 'features/profile/screens/personal_info_screen.dart';
 import 'features/vaccination_booking/screens/vaccination_booking_models.dart';
 import 'features/vaccination_booking/screens/vaccination_booking_screen.dart';
 
+/// Khởi tạo cấu hình điều hướng chính của ứng dụng bằng GoRouter.
 GoRouter createAppRouter({
   required AuthService authService,
 }) {
@@ -113,6 +115,22 @@ GoRouter createAppRouter({
           onOpenDoctor: (doctor) => context.push('/doctor/${doctor.id}'),
           initialKeyword: state.uri.queryParameters['search'],
         ),
+      ),
+      // Route chi tiết phòng khám, nhận dữ liệu qua `state.extra`.
+      GoRoute(
+        path: '/clinic-detail',
+        name: 'clinic-detail',
+        builder: (context, state) {
+          final clinic = state.extra;
+
+          if (clinic is! Map<String, dynamic>) {
+            return const Scaffold(
+              body: Center(child: Text('Không tìm thấy dữ liệu phòng khám')),
+            );
+          }
+
+          return ClinicDetailScreen(clinic: clinic);
+        },
       ),
       GoRoute(
         path: '/my-doctors',

@@ -1,3 +1,8 @@
+/**
+ * ClinicsService
+ * - Đọc dữ liệu cơ sở y tế từ Prisma và chuyển thành response phù hợp.
+ * - Gom phần format response về một chỗ để controller gọn hơn.
+ */
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { okResponse, paginatedResponse } from '@/common/utils/api-response';
@@ -7,6 +12,7 @@ import { toNumberId } from '@/common/utils/formatters';
 export class ClinicsService {
   constructor(private prisma: PrismaService) {}
 
+  // Chuẩn hoá dữ liệu facility sang response dùng chung cho list/detail.
   private toResponse(facility: any) {
     return {
       id: toNumberId(facility.facility_id),
@@ -31,6 +37,7 @@ export class ClinicsService {
     };
   }
 
+  // Response rút gọn cho mobile, chỉ giữ thông tin cần thiết.
   async getMobileFacilities(search?: string, facilityType?: string) {
     const facilities = await this.prisma.facility.findMany({
       where: {
@@ -62,6 +69,7 @@ export class ClinicsService {
     );
   }
 
+  // API danh sách phòng khám có phân trang.
   async getClinics(page = 1, limit = 10, search?: string, facilityType?: string) {
     const where = {
       is_active: 1,
@@ -92,6 +100,7 @@ export class ClinicsService {
     );
   }
 
+  // API chi tiết phòng khám cho màn detail.
   async getClinicById(id: string) {
     const facility = await this.prisma.facility.findUnique({
       where: { facility_id: BigInt(id) },

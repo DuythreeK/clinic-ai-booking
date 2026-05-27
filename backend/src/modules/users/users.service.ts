@@ -1,4 +1,10 @@
-﻿import { Injectable, NotFoundException } from '@nestjs/common';
+﻿/**
+ * UsersService
+ * - Quản lý các thao tác đọc/cập nhật user và hồ sơ mobile.
+ * - Chuyển dữ liệu Prisma sang DTO phù hợp cho client mobile.
+ * - Dùng transaction khi cập nhật nhiều bảng để tránh lệch dữ liệu.
+ */
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { UpdateUserDto } from './dto/user.dto';
 import { MobileProfileDto, UpdateMobileProfileDto } from './dto/mobile-profile.dto';
@@ -9,10 +15,12 @@ import { formatDateOnly, splitfull_name, toNumberId } from '@/common/utils/forma
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+  // Chuyển id dạng chuỗi từ controller sang BigInt để khớp Prisma.
   private toBigIntId(id: string): bigint {
     return BigInt(id);
   }
 
+  // Tạo response cơ bản cho endpoint `/users/me`.
   private toCurrentUserResponse(user: any) {
     return {
       id: toNumberId(user.user_id),
@@ -24,6 +32,7 @@ export class UsersService {
     };
   }
 
+  // Đổi giá trị giới tính từ DB sang nhãn hiển thị.
   private mapGender(gender?: string | null) {
     if (!gender) return null;
     if (gender === 'male') return 'Nam';
@@ -31,6 +40,7 @@ export class UsersService {
     return 'Khác';
   }
 
+  // Chuẩn hoá dữ liệu hồ sơ bệnh nhân thành DTO cho mobile.
   private toMobileProfileResponse(user: any, profile?: any): MobileProfileDto {
     const name = splitfull_name(user.full_name);
 
@@ -60,6 +70,7 @@ export class UsersService {
     };
   }
 
+  // Lấy user theo id nội bộ.
   async getUserById(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { user_id: this.toBigIntId(id) },
@@ -72,6 +83,7 @@ export class UsersService {
     return okResponse('Get current user successfully', this.toCurrentUserResponse(user));
   }
 
+  // Lấy hồ sơ mobile của user, ưu tiên profile chính.
   async getMobileProfile(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { user_id: this.toBigIntId(id) },
@@ -93,6 +105,7 @@ export class UsersService {
     );
   }
 
+  // Cập nhật thông tin user cơ bản.
   async updateUser(id: string, dto: UpdateUserDto) {
     const existing = await this.prisma.user.findUnique({
       where: { user_id: this.toBigIntId(id) },
@@ -120,6 +133,7 @@ export class UsersService {
     });
   }
 
+  // Cập nhật profile mobile và đồng bộ sang `patient_profile`.
   async updateMobileProfile(id: string, dto: UpdateMobileProfileDto) {
     const user_id = this.toBigIntId(id);
     const existing = await this.prisma.user.findUnique({

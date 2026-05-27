@@ -1,3 +1,9 @@
+/**
+ * SlotsController
+ * - Cung cấp các API quản lý slot: CRUD, tra cứu còn trống, xem log capacity.
+ * - Các API ghi dữ liệu đều cần JWT + phân quyền phù hợp.
+ * - Controller chỉ giữ vai trò nhận request và gọi service.
+ */
 import {
   Controller,
   Get,
@@ -26,6 +32,7 @@ import { UserRole } from '@prisma/client';
 export class SlotsController {
   constructor(private slotsService: SlotsService) {}
 
+  // Lấy danh sách slot theo bộ lọc bác sĩ, cơ sở và khoảng ngày.
   @Get()
   async getSlots(
     @Query('doctor_id') doctor_id?: string,
@@ -36,6 +43,7 @@ export class SlotsController {
     return this.slotsService.getSlots(doctor_id, clinicId, fromDate, toDate);
   }
 
+  // API kiểm tra slot còn trống cho luồng đặt lịch.
   @Get('available')
   async getAvailableSlots(
     @Query('doctor_id') doctor_id: string,
@@ -46,11 +54,13 @@ export class SlotsController {
     return this.slotsService.getAvailableSlots(doctor_id, clinicId, fromDate, toDate);
   }
 
+  // Lấy một slot theo id.
   @Get(':id')
   async getSlotById(@Param('id') id: string) {
     return this.slotsService.getSlotById(id);
   }
 
+  // Log thay đổi capacity, chỉ admin dùng.
   @Get(':id/capacity-logs')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin)
@@ -64,6 +74,7 @@ export class SlotsController {
     );
   }
 
+  // Tạo một slot cho lịch làm việc của bác sĩ.
   @Post()
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
@@ -71,6 +82,7 @@ export class SlotsController {
     return this.slotsService.createSlot(dto);
   }
 
+  // API tạo nhiều slot cùng lúc, đang để sẵn cho luồng sinh lịch sau này.
   @Post('bulk')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
@@ -78,6 +90,7 @@ export class SlotsController {
     return this.slotsService.createBulkSlots(dto);
   }
 
+  // Bật/tắt slot mà không xoá bản ghi.
   @Patch(':id')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
@@ -88,6 +101,7 @@ export class SlotsController {
     return this.slotsService.updateSlot(id, dto);
   }
 
+  // Điều chỉnh capacity còn lại và ghi log audit.
   @Patch(':id/capacity')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin)
@@ -99,6 +113,7 @@ export class SlotsController {
     return this.slotsService.updateSlotCapacity(userId, id, dto);
   }
 
+  // Xoá hẳn một slot.
   @Delete(':id')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)

@@ -1,3 +1,9 @@
+/**
+ * SlotsService
+ * - Xử lý logic nghiệp vụ cho slot: tạo, cập nhật, danh sách, xoá.
+ * - Quản lý thay đổi capacity và ghi log audit.
+ * - Dùng Prisma transaction khi cần đảm bảo tính nguyên tử.
+ */
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@/prisma/prisma.service';
 import { CreateSlotDto, UpdateSlotDto, CreateBulkSlotsDto, UpdateSlotCapacityDto, } from './dto/slot.dto';
@@ -8,10 +14,12 @@ import { okResponse } from '@/common/utils/api-response';
 export class SlotsService {
   constructor(private prisma: PrismaService) {}
 
+  // Đổi id dạng chuỗi từ controller sang BigInt của Prisma.
   private toBigIntId(id: string): bigint {
     return BigInt(id);
   }
 
+  // Tạo một slot từ khoảng thời gian đầu/cuối.
   async createSlot(dto: CreateSlotDto) {
     const startAt = new Date(dto.startAt);
     const endAt = new Date(dto.endAt);
@@ -37,6 +45,7 @@ export class SlotsService {
     });
   }
 
+  // API tạo nhiều slot cùng lúc, hiện mới trả placeholder.
   async createBulkSlots(dto: CreateBulkSlotsDto) {
     return {
       created: 0,
@@ -45,6 +54,7 @@ export class SlotsService {
     };
   }
 
+  // Lấy danh sách slot theo bộ lọc tuỳ chọn.
   async getSlots(doctor_id?: string, clinicId?: string, fromDate?: string, toDate?: string) {
     const where: any = {};
 
@@ -63,6 +73,7 @@ export class SlotsService {
     });
   }
 
+  // Lấy một slot theo id, không có thì báo lỗi ngay.
   async getSlotById(id: string) {
     const slot = await this.prisma.slot.findUnique({
       where: { slot_id: this.toBigIntId(id) },
@@ -72,6 +83,7 @@ export class SlotsService {
     return slot;
   }
 
+  // Bật/tắt trạng thái slot mà không xoá bản ghi.
   async updateSlot(id: string, dto: UpdateSlotDto) {
     await this.getSlotById(id);
 
@@ -84,12 +96,14 @@ export class SlotsService {
     });
   }
 
+  // Xoá slot khỏi hệ thống.
   async deleteSlot(id: string) {
     return this.prisma.slot.delete({
       where: { slot_id: this.toBigIntId(id) },
     });
   }
 
+  // Lấy danh sách slot còn trống cho màn đặt lịch.
   async getAvailableSlots(doctor_id: string, clinicId: string, fromDate: string, toDate: string) {
     return this.prisma.slot.findMany({
       where: {
@@ -103,12 +117,13 @@ export class SlotsService {
         },
       },
       include: {
-        appointments: true, // Lôi dữ liệu lịch hẹn ra để Flutter check
+        appointments: true, // Lấy kèm lịch hẹn để client kiểm tra
       },
       orderBy: [{ slot_date: 'asc' }, { start_time: 'asc' }],
     });
   }
 
+  // Trả log thay đổi capacity cho màn audit của admin.
   async getSlotCapacityLogs(id: string, limit = 50) {
       const slotId = this.toBigIntId(id);
       const safeLimit = Math.min(Math.max(limit, 1), 200);
@@ -149,6 +164,7 @@ export class SlotsService {
       })));
     }
 
+    // Cập nhật capacity theo transaction và ghi một dòng audit log.
     async updateSlotCapacity(userId: string, id: string, dto: UpdateSlotCapacityDto) {
       const slotId = this.toBigIntId(id);
       const adminUserId = this.toBigIntId(userId);

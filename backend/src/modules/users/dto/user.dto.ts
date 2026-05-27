@@ -1,5 +1,6 @@
 import { IsOptional, IsString, MaxLength } from 'class-validator';
 
+// DTO dùng khi user cập nhật profile cơ bản từ mobile/web.
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
