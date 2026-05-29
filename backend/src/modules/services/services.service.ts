@@ -53,6 +53,11 @@ export class ServicesService {
   }
 
   async getServices(page = 1, limit = 10, facilityId?: string, search?: string) {
+    /**
+     * Lấy danh sách service/gói (phục vụ cả UI admin và mobile)
+     * Input: page, limit, optional facilityId, search
+     * Output: paginated list of services basic info
+     */
     const where = {
       is_active: 1,
       facility_id: facilityId ? this.toBigIntId(facilityId) : undefined,
@@ -95,6 +100,10 @@ export class ServicesService {
   }
 
   async getServiceById(id: string) {
+    /**
+     * Lấy chi tiết một service theo id, bao gồm vaccines liên quan
+     * Throws NotFoundException nếu service không tồn tại hoặc inactive
+     */
     const service = await this.prisma.service.findUnique({
       where: { service_id: this.toBigIntId(id) },
       include: {
@@ -136,6 +145,11 @@ export class ServicesService {
   }
 
   async getAvailableSlots(id: string, date?: string, fromDate?: string, toDate?: string) {
+    /**
+     * Lấy các slot khả dụng cho một service (theo facility của service)
+     * Input: service id, optional date/fromDate/toDate
+     * Output: list of slots (slotId, startTime, endTime, availableCount, status)
+     */
     const service = await this.prisma.service.findUnique({
       where: { service_id: this.toBigIntId(id) },
     });
@@ -185,6 +199,10 @@ export class ServicesService {
   }
 
   async getVaccinationPackages(search?: string, facilityId?: string) {
+    /**
+     * Lấy các gói tiêm chủng (service có vaccines)
+     * Dùng cho màn hình chọn gói vaccine trên mobile
+     */
     const services = await this.prisma.service.findMany({
       where: {
         is_active: 1,
@@ -233,6 +251,12 @@ export class ServicesService {
     fromDate?: string,
     toDate?: string,
   ) {
+    /**
+     * Chuẩn bị chi tiết booking cho gói tiêm chủng:
+     * - Thông tin gói, cơ sở, và nhóm slot theo ngày (sáng/chiều)
+     * - Input: service id và range ngày
+     * - Output: VaccinationBookingDetailDto gồm danh sách slot nhóm theo ngày
+     */
     const service = await this.prisma.service.findUnique({
       where: { service_id: this.toBigIntId(id) },
       include: {

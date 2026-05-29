@@ -27,6 +27,11 @@ export class SlotsController {
   constructor(private slotsService: SlotsService) {}
 
   @Get()
+  /**
+   * GET /slots
+   * Query: doctorId, clinicId, fromDate, toDate
+   * Trả danh sách slot đã map booked_count và total_capacity
+   */
   async getSlots(
     @Query('doctorId') doctorId?: string,
     @Query('clinicId') clinicId?: string,
@@ -37,6 +42,11 @@ export class SlotsController {
   }
 
   @Get('available')
+  /**
+   * GET /slots/available
+   * Query: doctorId, clinicId, fromDate, toDate
+   * Trả các slot có status AVAILABLE trong khoảng ngày
+   */
   async getAvailableSlots(
     @Query('doctorId') doctorId: string,
     @Query('clinicId') clinicId: string,
@@ -47,6 +57,10 @@ export class SlotsController {
   }
 
   @Get(':id')
+  /**
+   * GET /slots/:id
+   * Trả chi tiết slot theo id, kèm booked_count và total_capacity
+   */
   async getSlotById(@Param('id') id: string) {
     return this.slotsService.getSlotById(id);
   }
@@ -67,6 +81,10 @@ export class SlotsController {
   @Post()
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
+  /**
+   * POST /slots
+   * Requires JWT and role admin/doctor. Tạo slot mới
+   */
   async createSlot(@Body() dto: CreateSlotDto) {
     return this.slotsService.createSlot(dto);
   }
@@ -74,6 +92,10 @@ export class SlotsController {
   @Post('bulk')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
+  /**
+   * POST /slots/bulk
+   * Requires JWT and role admin/doctor. Tạo nhiều slot (bulk)
+   */
   async createBulkSlots(@Body() dto: CreateBulkSlotsDto) {
     return this.slotsService.createBulkSlots(dto);
   }
@@ -81,6 +103,10 @@ export class SlotsController {
   @Patch(':id')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
+  /**
+   * PATCH /slots/:id
+   * Requires JWT and role admin/doctor. Cập nhật trạng thái slot (block/unblock)
+   */
   async updateSlot(
     @Param('id') id: string,
     @Body() dto: UpdateSlotDto,
@@ -91,6 +117,10 @@ export class SlotsController {
   @Patch(':id/capacity')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin)
+  /**
+   * PATCH /slots/:id/capacity
+   * Requires JWT and role admin. Cập nhật sức chứa slot (updateSlotCapacity)
+   */
   async updateSlotCapacity(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,
@@ -102,6 +132,10 @@ export class SlotsController {
   @Delete(':id')
   @UseGuards(JwtGuard, RolesGuard)
   @Roles(UserRole.admin, UserRole.doctor)
+  /**
+   * DELETE /slots/:id
+   * Requires JWT and role admin/doctor. Xóa slot theo id
+   */
   async deleteSlot(@Param('id') id: string) {
     return this.slotsService.deleteSlot(id);
   }

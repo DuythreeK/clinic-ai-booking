@@ -22,6 +22,11 @@ export class AppointmentsController {
 
   @Post()
   @Roles(UserRole.patient)
+  /**
+   * POST /appointments
+   * Requires JWT (patient). Tạo appointment (đặt lịch)
+   * Body: CreateAppointmentDto (patientId, slotId, facilityId, serviceId...)
+   */
   async create(
     @CurrentUser('sub') userId: string,
     @Body() dto: CreateAppointmentDto,
@@ -30,11 +35,19 @@ export class AppointmentsController {
   }
 
   @Get()
+  /**
+   * GET /appointments
+   * Requires JWT. Trả danh sách appointment của user
+   */
   async getUserAppointments(@CurrentUser('sub') userId: string) {
     return this.appointmentsService.getUserAppointments(userId);
   }
 
   @Get(':id')
+  /**
+   * GET /appointments/:id
+   * Requires JWT. Trả chi tiết appointment nếu thuộc user
+   */
   async getById(
     @CurrentUser('sub') userId: string,
     @Param('id') appointmentId: string,

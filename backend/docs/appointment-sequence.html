@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Vaccination Booking Sequence Diagram</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; margin: 16px; }
+    .container { max-width: 1100px; margin: auto; }
+    h1 { font-size: 20px; margin-bottom: 8px; }
+    .note { color: #555; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Vaccination Booking Sequence Diagram</h1>
+    <div class="note">This is the vaccination booking flow. It uses the shared appointments module, not a separate consultation-only flow.</div>
+
+    <div class="mermaid">
+sequenceDiagram
+  participant Client
+  participant AppointmentsController as "AppointmentsController\n(create)"
+  participant AppointmentsService as "AppointmentsService\n(createAppointment)"
+  participant PrismaService as "PrismaService (prisma client)"
+  participant DB as "DB (tblSlots, tblAppointment, tblPatientProfile, tblService)"
+
+  Client->>AppointmentsController: POST /appointments { CreateAppointmentDto }
+  activate AppointmentsController
+  AppointmentsController->>AppointmentsService: createAppointment(userId, dto)
+  activate AppointmentsService
+
+  %% 1. Validate patient
+  AppointmentsService->>PrismaService: patientProfile.findUnique(where: patientId)
+  PrismaService-->>AppointmentsService: patient | null
+  alt patient missing or not owned
+    AppointmentsService-->>AppointmentsController: throw NotFoundException("Patient profile not found")
+  end
+
+  %% 2. Validate slot
+  AppointmentsService->>PrismaService: slot.findUnique(where: slotId, include: { doctor })
+  PrismaService-->>AppointmentsService: slot | null
+  alt slot invalid or inactive
+    AppointmentsService-->>AppointmentsController: throw NotFoundException("Slot not found")
+  end
+
+  AppointmentsService->>PrismaService: service.findUnique(where: serviceId)
+  PrismaService-->>AppointmentsService: service | null
+
+  %% 3. Transaction: check duplicate, decrement slot, create appointment
+  AppointmentsService->>PrismaService: begin transaction
+  AppointmentsService->>PrismaService: check duplicate appointment
+  PrismaService-->>AppointmentsService: duplicate | null
+  alt duplicate exists
+    AppointmentsService-->>AppointmentsController: throw BadRequestException('Bệnh nhân đã có lịch...')
+  else
+    AppointmentsService->>PrismaService: update slot available_count - 1
+    PrismaService-->>AppointmentsService: { count }
+    alt count === 0
+      AppointmentsService-->>PrismaService: throw BadRequestException('Slot đã hết chỗ')
+    else
+      AppointmentsService->>PrismaService: read latest slot available_count
+      PrismaService-->>AppointmentsService: latestSlot
+      alt latestSlot.available_count <= 0
+        AppointmentsService->>PrismaService: update slot status FULL
+      end
+      AppointmentsService->>PrismaService: create appointment
+      PrismaService-->>AppointmentsService: createdAppointment
+      AppointmentsService->>PrismaService: fetch appointment with relations
+      PrismaService-->>AppointmentsService: appointmentWithIncludes
+    end
+  end
+
+  %% 4. Return
+  AppointmentsService-->>AppointmentsController: okResponse({ appointment summary })
+  deactivate AppointmentsService
+  AppointmentsController-->>Client: HTTP 201 Created (okResponse)
+  deactivate AppointmentsController
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script>
+    if (typeof mermaid !== 'undefined') {
+      mermaid.initialize({ startOnLoad: true, theme: 'default' });
+    }
+  </script>
+</body>
+</html>

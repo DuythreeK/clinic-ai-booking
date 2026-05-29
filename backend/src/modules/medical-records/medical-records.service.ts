@@ -64,6 +64,10 @@ export class MedicalRecordsService {
   }
 
   private toListItem(record: any): MedicalHistoryListItemDto {
+    /**
+     * Chuyển một `MedicalRecord` sang item list dùng cho màn hình lịch sử khám
+     * - Extract attachment, format fees và các label hiển thị
+     */
     const attachment = this.extractAttachment(record.attachments);
     const amount = Number(record.appointment.total_amount ?? 0);
     const feeLabel = formatCurrencyVnd(amount) ?? '0đ';
@@ -91,6 +95,10 @@ export class MedicalRecordsService {
   }
 
   async getMyMedicalRecords(userId: string) {
+    /**
+     * Lấy toàn bộ medical records của user (patient) kèm thông tin appointment, doctor
+     * Output: paginatedResponse (hiện mặc định page 1, limit 10)
+     */
     const records = await this.prisma.medicalRecord.findMany({
       where: {
         patient: {
@@ -120,6 +128,11 @@ export class MedicalRecordsService {
   }
 
   async getMedicalRecordById(userId: string, id: string) {
+    /**
+     * Lấy chi tiết một medical record theo id
+     * - Kiểm tra quyền (record.patient.user_id === userId)
+     * - Gom các thông tin payment, review để trả về chi tiết
+     */
     const record = await this.prisma.medicalRecord.findUnique({
       where: { record_id: this.toBigIntId(id) },
       include: {

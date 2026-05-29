@@ -23,10 +23,20 @@ export class AppointmentsService {
   }
 
   private createAppointmentCode() {
+    // Create a semi-unique appointment code for human-readable reference
     return `APT-${Date.now()}-${randomUUID().slice(0, 8).toUpperCase()}`;
   }
 
   async createAppointment(userId: string, dto: CreateAppointmentDto) {
+    /**
+     * Tạo appointment (đặt lịch)
+     * Quy trình:
+     *  - Validate patient, slot và service
+     *  - Trong `prisma.$transaction` kiểm tra duplicate, giảm available_count của slot (updateMany)
+     *  - Nếu updateMany trả về 0 => slot đã hết chỗ -> throw
+     *  - Tạo appointment và trả về dữ liệu đã format
+     * Lưu ý concurrency: sử dụng conditional update (updateMany with available_count > 0) để giảm race.
+     */
     const patientId = this.toBigIntId(dto.patientId, 'patientId');
     const slotId = this.toBigIntId(dto.slotId, 'slotId');
     const facilityId = this.toBigIntId(dto.facilityId, 'facilityId');
@@ -159,6 +169,10 @@ export class AppointmentsService {
   }
 
   async getAppointmentById(userId: string, appointmentId: string) {
+    /**
+     * Lấy chi tiết appointment cho user (kiểm tra quyền sở hữu)
+     * Throws NotFoundException nếu không tồn tại hoặc không thuộc user.
+     */
     const appointment = await this.prisma.appointment.findUnique({
       where: { appointment_id: this.toBigIntId(appointmentId, 'appointmentId') },
       include: {
@@ -205,6 +219,10 @@ export class AppointmentsService {
     });
   }
   async getUserAppointments(userId: string) {
+    /**
+     * Lấy tất cả appointment của user, kèm thông tin doctor, service, slot
+     * Trả về danh sách đã format.
+     */
     const appointments = await this.prisma.appointment.findMany({
       where: { user_id: this.toBigIntId(userId, 'userId') },
       include: {
