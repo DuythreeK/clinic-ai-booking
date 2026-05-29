@@ -38,6 +38,13 @@ export class PatientsService {
   }
 
   async createPatientProfile(userId: string, dto: CreatePatientProfileDto) {
+    /**
+     * Tạo hồ sơ bệnh nhân cho user
+     * - Nếu chưa có hồ sơ chính sẽ tự đánh dấu is_primary
+     * - Nếu dto.isPrimary === true sẽ unset các hồ sơ khác
+     * Input: userId, CreatePatientProfileDto
+     * Output: thông tin profile đã tạo
+     */
     const userBigIntId = this.toBigIntId(userId);
     const existingPrimary = await this.prisma.patientProfile.findFirst({
       where: { user_id: userBigIntId, is_primary: 1 },
@@ -106,6 +113,11 @@ export class PatientsService {
   }
 
   async updatePatientProfile(userId: string, id: string, dto: UpdatePatientProfileDto) {
+    /**
+     * Cập nhật hồ sơ bệnh nhân
+     * - Kiểm tra quyền sở hữu profile
+     * - Nếu thay đổi isPrimary cần đảm bảo tồn tại ít nhất 1 hồ sơ chính
+     */
     const profileId = this.toBigIntId(id);
     const userBigIntId = this.toBigIntId(userId);
     const existingProfile = await this.prisma.patientProfile.findUnique({
@@ -192,6 +204,11 @@ export class PatientsService {
   }
 
   async deletePatientProfile(userId: string, id: string) {
+    /**
+     * Xóa hồ sơ bệnh nhân
+     * - Nếu xóa hồ sơ chính sẽ promote hồ sơ mới làm is_primary nếu có
+     * - Throws nếu cố xóa khi chỉ có 1 hồ sơ chính
+     */
     const profileId = this.toBigIntId(id);
     const userBigIntId = this.toBigIntId(userId);
     const existingProfile = await this.prisma.patientProfile.findUnique({
@@ -239,6 +256,9 @@ export class PatientsService {
   }
 
   async getPatientProfiles(userId: string) {
+    /**
+     * Lấy danh sách tất cả patient profiles của user, sắp theo is_primary và created_at
+     */
     const profiles = await this.prisma.patientProfile.findMany({
       where: { user_id: this.toBigIntId(userId) },
       orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],
@@ -272,6 +292,9 @@ export class PatientsService {
   }
 
   async getMobilePatientProfiles(userId: string) {
+    /**
+     * Phiên bản trả về cho mobile (format trường ngày/label thân thiện)
+     */
     const profiles = await this.prisma.patientProfile.findMany({
       where: { user_id: this.toBigIntId(userId) },
       orderBy: [{ is_primary: 'desc' }, { created_at: 'desc' }],

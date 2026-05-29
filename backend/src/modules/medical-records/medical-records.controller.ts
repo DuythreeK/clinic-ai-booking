@@ -9,11 +9,19 @@ export class MedicalRecordsController {
   constructor(private medicalRecordsService: MedicalRecordsService) {}
 
   @Get()
+  /**
+   * GET /medical-records
+   * Requires JWT. Trả danh sách medical records (history) của user
+   */
   async getMine(@CurrentUser('sub') userId: string) {
     return this.medicalRecordsService.getMyMedicalRecords(userId);
   }
 
   @Get(':id')
+  /**
+   * GET /medical-records/:id
+   * Requires JWT. Trả chi tiết medical record nếu thuộc user
+   */
   async getById(
     @CurrentUser('sub') userId: string,
     @Param('id') id: string,

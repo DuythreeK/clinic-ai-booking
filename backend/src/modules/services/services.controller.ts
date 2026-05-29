@@ -6,6 +6,11 @@ export class ServicesController {
   constructor(private servicesService: ServicesService) {}
 
   @Get()
+  /**
+   * GET /services
+   * Query: page, limit, facilityId, search
+   * Trả danh sách service/gói (paginated)
+   */
   async getServices(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -21,6 +26,10 @@ export class ServicesController {
   }
 
   @Get('mobile/vaccination-packages')
+  /**
+   * GET /services/mobile/vaccination-packages
+   * Trả các gói tiêm chủng để hiển thị trên mobile
+   */
   async getVaccinationPackages(
     @Query('search') search?: string,
     @Query('facilityId') facilityId?: string,
@@ -29,11 +38,20 @@ export class ServicesController {
   }
 
   @Get(':id')
+  /**
+   * GET /services/:id
+   * Trả chi tiết service theo id
+   */
   async getServiceById(@Param('id') id: string) {
     return this.servicesService.getServiceById(id);
   }
 
   @Get(':id/mobile-vaccination-detail')
+  /**
+   * GET /services/:id/mobile-vaccination-detail
+   * Query: date/fromDate/toDate
+   * Trả chi tiết booking (service info + grouped slots) cho mobile
+   */
   async getVaccinationBookingDetail(
     @Param('id') id: string,
     @Query('date') date?: string,
@@ -49,6 +67,10 @@ export class ServicesController {
   }
 
   @Get(':id/available-slots')
+  /**
+   * GET /services/:id/available-slots
+   * Trả slot khả dụng cho service
+   */
   async getAvailableSlots(
     @Param('id') id: string,
     @Query('date') date?: string,

@@ -51,6 +51,10 @@ export class SlotsService {
   }
 
   async getSlots(doctorId?: string, clinicId?: string, fromDate?: string, toDate?: string) {
+    /**
+     * Lấy danh sách slot theo điều kiện (doctorId, clinicId, từ ngày -> đến ngày)
+     * Trả về các slot kèm booked_count và total_capacity
+     */
     const where: any = {};
 
     if (doctorId) where.doctor_id = this.toBigIntId(doctorId);
@@ -89,6 +93,10 @@ export class SlotsService {
   }
 
   async getSlotById(id: string) {
+    /**
+     * Lấy chi tiết slot theo id kèm booked_count và total_capacity
+     * Throws NotFoundException nếu slot không tồn tại
+     */
     const slot = await this.prisma.slot.findUnique({
       where: { slot_id: this.toBigIntId(id) },
       include: {
@@ -131,6 +139,11 @@ export class SlotsService {
   }
 
   async getSlotCapacityLogs(id: string, limit = 50) {
+    /**
+     * Lấy nhật ký thay đổi sức chứa cho slot (slotCapacityLog)
+     * - Kiểm tra slot tồn tại
+     * - Trả về list log đã format kèm thông tin user cập nhật
+     */
     const slotId = this.toBigIntId(id);
     const safeLimit = Math.min(Math.max(limit, 1), 200);
 
@@ -171,6 +184,14 @@ export class SlotsService {
   }
 
   async updateSlotCapacity(userId: string, id: string, dto: UpdateSlotCapacityDto) {
+    /**
+     * Cập nhật sức chứa slot (admin)
+     * Quy trình:
+     *  - Kiểm tra valid newCapacity và slot tồn tại
+     *  - Tính bookedCount hiện tại, đảm bảo newCapacity >= bookedCount
+     *  - Trong transaction update slot.available_count và tạo SlotCapacityLog
+     *  - Trả về summary với old/new capacity và status
+     */
     const slotId = this.toBigIntId(id);
     const adminUserId = this.toBigIntId(userId);
     const requestedCapacity = Number(dto.newCapacity);
@@ -248,6 +269,10 @@ export class SlotsService {
   }
 
   async getAvailableSlots(doctorId: string, clinicId: string, fromDate: string, toDate: string) {
+    /**
+     * Lấy các slot AVAILABLE cho doctor+clinic trong range ngày
+     * Trả về danh sách slot thô (dùng nội bộ hoặc API khác map sang DTO)
+     */
     return this.prisma.slot.findMany({
       where: {
         doctor_id: this.toBigIntId(doctorId),

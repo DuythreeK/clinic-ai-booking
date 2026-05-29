@@ -200,6 +200,12 @@ export class DoctorsService {
     specialtyId?: string,
     facilityId?: string,
   ) {
+    /**
+     * Lấy danh sách bác sĩ có phân trang + filter
+     * Input: page, limit, search (tên), specialtyId, facilityId
+     * Output: Paginated response chứa danh sách `MobileDoctorCardDto`
+     * Side-effects: Không có. Sử dụng `buildDoctorStats` để tính booking/review/next-slot.
+     */
     const where = {
       is_active: 1,
       specialty_id: specialtyId ? this.toBigIntId(specialtyId) : undefined,
@@ -229,6 +235,11 @@ export class DoctorsService {
   }
 
   async getFeaturedDoctors(limit = 10, search?: string, specialty?: string) {
+    /**
+     * Lấy danh sách bác sĩ "nổi bật"
+     * - Lấy các bác sĩ thỏa điều kiện, map sang DTO mobile
+     * - Sắp xếp theo số lượt booking hôm nay và cắt theo `limit`
+     */
     const doctors = await this.prisma.doctor.findMany({
       where: {
         is_active: 1,
@@ -252,6 +263,11 @@ export class DoctorsService {
   }
 
   async getMyDoctors(userId: string, search?: string) {
+    /**
+     * Lấy danh sách "bác sĩ của tôi" dựa trên lịch sử appointment và review của user
+     * Input: userId (string), optional search
+     * Output: danh sách `MobileDoctorCardDto` của những bác sĩ user đã tương tác
+     */
     const parsedUserId = this.toBigIntId(userId);
 
     const [appointments, reviews] = await Promise.all([
@@ -302,6 +318,10 @@ export class DoctorsService {
   }
 
   async getDoctorById(id: string) {
+    /**
+     * Lấy chi tiết bác sĩ theo id và kèm các thống kê (booking today, rating, next slot)
+     * Throws: NotFoundException nếu bác sĩ không tồn tại hoặc inactive
+     */
     const doctor = await this.prisma.doctor.findUnique({
       where: { doctor_id: this.toBigIntId(id) },
       include: {
@@ -320,6 +340,9 @@ export class DoctorsService {
   }
 
   async getDoctorByUserId(userId: string) {
+    /**
+     * Lấy hồ sơ doctor theo userId (dùng cho doctor profile của user đang đăng nhập)
+     */
     const doctor = await this.prisma.doctor.findUnique({
       where: { user_id: this.toBigIntId(userId) },
       include: {
@@ -341,6 +364,10 @@ export class DoctorsService {
   }
 
   async getDoctorReviews(id: string) {
+    /**
+     * Lấy review cho bác sĩ (visible only) kèm thông tin reviewer
+     * Trả paginatedResponse với items `MobileDoctorReviewDto`
+     */
     await this.getDoctorById(id);
 
     const reviews = await this.prisma.doctorReview.findMany({
@@ -367,6 +394,11 @@ export class DoctorsService {
   }
 
   async createDoctor(userId: string, dto: CreateDoctorDto) {
+    /**
+     * Tạo mới doctor record liên kết với `userId`.
+     * Trả về DTO mobile của doctor vừa tạo.
+     * Note: không có validation nâng cao ở đây (được giả định đã validate ở controller/DTO).
+     */
     const doctor = await this.prisma.doctor.create({
       data: {
         user_id: this.toBigIntId(userId),
@@ -389,6 +421,10 @@ export class DoctorsService {
   }
 
   async updateDoctor(id: string, dto: UpdateDoctorDto) {
+    /**
+     * Cập nhật thông tin doctor theo id.
+     * Throws: NotFoundException nếu doctor không tồn tại.
+     */
     await this.getDoctorById(id);
 
     const doctor = await this.prisma.doctor.update({
