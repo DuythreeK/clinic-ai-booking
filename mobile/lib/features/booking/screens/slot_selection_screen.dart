@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/*
+  SlotSelectionScreen
+  - Vai trò: Hiển thị các ca khám có sẵn cho bác sĩ + cơ sở (calendar + timeslots)
+  - Gọi backend: `/slots/available` với params `doctorId`, `clinicId`, `fromDate`, `toDate`
+  - Lưu ý: trang này parse response từ backend và trả về `slotId`, `date`, `time` cho caller
+*/
+
 import '../../../core/api/dio_client.dart';
 
 class SlotSelectionScreen extends StatefulWidget {

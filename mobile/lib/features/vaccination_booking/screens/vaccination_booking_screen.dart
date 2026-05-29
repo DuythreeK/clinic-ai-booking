@@ -1,4 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+/*
+  Vaccination booking screens
+  - Vai trò: flow đặt lịch tiêm chủng (danh sách gói, chọn cơ sở, chọn ngày/slot, profile, xác nhận, thanh toán)
+  - Gọi backend: `VaccinationBookingCatalog` load các endpoint gói/sở/các slots chi tiết và `/appointments` để đặt lịch
+  - Lưu ý: flow này dùng draft object (`VaccinationBookingDraft`) để truyền state giữa các route
+*/
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/navigation/app_route_observer.dart';

@@ -1,6 +1,16 @@
 import 'package:clinic_ai_booking/core/api/dio_client.dart';
 import 'package:clinic_ai_booking/core/models/models.dart';
 
+/*
+  PatientService
+  - Vai trò: quản lý hồ sơ bệnh nhân (current user)
+  - Mapping endpoints:
+    - GET `/patients/profile` -> `getMyProfile`
+    - PATCH `/patients/profile` -> `updateProfile`
+    - DELETE `/patients/profile` -> `deleteProfile`
+  - Lưu ý: updateProfile gửi partial payload; server có thể trả validation errors
+*/
+
 class PatientService {
   final DioClient dioClient;
 

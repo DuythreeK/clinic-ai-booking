@@ -1,4 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+/*
+  DoctorDetailScreen
+  - Vai trò: Hiển thị thông tin chi tiết bác sĩ, cho phép đánh dấu yêu thích và điều hướng sang flow đặt lịch
+  - Gọi backend: khi cần chi tiết đầy đủ có thể gọi `/doctors/:id` hoặc sử dụng `DoctorCatalog` cache
+  - Lưu ý: không trực tiếp thực hiện booking; chuyển sang route booking (`/booking?doctorId=...`) để xử lý đặt lịch
+*/
 import 'package:go_router/go_router.dart';
 
 import '../../../core/api/dio_client.dart';

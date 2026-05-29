@@ -1,6 +1,15 @@
 import 'package:clinic_ai_booking/core/api/dio_client.dart';
 import 'package:clinic_ai_booking/core/models/models.dart';
 
+/*
+  SlotService
+  - Vai trò: dịch vụ wrapper cho các endpoint `/slots/available`
+  - Methods:
+    - `getAvailableSlots` gọi `/slots/available`
+    - `getSlotsByDate` và `getSlotsByWeek` là helpers dựa trên `getAvailableSlots`
+  - Lưu ý: backend trả danh sách slot; client cần parse `slot_id`, `slot_date`, `start_time` như trong SlotSelectionScreen
+*/
+
 class SlotService {
   final DioClient dioClient;
 

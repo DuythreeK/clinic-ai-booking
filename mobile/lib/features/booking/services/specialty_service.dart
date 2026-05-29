@@ -1,6 +1,12 @@
 import 'package:clinic_ai_booking/core/api/dio_client.dart';
 import 'package:clinic_ai_booking/core/models/models.dart';
 
+/*
+  SpecialtyService
+  - Vai trò: wrapper cho endpoint chuyên khoa (`/specialties`)
+  - Methods: `getAllSpecialties`, `getSpecialtyById`, `searchSpecialties`
+*/
+
 class SpecialtyService {
   final DioClient dioClient;
 
