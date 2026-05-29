@@ -1,5 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 
+/*
+  FeaturedDoctorsScreen
+  - Vai trò: Hiển thị danh sách "bác sĩ nổi bật" với bộ lọc, sắp xếp và tìm kiếm
+  - Gọi backend: endpoint featured doctors (mobile) hoặc dùng local catalog cache
+  - Lưu ý: chịu trách nhiệm UI/UX (search, tabs, sort) và delegate hành vi mở chi tiết
+*/
+
 import 'doctor_hub_models.dart';
 import 'doctor_hub_widgets.dart';
 

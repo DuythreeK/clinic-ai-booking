@@ -1,4 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+/*
+  MedicalHistoryScreen
+  - Vai trò: danh sách các phiếu khám / lịch sử khám của người dùng
+  - Gọi backend: `MedicalHistoryCatalog.loadRemote()` chịu trách nhiệm gọi endpoint lịch sử khám (ví dụ `/medical-records`)
+  - Lưu ý: mở chi tiết phiếu khám bằng route `/medical-history/:id`
+*/
 import 'package:go_router/go_router.dart';
 
 import '../../booking/screens/doctor_hub_models.dart';

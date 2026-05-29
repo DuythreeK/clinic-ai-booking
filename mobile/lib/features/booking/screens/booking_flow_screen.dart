@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+/*
+  BookingFlowScreen
+  - Vai trò: Wizard đặt lịch khám (chọn cơ sở → chọn bác sĩ → chọn ca → chọn dịch vụ → xác nhận)
+  - Gọi backend: sử dụng endpoints: `/patients/profile`, `/doctors`, `/services?facilityId=`, `/slots/available`, `/appointments` (tạo lịch)
+  - Lưu ý: giữ state wizard cục bộ, kiểm tra lỗi mạng và xử lý case user huỷ giữa chừng
+*/
+
 import '../../../core/api/dio_client.dart';
 import '../../auth/services/auth_service.dart';
 import '../../facilities/models/booking_facility_item.dart';

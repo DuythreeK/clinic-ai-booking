@@ -1,4 +1,9 @@
 import 'package:flutter/material.dart';
+/*
+  MedicalHistoryDetailScreen
+  - Vai trò: hiển thị chi tiết một phiếu khám, tóm tắt thanh toán, file đính kèm và đánh giá
+  - Gọi backend: nội dung thường được load vào `MedicalHistoryCatalog` trước đó; nút đánh giá/biểu mẫu có thể gọi endpoint gửi review
+*/
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../booking/screens/doctor_hub_models.dart';

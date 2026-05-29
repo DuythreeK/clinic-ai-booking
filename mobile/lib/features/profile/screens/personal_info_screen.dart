@@ -1,4 +1,10 @@
 ﻿import 'package:flutter/material.dart';
+/*
+  PersonalInfoScreen / EditPersonalInfoScreen
+  - Vai trò: xem và chỉnh sửa thông tin hồ sơ người dùng
+  - Gọi backend: sử dụng `ProfileCatalog` internals để load/update profile (thường mapping tới `/patients/profile`)
+  - Lưu ý: chỉnh sửa sẽ điều hướng sang `/profile/edit` và gọi API cập nhật; cần validation trước khi gửi
+*/
 import 'package:go_router/go_router.dart';
 
 import 'profile_models.dart';

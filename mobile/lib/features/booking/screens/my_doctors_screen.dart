@@ -1,5 +1,12 @@
 ﻿import 'package:flutter/material.dart';
 
+/*
+  MyDoctorsScreen
+  - Vai trò: Hiển thị danh sách bác sĩ mà người dùng đánh dấu (favorites / my doctors)
+  - Gọi backend: có thể dùng local catalog cache hoặc endpoint trả về danh sách bác sĩ yêu thích
+  - Lưu ý: UI này không trực tiếp thực hiện booking; chuyển tiếp sang màn hình chi tiết/booking khi cần
+*/
+
 import 'doctor_hub_models.dart';
 import 'doctor_hub_widgets.dart';
 

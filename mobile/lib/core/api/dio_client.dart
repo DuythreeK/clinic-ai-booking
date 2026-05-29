@@ -5,6 +5,16 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:logger/logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/*
+  DioClient + TokenInterceptor
+  - Vai trò: wrapper HTTP client với:
+    - header `Authorization: Bearer <access_token>` tự động (TokenInterceptor.onRequest)
+    - refresh token flow khi gặp 401 (TokenInterceptor.onError) gọi `/auth/refresh`
+    - retry interceptor cho retry/backoff
+  - Lưu ý bảo mật: tokens lưu trong `FlutterSecureStorage` (web dùng SharedPreferences), đảm bảo XSS/CSRF mitigation
+  - Caller: sử dụng `DioClient.get/post/patch/delete` để gọi backend (đường dẫn tương đối `/...` sẽ được normalize)
+*/
+
 import '../config/api_config.dart';
 
 class TokenInterceptor extends Interceptor {

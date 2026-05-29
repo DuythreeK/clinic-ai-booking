@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 
+/*
+  DoctorSearchScreen
+  - Vai trò: UI tìm kiếm và lọc bác sĩ theo tên/chuyên khoa
+  - Các lớp chính: DoctorSearchScreen, DoctorSearchDetailScreen
+  - Gọi backend: endpoint danh sách bác sĩ (phục vụ search/filter), detail khi mở chi tiết
+  - Lưu ý: component này chỉ đảm trách hiển thị và local filtering; network call được thực hiện bởi catalog/service tương ứng (nếu có)
+*/
+
 class DoctorSearchScreen extends StatefulWidget {
   const DoctorSearchScreen({Key? key}) : super(key: key);
 

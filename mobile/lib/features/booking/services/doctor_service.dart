@@ -1,6 +1,16 @@
 import 'package:clinic_ai_booking/core/api/dio_client.dart';
 import 'package:clinic_ai_booking/core/models/models.dart';
 
+/*
+  DoctorService
+  - Vai trò: wrapper gọi REST API backend liên quan bác sĩ
+  - Mapping endpoints:
+    - GET `/doctors` -> `getAllDoctors`, `searchDoctors`
+    - GET `/doctors/:id` -> `getDoctorById`
+    - GET `/slots/available` -> `getDoctorAvailability`
+  - Lưu ý: phương thức trả về model `Doctor`/`Slot`; xử lý lỗi mạng nên được thực hiện ở caller hoặc show error UI
+*/
+
 class DoctorService {
   final DioClient dioClient;
 
