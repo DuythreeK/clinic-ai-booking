@@ -7,6 +7,14 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/api/dio_client.dart';
 import '../../../core/storage/auth_storage.dart';
 
+/// Mô tả file
+/// - Chứa các model và catalog nhẹ phục vụ giao diện khám/đặt lịch bác sĩ.
+/// - Bao gồm: `FacilityInfo`, `SpecialtyChoice`, `DoctorProfile`, `DoctorCatalog`, `SpecialtyCatalog`.
+///
+/// Ghi chú:
+/// - Phản hồi API có thể được bọc nhiều lớp (ví dụ `{ data: { items: [...] } }`), dùng `_unwrapItems` để xử lý.
+/// - `DoctorCatalog` lưu danh sách bác sĩ yêu thích vào `SharedPreferences` dưới dạng JSON.
+
 class FacilityInfo {
   const FacilityInfo({
     required this.name,
@@ -27,6 +35,10 @@ class FacilityInfo {
   }
 }
 
+/// `FacilityInfo`
+/// - Model gọn biểu diễn cơ sở y tế trả về từ API (tên, loại, địa chỉ).
+/// - `fromApi` chuyển đổi và đảm bảo các trường luôn là chuỗi an toàn.
+
 class SpecialtyChoice {
   const SpecialtyChoice({
     required this.id,
@@ -46,6 +58,10 @@ class SpecialtyChoice {
     );
   }
 }
+
+/// `SpecialtyChoice`
+/// - Đại diện cho một chuyên khoa dùng trong UI lọc (ChoiceChips).
+/// - `fromApi` chấp nhận cả key `id` hoặc `specialty_id` từ API.
 
 class DoctorProfile {
   const DoctorProfile({
@@ -177,6 +193,12 @@ class DoctorProfile {
     }
   }
 }
+
+  /// `DoctorProfile`
+  /// - DTO dùng trong UI để hiển thị thông tin bác sĩ (card, chi tiết).
+  /// - `fromApi` parse và chuẩn hóa dữ liệu backend (số → int/double, mặc định khi thiếu).
+  /// - `toJson` dùng để lưu profile yêu thích vào bộ nhớ cục bộ.
+  /// - `_highlightFromSpecialty` chọn màu giao diện dựa trên tên chuyên khoa.
 
 class DoctorCatalog extends ChangeNotifier {
   DoctorCatalog._();
@@ -327,6 +349,14 @@ class DoctorCatalog extends ChangeNotifier {
   }
 }
 
+/// `DoctorCatalog`
+/// - Cache đơn giản (ChangeNotifier) cho danh sách bác sĩ "nổi bật" và quản lý favorites.
+/// - Chức năng chính:
+///   * Tải bác sĩ nổi bật từ `/doctors/mobile/featured` qua `_fetchDoctors`.
+///   * Lưu/khôi phục hồ sơ bác sĩ yêu thích vào `SharedPreferences`.
+///   * Đồng bộ thông tin favorites với dữ liệu mới khi tải lại.
+/// - Ghi chú: `_fetchDoctors` dùng `_unwrapItems` để hỗ trợ nhiều dạng response từ API.
+
 class SpecialtyCatalog extends ChangeNotifier {
   SpecialtyCatalog._();
 
@@ -380,6 +410,11 @@ class SpecialtyCatalog extends ChangeNotifier {
     return <dynamic>[];
   }
 }
+
+/// `SpecialtyCatalog`
+/// - Tải danh sách chuyên khoa từ `/specialties` và cung cấp cho UI.
+/// - Lưu kết quả trong bộ nhớ cho đến khi app khởi động lại (dùng `force=true` để tải lại).
+/// - Sử dụng `_unwrapItems` giống `DoctorCatalog` để xử lý nhiều dạng response.
 
 
 
