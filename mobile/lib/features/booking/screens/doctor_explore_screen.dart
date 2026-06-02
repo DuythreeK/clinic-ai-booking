@@ -5,6 +5,10 @@ import '../../auth/services/auth_service.dart';
 import 'doctor_detail_screen.dart';
 import 'doctor_hub_models.dart';
 
+/// `DoctorExploreScreen`
+/// - Mục đích: màn hình tìm kiếm và lọc bác sĩ.
+/// - Luồng: tải `specialties` và `doctors` từ API, sau đó áp filter cục bộ (search + specialty).
+/// - Input: `initialSearch`, `initialSpecialty` để khởi tạo filter khi mở màn hình.
 class DoctorExploreScreen extends StatefulWidget {
   const DoctorExploreScreen({
     super.key,
@@ -21,6 +25,8 @@ class DoctorExploreScreen extends StatefulWidget {
   State<DoctorExploreScreen> createState() => _DoctorExploreScreenState();
 }
 
+/// State của `DoctorExploreScreen`.
+/// Chứa state cho danh sách bác sĩ, chuyên khoa, text search và các helper để load/lọc dữ liệu.
 class _DoctorExploreScreenState extends State<DoctorExploreScreen> {
   final DioClient _dioClient = DioClient();
   final TextEditingController _searchCtrl = TextEditingController();
@@ -34,17 +40,25 @@ class _DoctorExploreScreenState extends State<DoctorExploreScreen> {
   @override
   void initState() {
     super.initState();
+    // Khởi tạo value cho search field nếu có
     _searchCtrl.text = widget.initialSearch ?? '';
+    // Gắn listener để tự động áp filters khi người dùng nhập
     _searchCtrl.addListener(_applyFilters);
+    // Tải dữ liệu ban đầu (specialties + doctors)
     _loadData();
   }
 
   @override
   void dispose() {
+    // Hủy controller để tránh memory leak
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// _loadData
+  /// - Gọi API: `/specialties` và `/doctors`.
+  /// - Map dữ liệu trả về sang `SpecialtyChoice` và `DoctorProfile`.
+  /// - Đặt `_specialties` và `_doctors`, sau đó gọi `_applyFilters()` để render.
   Future<void> _loadData() async {
     setState(() {
       _loading = true;
@@ -96,6 +110,9 @@ class _DoctorExploreScreenState extends State<DoctorExploreScreen> {
     }
   }
 
+  /// _unwrapItems
+  /// - Helper để unpack payload API vào List
+  /// - Hỗ trợ response dạng `{ data: [...] }`, `{ data: { items: [...] } }`, `{ items: [...] }` hoặc trực tiếp `[...]`.
   List<dynamic> _unwrapItems(dynamic data) {
     if (data is Map<String, dynamic>) {
       final wrapped = data['data'];
@@ -111,11 +128,18 @@ class _DoctorExploreScreenState extends State<DoctorExploreScreen> {
     return <dynamic>[];
   }
 
+  /// _applyFilters
+  /// - Trigger rebuild khi filter thay đổi. Logic lọc thật sự nằm ở getter `_filteredDoctors`.
   void _applyFilters() {
     if (!mounted) return;
     setState(() {});
   }
 
+  /// `_filteredDoctors` getter
+  /// - Áp dụng các filter cục bộ:
+  ///    * `search` so sánh partial trên `name`, `specialty`, `focus`, tên cơ sở
+  ///    * `specialty` so sánh exact (case-insensitive) với chip được chọn
+  /// - Trả về danh sách đã sort theo `bookingToday` giảm dần
   List<DoctorProfile> get _filteredDoctors {
     final query = _searchCtrl.text.trim().toLowerCase();
     final specialty = _selectedSpecialty.trim().toLowerCase();
@@ -138,6 +162,7 @@ class _DoctorExploreScreenState extends State<DoctorExploreScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Build chịu trách nhiệm hiển thị các trạng thái: loading / error / empty / results
     final doctors = _filteredDoctors;
     final specialtyChips = <SpecialtyChoice>[
       const SpecialtyChoice(id: 'all', name: 'Tất cả'),
@@ -403,6 +428,10 @@ class _DoctorResultCard extends StatelessWidget {
   }
 }
 
+/// `_DoctorResultCard`
+/// - Hiển thị tóm tắt thông tin bác sĩ trong danh sách kết quả.
+/// - Input: `doctor` (model) và `onTap` callback để mở chi tiết.
+
 class _ExploreEmptyState extends StatelessWidget {
   const _ExploreEmptyState();
 
@@ -424,6 +453,9 @@ class _ExploreEmptyState extends StatelessWidget {
     );
   }
 }
+
+/// `_ExploreEmptyState`
+/// - Component hiển thị khi không có bác sĩ phù hợp.
 
 class _ExploreErrorState extends StatelessWidget {
   const _ExploreErrorState({
@@ -463,6 +495,9 @@ class _ExploreErrorState extends StatelessWidget {
   }
 }
 
+/// `_ExploreErrorState`
+/// - Hiển thị thông báo lỗi và nút `Thử lại`.
+
 class _RoundButton extends StatelessWidget {
   const _RoundButton({
     required this.icon,
@@ -490,3 +525,6 @@ class _RoundButton extends StatelessWidget {
     );
   }
 }
+
+/// `_RoundButton`
+/// - Button tròn dùng ở header, nhận `icon` và `onTap`.
